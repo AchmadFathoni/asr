@@ -12,6 +12,7 @@ import com.asr.core.interfaces.AlarmScheduler
 import com.asr.core.now
 import com.asr.core.tag.Tag
 import com.asr.core.tag.TagRepo
+import com.asr.ui.app.TagFilterState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -39,10 +40,12 @@ class HabitsViewModel(
         habitRepo.getRecordsFlow(),
         habitRepo.getRecordsForDateFlow(today),
         tagRepo.getTagsFlow(),
-        _selected,
-    ) { habits, allRecords, records, tags, selected ->
+        combine(_selected, tagRepo.getHabitTagMappingsFlow(), TagFilterState.selectedTagIds) { s, m, ids -> Triple(s, m, ids) },
+    ) { habits, allRecords, records, tags, (selected, tagMappings, filterTagIds) ->
+        val filtered = if (filterTagIds.isEmpty()) habits
+            else habits.filter { tagMappings[it.id]?.any { t -> t in filterTagIds } == true }
         HabitsState(
-            habits = habits,
+            habits = filtered,
             allRecords = allRecords,
             todayRecords = records.associateBy { it.habitId },
             streaks = habits.associate { it.id to it.computeStreak(allRecords, today) },

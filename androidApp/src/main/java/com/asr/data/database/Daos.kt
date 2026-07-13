@@ -136,6 +136,12 @@ interface TagDao {
     )
     suspend fun getTagsForHabit(habitId: Long): List<TagEntity>
 
+    @Query("SELECT * FROM task_tags")
+    fun getAllTaskTagsFlow(): Flow<List<TaskTagEntity>>
+
+    @Query("SELECT * FROM habit_tags")
+    fun getAllHabitTagsFlow(): Flow<List<HabitTagEntity>>
+
     @Query("DELETE FROM task_tags WHERE taskId = :taskId")
     suspend fun clearTaskTags(taskId: Long)
 

@@ -7,6 +7,7 @@ import com.asr.core.tag.TagRepo
 import com.asr.core.interfaces.AlarmScheduler
 import com.asr.core.task.Task
 import com.asr.core.task.TaskRepo
+import com.asr.ui.app.TagFilterState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -30,15 +31,18 @@ class TasksViewModel(
         tagRepo.getTagsFlow(),
         _filter,
         _expandedIds,
-    ) { all, tags, filter, expandedIds ->
-        val filtered = when (filter) {
+        combine(tagRepo.getTaskTagMappingsFlow(), TagFilterState.selectedTagIds) { m, ids -> m to ids },
+    ) { all, tags, filter, expandedIds, (tagMappings, filterTagIds) ->
+        val base = when (filter) {
             TaskFilter.ALL -> all
             TaskFilter.ACTIVE -> all.filter { !it.isDone }
             TaskFilter.DONE -> all.filter { it.isDone }
         }
+        val tasks = if (filterTagIds.isEmpty()) base
+            else base.filter { tagMappings[it.id]?.any { t -> t in filterTagIds } == true }
 
         TasksState(
-            tasks = filtered,
+            tasks = tasks,
             filter = filter,
             tags = tags,
             expandedTaskIds = expandedIds,

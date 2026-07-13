@@ -65,8 +65,9 @@ import com.asr.core.habit.shouldShowToday
 import com.asr.core.now
 import com.asr.ui.LIGHT_CHECK_COLORS
 import com.asr.ui.TAG_COLORS
-import com.asr.ui.viewmodel.HabitsViewModel
 import com.asr.ui.app.EmptyState
+import com.asr.ui.app.TagFilterChips
+import com.asr.ui.viewmodel.HabitsViewModel
 import org.jetbrains.compose.resources.vectorResource
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -120,7 +121,7 @@ fun HabitsPage(viewModel: HabitsViewModel) {
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
-                Spacer(Modifier.height(8.dp))
+                TagFilterChips(tags = state.tags, modifier = Modifier.padding(top = 4.dp, bottom = 4.dp))
 
                 val filteredHabits = if (searchQuery.isBlank()) state.habits
                     else state.habits.filter { it.title.contains(searchQuery, ignoreCase = true) }

@@ -17,6 +17,10 @@ interface TagRepo {
 
     suspend fun getTagsForHabit(habitId: Long): List<Tag>
 
+    fun getTaskTagMappingsFlow(): Flow<Map<Long, List<Long>>>
+
+    fun getHabitTagMappingsFlow(): Flow<Map<Long, List<Long>>>
+
     suspend fun setTagsForTask(taskId: Long, tagIds: List<Long>)
 
     suspend fun setTagsForHabit(habitId: Long, tagIds: List<Long>)

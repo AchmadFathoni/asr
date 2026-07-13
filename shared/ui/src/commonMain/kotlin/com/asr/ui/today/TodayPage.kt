@@ -29,10 +29,12 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import com.asr.core.interfaces.SoundPlayer
 import org.koin.compose.koinInject
+import com.asr.core.tag.Tag
 import com.asr.core.task.Task
+import com.asr.ui.app.EmptyState
+import com.asr.ui.app.TagFilterChips
 import com.asr.ui.habit.HabitItem
 import com.asr.ui.viewmodel.TodayViewModel
-import com.asr.ui.app.EmptyState
 import asr.shared.ui.generated.resources.*
 
 @Composable
@@ -50,6 +52,9 @@ fun TodayPage(viewModel: TodayViewModel) {
     LazyColumn(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         item {
             Text("Today", style = MaterialTheme.typography.headlineMedium)
+        }
+        item {
+            TagFilterChips(tags = state.tags)
         }
 
         // Tasks section

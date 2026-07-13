@@ -34,6 +34,12 @@ class TagRepository(private val tagDao: TagDao) : TagRepo {
     override suspend fun getTagsForHabit(habitId: Long): List<Tag> =
         tagDao.getTagsForHabit(habitId).map { it.toDomain() }
 
+    override fun getTaskTagMappingsFlow(): Flow<Map<Long, List<Long>>> =
+        tagDao.getAllTaskTagsFlow().map { list -> list.groupBy({ it.taskId }, { it.tagId }) }
+
+    override fun getHabitTagMappingsFlow(): Flow<Map<Long, List<Long>>> =
+        tagDao.getAllHabitTagsFlow().map { list -> list.groupBy({ it.habitId }, { it.tagId }) }
+
     override suspend fun setTagsForTask(taskId: Long, tagIds: List<Long>) {
         tagDao.clearTaskTags(taskId)
         tagIds.forEach { tagDao.addTaskTag(TaskTagEntity(taskId, it)) }

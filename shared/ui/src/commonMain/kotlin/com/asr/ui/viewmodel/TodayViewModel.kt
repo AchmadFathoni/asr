@@ -9,8 +9,11 @@ import com.asr.core.habit.HabitState
 import com.asr.core.habit.habitRecordWithNewState
 import com.asr.core.habit.shouldShowToday
 import com.asr.core.now
+import com.asr.core.tag.Tag
+import com.asr.core.tag.TagRepo
 import com.asr.core.task.Task
 import com.asr.core.task.TaskRepo
+import com.asr.ui.app.TagFilterState
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -24,6 +27,7 @@ import org.koin.core.annotation.Provided
 class TodayViewModel(
     @Provided private val taskRepo: TaskRepo,
     @Provided private val habitRepo: HabitRepo,
+    @Provided private val tagRepo: TagRepo,
 ) : ViewModel() {
     private val today = LocalDate.now()
 
@@ -31,10 +35,23 @@ class TodayViewModel(
         taskRepo.getUndoneTasksFlow(),
         habitRepo.getHabitsFlow(),
         habitRepo.getRecordsForDateFlow(today),
-    ) { tasks, habits, records ->
+        tagRepo.getTagsFlow(),
+        combine(
+            tagRepo.getTaskTagMappingsFlow(),
+            tagRepo.getHabitTagMappingsFlow(),
+            TagFilterState.selectedTagIds,
+        ) { ttm, htm, ids -> Triple(ttm, htm, ids) },
+    ) { tasks, habits, records, tags, (ttm, htm, filterTagIds) ->
+        val baseTasks = tasks.filter { val due = it.dueDate; due == null || due <= today }
+        val baseHabits = habits.filter { it.shouldShowToday(today) }
+        val tasksFiltered = if (filterTagIds.isEmpty()) baseTasks
+            else baseTasks.filter { ttm[it.id]?.any { t -> t in filterTagIds } == true }
+        val habitsFiltered = if (filterTagIds.isEmpty()) baseHabits
+            else baseHabits.filter { htm[it.id]?.any { t -> t in filterTagIds } == true }
         TodayState(
-            tasks = tasks.filter { val due = it.dueDate; due == null || due <= today },
-            habits = habits.filter { it.shouldShowToday(today) },
+            tasks = tasksFiltered,
+            habits = habitsFiltered,
+            tags = tags,
             habitRecords = records.associateBy { it.habitId },
             isLoading = false,
         )
@@ -72,6 +89,7 @@ class TodayViewModel(
 data class TodayState(
     val tasks: List<Task> = emptyList(),
     val habits: List<Habit> = emptyList(),
+    val tags: List<Tag> = emptyList(),
     val habitRecords: Map<Long, HabitRecord> = emptyMap(),
     val isLoading: Boolean = true,
 )

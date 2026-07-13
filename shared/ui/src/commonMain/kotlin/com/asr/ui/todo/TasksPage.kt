@@ -60,9 +60,10 @@ import com.asr.core.now
 import com.asr.core.task.Task
 import com.asr.ui.LIGHT_CHECK_COLORS
 import com.asr.ui.TAG_COLORS
+import com.asr.ui.app.EmptyState
+import com.asr.ui.app.TagFilterChips
 import com.asr.ui.viewmodel.TaskFilter
 import com.asr.ui.viewmodel.TasksViewModel
-import com.asr.ui.app.EmptyState
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -129,7 +130,7 @@ fun TasksPage(viewModel: TasksViewModel) {
                 }
             }
 
-            Spacer(Modifier.height(8.dp))
+            TagFilterChips(tags = state.tags, modifier = Modifier.padding(top = 8.dp))
 
             LazyColumn(modifier = Modifier.weight(1f)) {
                 items(flatTasks) { (task, depth) ->
