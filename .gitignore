@@ -1,0 +1,31 @@
+# Gradle
+.gradle/
+.gradle-home/
+build/
+**/build/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Android
+local.properties
+.android-sdk/
+.android-home/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Nix/direnv
+.direnv/
+
+# OS
+.DS_Store
+
+# Kotlin
+.kotlin/
+
+# Misc
+*.log
+*.hprof
