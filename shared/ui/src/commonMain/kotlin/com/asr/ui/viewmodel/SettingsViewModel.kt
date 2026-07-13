@@ -57,7 +57,7 @@ class SettingsViewModel(
         data class SetNewTagName(val name: String) : Action
         data object CreateTag : Action
         data class DeleteTag(val id: Long) : Action
-        data class SetDarkMode(val isDark: Boolean) : Action
+        data class SetDarkMode(val isDark: Boolean?) : Action
     }
 
     fun onAction(action: Action) {
@@ -100,5 +100,5 @@ data class SettingsState(
     val restoreState: RestoreState = RestoreState.IDLE,
     val tags: List<Tag> = emptyList(),
     val newTagName: String = "",
-    val isDarkMode: Boolean = false,
+    val isDarkMode: Boolean? = null,
 )

@@ -386,7 +386,7 @@ fun HabitsPage(viewModel: HabitsViewModel) {
                     if (habit != null) {
                         val today = LocalDate.now()
                         val monthStart = LocalDate(today.year, today.month, 1)
-                        val monthLen = daysInMonth(today.year, today.month)
+                        val monthLen = daysInMonth(today.year, today.month.ordinal + 1)
                         val startOffset = monthStart.dayOfWeek.ordinal
                         val recordsByDate = state.selectedHabitHistory.filter { it.date.year == today.year && it.date.month == today.month }.associateBy { it.date }
                         Column {

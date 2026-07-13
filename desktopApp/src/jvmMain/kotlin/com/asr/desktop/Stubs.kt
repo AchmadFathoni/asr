@@ -139,10 +139,10 @@ class RestoreRepoStub : RestoreRepo {
 
 @Single(binds = [SettingsRepo::class])
 class SettingsRepoStub : SettingsRepo {
-    private var dark = false
+    private var dark: Boolean? = true
 
-    override fun isDarkMode(): Boolean = dark
-    override fun setDarkMode(isDark: Boolean) { dark = isDark }
+    override fun isDarkMode(): Boolean? = dark
+    override fun setDarkMode(isDark: Boolean?) { dark = isDark }
 }
 
 @Single(binds = [SoundPlayer::class])

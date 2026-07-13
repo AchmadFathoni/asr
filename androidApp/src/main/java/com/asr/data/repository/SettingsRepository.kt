@@ -8,10 +8,17 @@ import org.koin.core.annotation.Single
 class SettingsRepository(context: Context) : SettingsRepo {
     private val prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
-    override fun isDarkMode(): Boolean = prefs.getBoolean(KEY_DARK_MODE, false)
+    override fun isDarkMode(): Boolean? {
+        if (!prefs.contains(KEY_DARK_MODE)) return null
+        return prefs.getBoolean(KEY_DARK_MODE, false)
+    }
 
-    override fun setDarkMode(isDark: Boolean) {
-        prefs.edit().putBoolean(KEY_DARK_MODE, isDark).apply()
+    override fun setDarkMode(isDark: Boolean?) {
+        if (isDark == null) {
+            prefs.edit().remove(KEY_DARK_MODE).apply()
+        } else {
+            prefs.edit().putBoolean(KEY_DARK_MODE, isDark).apply()
+        }
     }
 
     companion object {
