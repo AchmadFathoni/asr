@@ -23,12 +23,14 @@ class TasksViewModel(
     @Provided private val alarmScheduler: AlarmScheduler,
 ) : ViewModel() {
     private val _filter = MutableStateFlow(TaskFilter.ACTIVE)
+    private val _expandedIds = MutableStateFlow<Set<Long>>(emptySet())
 
     private val _state: StateFlow<TasksState> = combine(
         taskRepo.getTasksFlow(),
         tagRepo.getTagsFlow(),
         _filter,
-    ) { all, tags, filter ->
+        _expandedIds,
+    ) { all, tags, filter, expandedIds ->
         val filtered = when (filter) {
             TaskFilter.ALL -> all
             TaskFilter.ACTIVE -> all.filter { !it.isDone }
@@ -39,6 +41,7 @@ class TasksViewModel(
             tasks = filtered,
             filter = filter,
             tags = tags,
+            expandedTaskIds = expandedIds,
             isLoading = false,
         )
     }.stateIn(
@@ -53,6 +56,7 @@ class TasksViewModel(
         data class UpsertTask(val task: Task, val tagIds: List<Long> = emptyList()) : Action
         data class DeleteTask(val task: Task) : Action
         data class ToggleTask(val taskId: Long) : Action
+        data class ToggleExpand(val taskId: Long) : Action
         data class SetFilter(val filter: TaskFilter) : Action
         data class CreateTag(val name: String) : Action
         data object DeleteDoneTasks : Action
@@ -62,6 +66,9 @@ class TasksViewModel(
         when (action) {
             is Action.UpsertTask -> viewModelScope.launch {
                 val id = taskRepo.upsertTask(action.task)
+                action.task.parentId?.let { parentId ->
+                    _expandedIds.value = _expandedIds.value + parentId
+                }
                 alarmScheduler.schedule(action.task.copy(id = id))
                 if (action.tagIds.isNotEmpty()) {
                     tagRepo.setTagsForTask(id, action.tagIds)
@@ -73,6 +80,12 @@ class TasksViewModel(
             }
             is Action.ToggleTask -> viewModelScope.launch {
                 taskRepo.toggleTask(action.taskId)
+            }
+            is Action.ToggleExpand -> {
+                val id = action.taskId
+                _expandedIds.value = if (id in _expandedIds.value)
+                    _expandedIds.value - id
+                else _expandedIds.value + id
             }
             is Action.SetFilter -> _filter.value = action.filter
             is Action.CreateTag -> viewModelScope.launch {
@@ -91,5 +104,6 @@ data class TasksState(
     val tasks: List<Task> = emptyList(),
     val filter: TaskFilter = TaskFilter.ACTIVE,
     val tags: List<Tag> = emptyList(),
+    val expandedTaskIds: Set<Long> = emptySet(),
     val isLoading: Boolean = true,
 )

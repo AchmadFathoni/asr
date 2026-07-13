@@ -39,19 +39,56 @@ class TaskRepository(private val taskDao: TaskDao) : TaskRepo {
 
     override suspend fun toggleTask(id: Long) {
         val entity = taskDao.getTaskById(id) ?: return
+        val newDone = !entity.isDone
         val now = LocalDateTime.now()
+        val epochNow = now.toInstant(TimeZone.currentSystemDefault()).epochSeconds
+
         taskDao.upsertTask(
-            entity.copy(
-                isDone = !entity.isDone,
-                doneAt = if (!entity.isDone) {
-                    now.toInstant(TimeZone.currentSystemDefault()).epochSeconds
-                } else null,
-            )
+            entity.copy(isDone = newDone, doneAt = if (newDone) epochNow else null)
         )
+
+        if (newDone) {
+            completeDescendants(entity.id, epochNow)
+            entity.parentId?.let { parentId ->
+                val parent = taskDao.getTaskById(parentId) ?: return@let
+                val siblings = taskDao.getSubTasks(parentId)
+                if (siblings.all { it.isDone }) {
+                    taskDao.upsertTask(parent.copy(isDone = true, doneAt = epochNow))
+                }
+            }
+        } else {
+            uncompleteDescendants(entity.id)
+            entity.parentId?.let { parentId ->
+                val parent = taskDao.getTaskById(parentId) ?: return@let
+                if (parent.isDone) {
+                    taskDao.upsertTask(parent.copy(isDone = false, doneAt = null))
+                }
+            }
+        }
     }
 
-    override suspend fun deleteTask(task: Task) =
-        taskDao.deleteTask(task.id)
+    override suspend fun deleteTask(task: Task) {
+        deleteRecursive(task.id)
+    }
+
+    private suspend fun completeDescendants(parentId: Long, doneAt: Long) {
+        taskDao.getSubTasks(parentId).forEach { sub ->
+            taskDao.upsertTask(sub.copy(isDone = true, doneAt = doneAt))
+            completeDescendants(sub.id, doneAt)
+        }
+    }
+
+    private suspend fun uncompleteDescendants(parentId: Long) {
+        taskDao.getSubTasks(parentId).forEach { sub ->
+            taskDao.upsertTask(sub.copy(isDone = false, doneAt = null))
+            uncompleteDescendants(sub.id)
+        }
+    }
+
+    private suspend fun deleteRecursive(id: Long) {
+        taskDao.getSubTasks(id).forEach { deleteRecursive(it.id) }
+        taskDao.deleteTask(id)
+    }
 
     override suspend fun deleteDoneTasks() =
         taskDao.deleteDoneTasks()

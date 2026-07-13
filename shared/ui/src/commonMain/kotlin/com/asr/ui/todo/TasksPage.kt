@@ -74,8 +74,15 @@ fun TasksPage(viewModel: TasksViewModel) {
     var showDatePicker by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
 
-    val activeTasks = state.tasks.filter { it.parentId == null }
-    val subTaskMap = state.tasks.filter { it.parentId != null }.groupBy { it.parentId }
+    val subTaskMap = remember(state.tasks) {
+        state.tasks.filter { it.parentId != null }.groupBy { it.parentId!! }
+    }
+
+    val flatTasks = remember(state.tasks, state.expandedTaskIds) {
+        buildFlatList(state.tasks, state.expandedTaskIds)
+    }
+
+    val taskToDeleteHasChildren = taskToDelete?.let { subTaskMap.containsKey(it.id) } ?: false
 
     Scaffold(
         floatingActionButton = {
@@ -112,11 +119,17 @@ fun TasksPage(viewModel: TasksViewModel) {
             Spacer(Modifier.height(8.dp))
 
             LazyColumn(modifier = Modifier.weight(1f)) {
-                items(activeTasks) { task ->
+                items(flatTasks) { (task, depth) ->
+                    val hasChildren = subTaskMap.containsKey(task.id)
+                    val progress = if (hasChildren) countProgress(task.id, subTaskMap) else null
                     TaskRow(
                         task = task,
-                        depth = 0,
+                        depth = depth,
+                        hasChildren = hasChildren,
+                        isExpanded = task.id in state.expandedTaskIds,
+                        progress = progress,
                         onToggle = { viewModel.onAction(TasksViewModel.Action.ToggleTask(task.id)) },
+                        onToggleExpand = { viewModel.onAction(TasksViewModel.Action.ToggleExpand(task.id)) },
                         onDelete = { taskToDelete = task },
                         onAddSub = {
                             newTaskTitle = ""
@@ -140,26 +153,6 @@ fun TasksPage(viewModel: TasksViewModel) {
                             showAddDialog = true
                         },
                     )
-                    subTaskMap[task.id]?.forEach { sub ->
-                        TaskRow(
-                            task = sub,
-                            depth = 1,
-                            onToggle = { viewModel.onAction(TasksViewModel.Action.ToggleTask(sub.id)) },
-                            onDelete = { taskToDelete = sub },
-                            onAddSub = {},
-                            onEdit = {
-                                editingTask = sub
-                                newTaskTitle = sub.title
-                                newTaskDescription = sub.description
-                                newTaskReminder = sub.reminderTime ?: ""
-                                newDueDate = sub.dueDate
-                                selectedTagIds = emptySet()
-                                newTagName = ""
-                                newTaskParentId = null
-                                showAddDialog = true
-                            },
-                        )
-                    }
                 }
 
                 if (state.isLoading) {
@@ -168,7 +161,7 @@ fun TasksPage(viewModel: TasksViewModel) {
                             modifier = Modifier.fillMaxWidth().padding(48.dp),
                         )
                     }
-                } else if (activeTasks.isEmpty()) {
+                } else if (flatTasks.isEmpty()) {
                     item {
                         EmptyState(
                             icon = Res.drawable.check_list,
@@ -337,8 +330,16 @@ fun TasksPage(viewModel: TasksViewModel) {
     taskToDelete?.let { task ->
         AlertDialog(
             onDismissRequest = { taskToDelete = null },
-            title = { Text("Delete task?") },
-            text = { Text(task.title) },
+            title = { Text(if (taskToDeleteHasChildren) "Delete task and subtasks?" else "Delete task?") },
+            text = {
+                Column {
+                    Text(task.title)
+                    if (taskToDeleteHasChildren) {
+                        Spacer(Modifier.height(4.dp))
+                        Text("All subtasks will also be deleted.", style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+            },
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.onAction(TasksViewModel.Action.DeleteTask(task))
@@ -354,7 +355,11 @@ fun TasksPage(viewModel: TasksViewModel) {
 fun TaskRow(
     task: Task,
     depth: Int,
+    hasChildren: Boolean,
+    isExpanded: Boolean,
+    progress: Pair<Int, Int>?,
     onToggle: () -> Unit,
+    onToggleExpand: () -> Unit,
     onDelete: () -> Unit,
     onAddSub: () -> Unit,
     onEdit: () -> Unit,
@@ -386,6 +391,11 @@ fun TaskRow(
                 if (!task.isDone) soundPlayer.play()
                 onToggle()
             })
+            if (hasChildren) {
+                TextButton(onClick = onToggleExpand, modifier = Modifier.padding(0.dp)) {
+                    Text(if (isExpanded) "\u25BE" else "\u25B8")
+                }
+            }
             Text(
                 text = task.title,
                 modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
@@ -393,11 +403,49 @@ fun TaskRow(
                     textDecoration = if (task.isDone) TextDecoration.LineThrough else null,
                 ),
             )
-            if (depth == 0) {
-                TextButton(onClick = onAddSub) { Text("+") }
+            if (progress != null && progress.second > 0) {
+                Text(
+                    "${progress.first}/${progress.second}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
+            TextButton(onClick = onAddSub) { Text("+") }
             TextButton(onClick = onEdit) { Text("Edit") }
             TextButton(onClick = onDelete) { Text("Del") }
         }
     }
+}
+
+private fun buildFlatList(
+    tasks: List<Task>,
+    expandedIds: Set<Long>,
+): List<Pair<Task, Int>> {
+    val subTaskMap = tasks.filter { it.parentId != null }.groupBy { it.parentId!! }
+    fun recurse(items: List<Task>, depth: Int): List<Pair<Task, Int>> {
+        val result = mutableListOf<Pair<Task, Int>>()
+        for (task in items) {
+            result.add(task to depth)
+            if (task.id in expandedIds) {
+                result.addAll(recurse(subTaskMap[task.id].orEmpty(), depth + 1))
+            }
+        }
+        return result
+    }
+    return recurse(tasks.filter { it.parentId == null }, 0)
+}
+
+private fun countProgress(
+    taskId: Long,
+    subTaskMap: Map<Long, List<Task>>,
+): Pair<Int, Int> {
+    val subs = subTaskMap[taskId] ?: return 0 to 0
+    var done = subs.count { it.isDone }
+    var total = subs.size
+    for (sub in subs) {
+        val (d, t) = countProgress(sub.id, subTaskMap)
+        done += d
+        total += t
+    }
+    return done to total
 }

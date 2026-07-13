@@ -19,6 +19,8 @@ import kotlin.test.assertNull
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
+enum class TaskFilter { ALL, ACTIVE, DONE }
+
 class BusinessLogicTest {
 
     // Habit period counting algorithm extracted from TodayViewModel / HabitsViewModel
