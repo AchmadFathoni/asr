@@ -10,7 +10,6 @@ data class TaskEntity(
     val title: String,
     val description: String = "",
     val isDone: Boolean = false,
-    val doneAt: Long? = null,
     val dueDate: Long? = null,
     val parentId: Long? = null,
     @ColumnInfo(name = "order_index") val order: Int = 0,
@@ -50,7 +49,6 @@ data class HabitRecordEntity(
     val date: Long,
     val state: String = "NOT_DONE",
     val count: Int = 0,
-    val doneAt: Long? = null,
 )
 
 @Entity(tableName = "tags")

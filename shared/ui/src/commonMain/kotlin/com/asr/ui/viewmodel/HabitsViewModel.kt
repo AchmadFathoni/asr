@@ -21,7 +21,6 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
-import kotlinx.datetime.LocalDateTime
 import org.koin.core.annotation.KoinViewModel
 import org.koin.core.annotation.Provided
 
@@ -88,7 +87,7 @@ class HabitsViewModel(
             is Action.SetRecordState -> viewModelScope.launch {
                 val existing = habitRepo.getRecordForDate(action.habitId, today)
                 val habit = habitRepo.getHabitById(action.habitId) ?: return@launch
-                habitRepo.upsertRecord(habitRecordWithNewState(existing, habit, today, action.state, LocalDateTime.now()))
+                habitRepo.upsertRecord(habitRecordWithNewState(existing, habit, today, action.state))
             }
             is Action.CreateTag -> viewModelScope.launch {
                 if (action.name.isNotBlank()) tagRepo.upsertTag(Tag(name = action.name))

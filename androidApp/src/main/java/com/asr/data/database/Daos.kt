@@ -13,7 +13,7 @@ interface TaskDao {
     @Query("SELECT * FROM tasks WHERE isDone = 0 ORDER BY order_index ASC")
     fun getUndoneTasksFlow(): Flow<List<TaskEntity>>
 
-    @Query("SELECT * FROM tasks WHERE isDone = 1 ORDER BY doneAt DESC")
+    @Query("SELECT * FROM tasks WHERE isDone = 1 ORDER BY id DESC")
     fun getDoneTasksFlow(): Flow<List<TaskEntity>>
 
     @Query("SELECT * FROM tasks WHERE id = :id")

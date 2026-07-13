@@ -17,7 +17,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
-import kotlinx.datetime.LocalDateTime
 import org.koin.core.annotation.KoinViewModel
 import org.koin.core.annotation.Provided
 
@@ -61,7 +60,7 @@ class TodayViewModel(
             is Action.ToggleHabit -> viewModelScope.launch {
                 val existing = habitRepo.getRecordForDate(action.habitId, today)
                 val habit = habitRepo.getHabitById(action.habitId) ?: return@launch
-                habitRepo.upsertRecord(habitRecordWithNewState(existing, habit, today, action.newState, LocalDateTime.now()))
+                habitRepo.upsertRecord(habitRecordWithNewState(existing, habit, today, action.newState))
             }
             is Action.DeleteDoneTasks -> viewModelScope.launch {
                 taskRepo.deleteDoneTasks()

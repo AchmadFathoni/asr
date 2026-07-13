@@ -99,7 +99,6 @@ class HabitRepository(private val habitDao: HabitDao) : HabitRepo {
         date = Converters.dateFromTimestamp(date),
         state = HabitState.valueOf(state),
         count = count,
-        doneAt = Converters.dateTimeFromTimestamp(doneAt),
     )
 
     private fun HabitRecord.toEntity() = HabitRecordEntity(
@@ -108,6 +107,5 @@ class HabitRepository(private val habitDao: HabitDao) : HabitRepo {
         date = Converters.dateToTimestamp(date),
         state = state.name,
         count = count,
-        doneAt = Converters.dateTimeToTimestamp(doneAt),
     )
 }

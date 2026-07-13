@@ -41,17 +41,6 @@ class HabitTrackingTest {
     }
 
     @Test
-    fun recordDoneAtIsNullWhenNotDone() {
-        val record = HabitRecord(
-            id = 1,
-            habitId = 1,
-            date = LocalDate(2026, 7, 13),
-            state = HabitState.NOT_DONE,
-        )
-        assertEquals(null, record.doneAt)
-    }
-
-    @Test
     fun skippedRecordPreservesCount() {
         val record = HabitRecord(
             id = 1,

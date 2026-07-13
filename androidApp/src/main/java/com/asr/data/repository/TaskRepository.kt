@@ -40,20 +40,16 @@ class TaskRepository(private val taskDao: TaskDao) : TaskRepo {
     override suspend fun toggleTask(id: Long) {
         val entity = taskDao.getTaskById(id) ?: return
         val newDone = !entity.isDone
-        val now = LocalDateTime.now()
-        val epochNow = now.toInstant(TimeZone.currentSystemDefault()).epochSeconds
 
-        taskDao.upsertTask(
-            entity.copy(isDone = newDone, doneAt = if (newDone) epochNow else null)
-        )
+        taskDao.upsertTask(entity.copy(isDone = newDone))
 
         if (newDone) {
-            completeDescendants(entity.id, epochNow)
+            completeDescendants(entity.id)
             entity.parentId?.let { parentId ->
                 val parent = taskDao.getTaskById(parentId) ?: return@let
                 val siblings = taskDao.getSubTasks(parentId)
                 if (siblings.all { it.isDone }) {
-                    taskDao.upsertTask(parent.copy(isDone = true, doneAt = epochNow))
+                    taskDao.upsertTask(parent.copy(isDone = true))
                 }
             }
         } else {
@@ -61,7 +57,7 @@ class TaskRepository(private val taskDao: TaskDao) : TaskRepo {
             entity.parentId?.let { parentId ->
                 val parent = taskDao.getTaskById(parentId) ?: return@let
                 if (parent.isDone) {
-                    taskDao.upsertTask(parent.copy(isDone = false, doneAt = null))
+                    taskDao.upsertTask(parent.copy(isDone = false))
                 }
             }
         }
@@ -71,16 +67,16 @@ class TaskRepository(private val taskDao: TaskDao) : TaskRepo {
         deleteRecursive(task.id)
     }
 
-    private suspend fun completeDescendants(parentId: Long, doneAt: Long) {
+    private suspend fun completeDescendants(parentId: Long) {
         taskDao.getSubTasks(parentId).forEach { sub ->
-            taskDao.upsertTask(sub.copy(isDone = true, doneAt = doneAt))
-            completeDescendants(sub.id, doneAt)
+            taskDao.upsertTask(sub.copy(isDone = true))
+            completeDescendants(sub.id)
         }
     }
 
     private suspend fun uncompleteDescendants(parentId: Long) {
         taskDao.getSubTasks(parentId).forEach { sub ->
-            taskDao.upsertTask(sub.copy(isDone = false, doneAt = null))
+            taskDao.upsertTask(sub.copy(isDone = false))
             uncompleteDescendants(sub.id)
         }
     }
@@ -101,7 +97,6 @@ class TaskRepository(private val taskDao: TaskDao) : TaskRepo {
         title = title,
         description = description,
         isDone = isDone,
-        doneAt = Converters.dateTimeFromTimestamp(doneAt),
         dueDate = dueDate?.let { Converters.dateFromTimestamp(it) },
         parentId = parentId,
         order = order,
@@ -113,7 +108,6 @@ class TaskRepository(private val taskDao: TaskDao) : TaskRepo {
         title = title,
         description = description,
         isDone = isDone,
-        doneAt = Converters.dateTimeToTimestamp(doneAt),
         dueDate = dueDate?.let { Converters.dateToTimestamp(it) },
         parentId = parentId,
         order = order,

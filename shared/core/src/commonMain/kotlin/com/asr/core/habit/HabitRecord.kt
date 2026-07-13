@@ -1,7 +1,6 @@
 package com.asr.core.habit
 
 import kotlinx.datetime.LocalDate
-import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.Serializable
 
 fun habitRecordWithNewState(
@@ -9,7 +8,6 @@ fun habitRecordWithNewState(
     habit: Habit,
     date: LocalDate,
     targetState: HabitState,
-    now: LocalDateTime,
 ): HabitRecord {
     if (targetState == HabitState.DONE) {
         val existingState = existing?.state
@@ -21,7 +19,6 @@ fun habitRecordWithNewState(
             date = date,
             state = state,
             count = newCount,
-            doneAt = if (state == HabitState.DONE) now else null,
         )
     }
     return HabitRecord(
@@ -29,7 +26,6 @@ fun habitRecordWithNewState(
         habitId = habit.id,
         date = date,
         state = targetState,
-        doneAt = if (targetState == HabitState.DONE) now else null,
     )
 }
 
@@ -40,7 +36,6 @@ data class HabitRecord(
     val date: LocalDate,
     val state: HabitState = HabitState.NOT_DONE,
     val count: Int = 0,
-    val doneAt: LocalDateTime? = null,
 )
 
 @Serializable

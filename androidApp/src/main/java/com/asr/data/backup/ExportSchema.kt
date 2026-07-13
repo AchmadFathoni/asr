@@ -18,7 +18,6 @@ data class TaskSchema(
     val title: String,
     val description: String = "",
     val isDone: Boolean = false,
-    val doneAt: Long? = null,
     val parentId: Long? = null,
     val order: Int = 0,
     val reminderTime: String? = null,
@@ -42,7 +41,6 @@ data class HabitRecordSchema(
     val date: Long,
     val state: String = "NOT_DONE",
     val count: Int = 0,
-    val doneAt: Long? = null,
 )
 
 @Serializable
