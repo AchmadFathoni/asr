@@ -41,18 +41,9 @@ import androidx.compose.ui.unit.dp
 import com.asr.core.backup.ExportState
 import com.asr.core.backup.RestoreState
 import com.asr.core.tag.Tag
+import com.asr.ui.LIGHT_CHECK_COLORS
+import com.asr.ui.TAG_COLORS
 import com.asr.ui.viewmodel.SettingsViewModel
-
-private val TAG_COLORS = listOf(
-    0xFFF18F01L to "Orange", 0xFF56B4E9L to "Sky Blue",
-    0xFF009E73L to "Bluish Green", 0xFFF0E442L to "Yellow",
-    0xFFD55E00L to "Vermillion", 0xFFCC79A7L to "Pink",
-    0xFF469990L to "Teal", 0xFFBFEF45L to "Lime",
-    0xFFDCBEFFL to "Lavender", 0xFFFF6F61L to "Coral",
-    0xFF98FB98L to "Mint", 0xFF911EB4L to "Violet",
-    0xFFFABED4L to "Rose", 0xFF800000L to "Maroon",
-    0xFFFFFAC8L to "Cream", 0xFF708090L to "Slate",
-)
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -60,6 +51,7 @@ fun SettingsPage(viewModel: SettingsViewModel) {
     val state by viewModel.state.collectAsState()
 
     val tagToDelete = remember { mutableStateOf<Tag?>(null) }
+    val editingColorTagId = remember { mutableStateOf<Long?>(null) }
 
     Column(
         modifier = Modifier.fillMaxSize().padding(16.dp).verticalScroll(rememberScrollState()),
@@ -186,28 +178,57 @@ fun SettingsPage(viewModel: SettingsViewModel) {
                 if (state.tags.isNotEmpty()) {
                     Spacer(Modifier.height(8.dp))
                     state.tags.forEach { tag ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            val color = tag.color
-                            if (color != null) {
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                val color = tag.color
                                 Box(
                                     modifier = Modifier
                                         .padding(end = 8.dp)
                                         .size(12.dp)
                                         .clip(CircleShape)
-                                        .background(Color(color)),
+                                        .background(if (color != null) Color(color) else MaterialTheme.colorScheme.surfaceVariant)
+                                        .clickable { editingColorTagId.value = if (editingColorTagId.value == tag.id) null else tag.id },
                                 )
+                                Text(
+                                    text = tag.name,
+                                    modifier = Modifier.weight(1f),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                )
+                                TextButton(
+                                    onClick = { tagToDelete.value = tag },
+                                ) { Text("Delete", color = MaterialTheme.colorScheme.error) }
                             }
-                            Text(
-                                text = tag.name,
-                                modifier = Modifier.weight(1f),
-                                style = MaterialTheme.typography.bodyLarge,
-                            )
-                            TextButton(
-                                onClick = { tagToDelete.value = tag },
-                            ) { Text("Delete", color = MaterialTheme.colorScheme.error) }
+                            if (editingColorTagId.value == tag.id) {
+                                Spacer(Modifier.height(4.dp))
+                                FlowRow(modifier = Modifier.fillMaxWidth().padding(start = 20.dp)) {
+                                    TAG_COLORS.forEach { (c, _) ->
+                                        val selected = tag.color == c
+                                        Box(
+                                            modifier = Modifier
+                                                .padding(2.dp)
+                                                .size(20.dp)
+                                                .clip(CircleShape)
+                                                .background(Color(c))
+                                                .clickable {
+                                                    viewModel.onAction(SettingsViewModel.Action.SetTagColor(tag.id, if (selected) null else c))
+                                                    editingColorTagId.value = null
+                                                },
+                                            contentAlignment = Alignment.Center,
+                                        ) {
+                                            if (selected) {
+                                                Text(
+                                                    "✓",
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = if (c in LIGHT_CHECK_COLORS) Color.Black else Color.White,
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }

@@ -60,6 +60,7 @@ class SettingsViewModel(
         data class SetNewTagColor(val color: Long?) : Action
         data object CreateTag : Action
         data class DeleteTag(val id: Long) : Action
+        data class SetTagColor(val tagId: Long, val color: Long?) : Action
         data class SetDarkMode(val isDark: Boolean?) : Action
     }
 
@@ -91,6 +92,10 @@ class SettingsViewModel(
             }
             is Action.DeleteTag -> viewModelScope.launch {
                 tagRepo.deleteTag(action.id)
+            }
+            is Action.SetTagColor -> viewModelScope.launch {
+                val existing = tagRepo.getTagById(action.tagId) ?: return@launch
+                tagRepo.upsertTag(existing.copy(color = action.color))
             }
             is Action.SetDarkMode -> {
                 _isDarkMode.value = action.isDark

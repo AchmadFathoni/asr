@@ -6,6 +6,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -56,6 +58,8 @@ import org.koin.compose.koinInject
 import asr.shared.ui.generated.resources.*
 import com.asr.core.now
 import com.asr.core.task.Task
+import com.asr.ui.LIGHT_CHECK_COLORS
+import com.asr.ui.TAG_COLORS
 import com.asr.ui.viewmodel.TaskFilter
 import com.asr.ui.viewmodel.TasksViewModel
 import com.asr.ui.app.EmptyState
@@ -65,6 +69,7 @@ import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Instant
 import org.jetbrains.compose.resources.vectorResource
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun TasksPage(viewModel: TasksViewModel) {
     val state by viewModel.state.collectAsState()
@@ -76,6 +81,7 @@ fun TasksPage(viewModel: TasksViewModel) {
     var newTaskParentId by remember { mutableStateOf<Long?>(null) }
     var selectedTagIds by remember { mutableStateOf(setOf<Long>()) }
     var newTagName by remember { mutableStateOf("") }
+    var newTagColor by remember { mutableStateOf<Long?>(null) }
     var editingTask by remember { mutableStateOf<Task?>(null) }
     var taskToDelete by remember { mutableStateOf<Task?>(null) }
     var showDatePicker by remember { mutableStateOf(false) }
@@ -96,7 +102,7 @@ fun TasksPage(viewModel: TasksViewModel) {
             FloatingActionButton(onClick = {
                 newTaskTitle = ""; newTaskDescription = ""; newTaskReminder = ""
                 newDueDate = null; newTaskParentId = null
-                selectedTagIds = emptySet(); newTagName = ""
+                selectedTagIds = emptySet(); newTagName = ""; newTagColor = null
                 editingTask = null; showAddDialog = true
             }) {
                 Icon(imageVector = vectorResource(Res.drawable.add), contentDescription = "Add task")
@@ -143,7 +149,7 @@ fun TasksPage(viewModel: TasksViewModel) {
                             newTaskDescription = ""
                             newTaskReminder = ""
                             newDueDate = null
-                            newTagName = ""
+                            newTagName = ""; newTagColor = null
                             editingTask = null
                             newTaskParentId = task.id
                             showAddDialog = true
@@ -155,7 +161,7 @@ fun TasksPage(viewModel: TasksViewModel) {
                             newTaskReminder = task.reminderTime ?: ""
                             newDueDate = task.dueDate
                             selectedTagIds = emptySet()
-                            newTagName = ""
+                            newTagName = ""; newTagColor = null
                             newTaskParentId = null
                             showAddDialog = true
                         },
@@ -225,24 +231,51 @@ fun TasksPage(viewModel: TasksViewModel) {
                     Text("Tags", style = MaterialTheme.typography.labelMedium)
                     Spacer(Modifier.height(4.dp))
 
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        OutlinedTextField(
-                            value = newTagName,
-                            onValueChange = { newTagName = it },
-                            label = { Text("New tag name") },
-                            singleLine = true,
-                            modifier = Modifier.weight(1f),
-                        )
-                        TextButton(
-                            onClick = {
-                                if (newTagName.isNotBlank()) {
-                                    viewModel.onAction(TasksViewModel.Action.CreateTag(newTagName.trim()))
-                                    newTagName = ""
+                        Column {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                OutlinedTextField(
+                                    value = newTagName,
+                                    onValueChange = { newTagName = it },
+                                    label = { Text("New tag name") },
+                                    singleLine = true,
+                                    modifier = Modifier.weight(1f),
+                                )
+                                TextButton(
+                                    onClick = {
+                                        if (newTagName.isNotBlank()) {
+                                            viewModel.onAction(TasksViewModel.Action.CreateTag(newTagName.trim(), newTagColor))
+                                            newTagName = ""; newTagColor = null
+                                        }
+                                    },
+                                    enabled = newTagName.isNotBlank(),
+                                ) { Text("Add") }
+                            }
+                            if (newTagName.isNotBlank()) {
+                                Spacer(Modifier.height(4.dp))
+                                FlowRow {
+                                    TAG_COLORS.forEach { (c, _) ->
+                                        val selected = newTagColor == c
+                                        Box(
+                                            modifier = Modifier
+                                                .padding(2.dp)
+                                                .size(16.dp)
+                                                .clip(CircleShape)
+                                                .background(Color(c))
+                                                .clickable { newTagColor = if (selected) null else c },
+                                            contentAlignment = Alignment.Center,
+                                        ) {
+                                            if (selected) {
+                                                Text(
+                                                    "✓",
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = if (c in LIGHT_CHECK_COLORS) Color.Black else Color.White,
+                                                )
+                                            }
+                                        }
+                                    }
                                 }
-                            },
-                            enabled = newTagName.isNotBlank(),
-                        ) { Text("Add") }
-                    }
+                            }
+                        }
 
                     if (state.tags.isNotEmpty()) {
                         Spacer(Modifier.height(4.dp))

@@ -3,6 +3,7 @@ package com.asr.ui.habit
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.size
@@ -62,6 +63,8 @@ import com.asr.core.habit.HabitState
 import com.asr.core.habit.daysInMonth
 import com.asr.core.habit.shouldShowToday
 import com.asr.core.now
+import com.asr.ui.LIGHT_CHECK_COLORS
+import com.asr.ui.TAG_COLORS
 import com.asr.ui.viewmodel.HabitsViewModel
 import com.asr.ui.app.EmptyState
 import org.jetbrains.compose.resources.vectorResource
@@ -86,6 +89,7 @@ fun HabitsPage(viewModel: HabitsViewModel) {
     var habitToDelete by remember { mutableStateOf<Habit?>(null) }
     var selectedTagIds by remember { mutableStateOf(setOf<Long>()) }
     var newTagName by remember { mutableStateOf("") }
+    var newTagColor by remember { mutableStateOf<Long?>(null) }
     var searchQuery by remember { mutableStateOf("") }
 
     val dayNames = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
@@ -97,7 +101,7 @@ fun HabitsPage(viewModel: HabitsViewModel) {
                 newHabitTitle = ""; newHabitDescription = ""; newHabitReminder = ""
                 newFreq = HabitFrequency.DAILY; newCount = "1"
                 newDaysOfWeek.clear(); newDayOfMonth = null; newMonthOfYear = null
-                selectedTagIds = emptySet(); newTagName = ""
+                selectedTagIds = emptySet(); newTagName = ""; newTagColor = null
                 editingHabit = null
                 showAddDialog = true
             }) {
@@ -147,7 +151,7 @@ fun HabitsPage(viewModel: HabitsViewModel) {
                                 newDaysOfWeek.clear(); newDaysOfWeek.addAll(habit.daysOfWeek)
                                 newDayOfMonth = habit.dayOfMonth
                                 newMonthOfYear = habit.monthOfYear
-                                selectedTagIds = emptySet(); newTagName = ""
+                                selectedTagIds = emptySet(); newTagName = ""; newTagColor = null
                                 showAddDialog = true
                             },
                             onMoveUp = if (filteredHabits.firstOrNull() != habit) {{ viewModel.onAction(HabitsViewModel.Action.MoveHabit(habit.id, -1)) }} else null,
@@ -239,23 +243,50 @@ fun HabitsPage(viewModel: HabitsViewModel) {
                     Spacer(Modifier.height(8.dp))
                     Text("Tags", style = MaterialTheme.typography.labelMedium)
                     Spacer(Modifier.height(4.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        OutlinedTextField(
-                            value = newTagName,
-                            onValueChange = { newTagName = it },
-                            label = { Text("New tag name") },
-                            singleLine = true,
-                            modifier = Modifier.weight(1f),
-                        )
-                        TextButton(
-                            onClick = {
-                                if (newTagName.isNotBlank()) {
-                                    viewModel.onAction(HabitsViewModel.Action.CreateTag(newTagName.trim()))
-                                    newTagName = ""
+                    Column {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            OutlinedTextField(
+                                value = newTagName,
+                                onValueChange = { newTagName = it },
+                                label = { Text("New tag name") },
+                                singleLine = true,
+                                modifier = Modifier.weight(1f),
+                            )
+                            TextButton(
+                                onClick = {
+                                    if (newTagName.isNotBlank()) {
+                                        viewModel.onAction(HabitsViewModel.Action.CreateTag(newTagName.trim(), newTagColor))
+                                        newTagName = ""; newTagColor = null
+                                    }
+                                },
+                                enabled = newTagName.isNotBlank(),
+                            ) { Text("Add") }
+                        }
+                        if (newTagName.isNotBlank()) {
+                            Spacer(Modifier.height(4.dp))
+                            FlowRow {
+                                TAG_COLORS.forEach { (c, _) ->
+                                    val selected = newTagColor == c
+                                    Box(
+                                        modifier = Modifier
+                                            .padding(2.dp)
+                                            .size(16.dp)
+                                            .clip(CircleShape)
+                                            .background(Color(c))
+                                            .clickable { newTagColor = if (selected) null else c },
+                                        contentAlignment = Alignment.Center,
+                                    ) {
+                                        if (selected) {
+                                            Text(
+                                                "✓",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = if (c in LIGHT_CHECK_COLORS) Color.Black else Color.White,
+                                            )
+                                        }
+                                    }
                                 }
-                            },
-                            enabled = newTagName.isNotBlank(),
-                        ) { Text("Add") }
+                            }
+                        }
                     }
                     if (state.tags.isNotEmpty()) {
                         Spacer(Modifier.height(4.dp))

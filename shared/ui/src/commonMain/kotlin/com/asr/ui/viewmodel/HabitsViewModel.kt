@@ -64,7 +64,7 @@ class HabitsViewModel(
         data class DeleteHabit(val habitId: Long) : Action
         data class SetRecordState(val habitId: Long, val state: HabitState) : Action
         data class ViewHabitHistory(val habitId: Long) : Action
-        data class CreateTag(val name: String) : Action
+        data class CreateTag(val name: String, val color: Long? = null) : Action
         data class MoveHabit(val habitId: Long, val direction: Int) : Action
     }
 
@@ -90,7 +90,7 @@ class HabitsViewModel(
                 habitRepo.upsertRecord(habitRecordWithNewState(existing, habit, today, action.state))
             }
             is Action.CreateTag -> viewModelScope.launch {
-                if (action.name.isNotBlank()) tagRepo.upsertTag(Tag(name = action.name))
+                if (action.name.isNotBlank()) tagRepo.upsertTag(Tag(name = action.name, color = action.color))
             }
             is Action.MoveHabit -> viewModelScope.launch {
                 val habits = _state.value.habits.sortedBy { it.order }

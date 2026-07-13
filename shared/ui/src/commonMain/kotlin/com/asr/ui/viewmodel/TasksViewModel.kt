@@ -58,7 +58,7 @@ class TasksViewModel(
         data class ToggleTask(val taskId: Long) : Action
         data class ToggleExpand(val taskId: Long) : Action
         data class SetFilter(val filter: TaskFilter) : Action
-        data class CreateTag(val name: String) : Action
+        data class CreateTag(val name: String, val color: Long? = null) : Action
         data object DeleteDoneTasks : Action
     }
 
@@ -89,7 +89,7 @@ class TasksViewModel(
             }
             is Action.SetFilter -> _filter.value = action.filter
             is Action.CreateTag -> viewModelScope.launch {
-                if (action.name.isNotBlank()) tagRepo.upsertTag(Tag(name = action.name))
+                if (action.name.isNotBlank()) tagRepo.upsertTag(Tag(name = action.name, color = action.color))
             }
             is Action.DeleteDoneTasks -> viewModelScope.launch {
                 taskRepo.deleteDoneTasks()
