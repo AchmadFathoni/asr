@@ -3,16 +3,23 @@ set -euo pipefail
 
 echo "==> Patching AAPT2 for NixOS..."
 
-# Find and patch all aapt2 binaries in Gradle caches
+DYNAMIC_LINKER=""
+if [ -n "${NIX_CC:-}" ]; then
+  DYNAMIC_LINKER="$(cat "$NIX_CC/nix-support/dynamic-linker")"
+else
+  DYNAMIC_LINKER="$(patchelf --print-interpreter "$(which bash)")"
+fi
+
+mkdir -p .gradle-home/caches
+
 find .gradle-home/caches -name aapt2 -type f 2>/dev/null | while read -r aapt2; do
-  patchelf --set-interpreter "$(cat "${NIX_CC:?}/nix-support/dynamic-linker")" \
+  patchelf --set-interpreter "$DYNAMIC_LINKER" \
     "$aapt2" 2>/dev/null && echo "  patched: $aapt2" || true
 done
 
-# Also patch SDK build-tools aapt2
 for aapt2 in .android-sdk/build-tools/*/aapt2; do
   [ -f "$aapt2" ] || continue
-  patchelf --set-interpreter "$(cat "${NIX_CC:?}/nix-support/dynamic-linker")" \
+  patchelf --set-interpreter "$DYNAMIC_LINKER" \
     "$aapt2" 2>/dev/null && echo "  patched: $aapt2" || true
 done
 

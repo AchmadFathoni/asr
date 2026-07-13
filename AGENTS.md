@@ -17,7 +17,7 @@ direnv allow             # Enter Nix dev shell (first time: downloads Android SD
 - **Database:** Room 3
 - **Navigation:** State-based (flat structure with 3 tabs + settings)
 - **Serialization:** kotlinx-serialization-json
-- **Date/Time:** kotlinx-datetime + java.time (see Design Decision #2)
+- **Date/Time:** kotlinx-datetime + kotlin.time.Clock.System (see Design Decision #2)
 - **File Dialogs:** FileKit
 - **Widgets:** Glance
 

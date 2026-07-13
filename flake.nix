@@ -22,9 +22,7 @@
 
           packages = with pkgs; [
             jdk21
-            git
             gh
-            gcc
             zlib
             ncurses
             patchelf
