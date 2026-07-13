@@ -115,6 +115,8 @@ class TagRepoStub : TagRepo {
         taskTags.value[taskId].orEmpty().mapNotNull { id -> tags.value.find { it.id == id } }
     override suspend fun getTagsForHabit(habitId: Long): List<Tag> =
         habitTags.value[habitId].orEmpty().mapNotNull { id -> tags.value.find { it.id == id } }
+    override fun getTaskTagMappingsFlow(): Flow<Map<Long, List<Long>>> = taskTags
+    override fun getHabitTagMappingsFlow(): Flow<Map<Long, List<Long>>> = habitTags
     override suspend fun setTagsForTask(taskId: Long, tagIds: List<Long>) {
         taskTags.value = taskTags.value + (taskId to tagIds)
     }
