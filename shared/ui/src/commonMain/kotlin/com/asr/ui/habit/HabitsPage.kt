@@ -5,6 +5,8 @@ import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
@@ -44,6 +46,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.style.TextDecoration
@@ -265,7 +268,16 @@ fun HabitsPage(viewModel: HabitsViewModel) {
                                             selectedTagIds - tag.id
                                         else selectedTagIds + tag.id
                                     },
-                                    label = { Text(tag.name) },
+                                    label = {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            val color = tag.color
+                                            if (color != null) {
+                                                Box(Modifier.size(8.dp).clip(CircleShape).background(Color(color)))
+                                                Spacer(Modifier.width(4.dp))
+                                            }
+                                            Text(tag.name)
+                                        }
+                                    },
                                 )
                             }
                         }

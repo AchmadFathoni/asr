@@ -2,7 +2,9 @@ package com.asr.ui.todo
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -41,9 +43,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import com.asr.core.interfaces.SoundPlayer
 import org.koin.compose.koinInject
 import asr.shared.ui.generated.resources.*
@@ -248,7 +255,16 @@ fun TasksPage(viewModel: TasksViewModel) {
                                             selectedTagIds - tag.id
                                         else selectedTagIds + tag.id
                                     },
-                                    label = { Text(tag.name) },
+                                    label = {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            val color = tag.color
+                                            if (color != null) {
+                                                Box(Modifier.size(8.dp).clip(CircleShape).background(Color(color)))
+                                                Spacer(Modifier.width(4.dp))
+                                            }
+                                            Text(tag.name)
+                                        }
+                                    },
                                 )
                             }
                         }

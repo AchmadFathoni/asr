@@ -29,20 +29,22 @@ class SettingsViewModel(
     private val _exportState = MutableStateFlow(ExportState.IDLE)
     private val _restoreState = MutableStateFlow(RestoreState.IDLE)
     private val _newTagName = MutableStateFlow("")
+    private val _newTagColor = MutableStateFlow<Long?>(null)
     private val _isDarkMode = MutableStateFlow(settingsRepo.isDarkMode())
 
     val state: StateFlow<SettingsState> = combine(
         _exportState,
         _restoreState,
         tagRepo.getTagsFlow(),
-        _newTagName,
+        combine(_newTagName, _newTagColor) { n, c -> n to c },
         _isDarkMode,
-    ) { exportState, restoreState, tags, newName, isDark ->
+    ) { exportState, restoreState, tags, (newName, newColor), isDark ->
         SettingsState(
             exportState = exportState,
             restoreState = restoreState,
             tags = tags,
             newTagName = newName,
+            newTagColor = newColor,
             isDarkMode = isDark,
         )
     }.stateIn(
@@ -55,6 +57,7 @@ class SettingsViewModel(
         data object Export : Action
         data object Restore : Action
         data class SetNewTagName(val name: String) : Action
+        data class SetNewTagColor(val color: Long?) : Action
         data object CreateTag : Action
         data class DeleteTag(val id: Long) : Action
         data class SetDarkMode(val isDark: Boolean?) : Action
@@ -77,11 +80,13 @@ class SettingsViewModel(
                 }
             }
             is Action.SetNewTagName -> _newTagName.value = action.name
+            is Action.SetNewTagColor -> _newTagColor.value = action.color
             Action.CreateTag -> viewModelScope.launch {
                 val name = _newTagName.value.trim()
                 if (name.isNotBlank()) {
-                    tagRepo.upsertTag(Tag(name = name))
+                    tagRepo.upsertTag(Tag(name = name, color = _newTagColor.value))
                     _newTagName.value = ""
+                    _newTagColor.value = null
                 }
             }
             is Action.DeleteTag -> viewModelScope.launch {
@@ -100,5 +105,6 @@ data class SettingsState(
     val restoreState: RestoreState = RestoreState.IDLE,
     val tags: List<Tag> = emptyList(),
     val newTagName: String = "",
+    val newTagColor: Long? = null,
     val isDarkMode: Boolean? = null,
 )

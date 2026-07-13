@@ -1,14 +1,21 @@
 package com.asr.ui.setting
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
@@ -27,6 +34,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.asr.core.backup.ExportState
@@ -34,6 +43,18 @@ import com.asr.core.backup.RestoreState
 import com.asr.core.tag.Tag
 import com.asr.ui.viewmodel.SettingsViewModel
 
+private val TAG_COLORS = listOf(
+    0xFFF18F01L to "Orange", 0xFF56B4E9L to "Sky Blue",
+    0xFF009E73L to "Bluish Green", 0xFFF0E442L to "Yellow",
+    0xFFD55E00L to "Vermillion", 0xFFCC79A7L to "Pink",
+    0xFF469990L to "Teal", 0xFFBFEF45L to "Lime",
+    0xFFDCBEFFL to "Lavender", 0xFFFF6F61L to "Coral",
+    0xFF98FB98L to "Mint", 0xFF911EB4L to "Violet",
+    0xFFFABED4L to "Rose", 0xFF800000L to "Maroon",
+    0xFFFFFAC8L to "Cream", 0xFF708090L to "Slate",
+)
+
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun SettingsPage(viewModel: SettingsViewModel) {
     val state by viewModel.state.collectAsState()
@@ -133,6 +154,35 @@ fun SettingsPage(viewModel: SettingsViewModel) {
                         enabled = state.newTagName.isNotBlank(),
                     ) { Text("Create") }
                 }
+                Spacer(Modifier.height(4.dp))
+                FlowRow {
+                    TAG_COLORS.chunked(8).forEach { row ->
+                        Row {
+                            row.forEach { (color, _) ->
+                                val selected = state.newTagColor == color
+                                Box(
+                                    modifier = Modifier
+                                        .padding(2.dp)
+                                        .size(20.dp)
+                                        .clip(CircleShape)
+                                        .background(Color(color))
+                                        .clickable {
+                                            viewModel.onAction(SettingsViewModel.Action.SetNewTagColor(if (selected) null else color))
+                                        },
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    if (selected) {
+                                        Text(
+                                            "✓",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = if (color == 0xFFFFFAC8L || color == 0xFFF0E442L || color == 0xFFBFEF45L || color == 0xFF98FB98L || color == 0xFFDCBEFFL) Color.Black else Color.White,
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
                 if (state.tags.isNotEmpty()) {
                     Spacer(Modifier.height(8.dp))
                     state.tags.forEach { tag ->
@@ -140,6 +190,16 @@ fun SettingsPage(viewModel: SettingsViewModel) {
                             modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
+                            val color = tag.color
+                            if (color != null) {
+                                Box(
+                                    modifier = Modifier
+                                        .padding(end = 8.dp)
+                                        .size(12.dp)
+                                        .clip(CircleShape)
+                                        .background(Color(color)),
+                                )
+                            }
                             Text(
                                 text = tag.name,
                                 modifier = Modifier.weight(1f),
