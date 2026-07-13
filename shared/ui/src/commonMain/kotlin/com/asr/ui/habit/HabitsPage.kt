@@ -385,10 +385,10 @@ fun HabitsPage(viewModel: HabitsViewModel) {
                 Column {
                     if (habit != null) {
                         val today = LocalDate.now()
-                        val monthStart = LocalDate(today.year, today.monthNumber, 1)
-                        val monthLen = daysInMonth(today.year, today.monthNumber)
+                        val monthStart = LocalDate(today.year, today.month, 1)
+                        val monthLen = daysInMonth(today.year, today.month)
                         val startOffset = monthStart.dayOfWeek.ordinal
-                        val recordsByDate = state.selectedHabitHistory.filter { it.date.year == today.year && it.date.monthNumber == today.monthNumber }.associateBy { it.date }
+                        val recordsByDate = state.selectedHabitHistory.filter { it.date.year == today.year && it.date.month == today.month }.associateBy { it.date }
                         Column {
                             Row {
                                 listOf("M","T","W","T","F","S","S").forEach { Text(it, modifier = Modifier.weight(1f).padding(2.dp)) }
@@ -400,7 +400,7 @@ fun HabitsPage(viewModel: HabitsViewModel) {
                                         if ((day == 1 && col < startOffset) || day > monthLen) {
                                             Box(modifier = Modifier.weight(1f).padding(2.dp))
                                         } else {
-                                            val date = LocalDate(today.year, today.monthNumber, day)
+                                            val date = LocalDate(today.year, today.month, day)
                                             val record = recordsByDate[date]
                                             val bg = when (record?.state) {
                                                 HabitState.DONE -> Color(0xFF4CAF50)

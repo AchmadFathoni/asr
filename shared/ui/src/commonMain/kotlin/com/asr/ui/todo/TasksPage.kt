@@ -211,7 +211,7 @@ fun TasksPage(viewModel: TasksViewModel) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         TextButton(onClick = { showDatePicker = true }) {
                             Text(newDueDate?.let {
-                                "${it.monthNumber}/${it.dayOfMonth}/${it.year}"
+                                "${it.month}/${it.day}/${it.year}"
                             } ?: "Set date")
                         }
                         if (newDueDate != null) {
