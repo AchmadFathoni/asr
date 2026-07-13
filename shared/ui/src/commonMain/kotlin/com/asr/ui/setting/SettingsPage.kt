@@ -147,7 +147,7 @@ fun SettingsPage(viewModel: SettingsViewModel) {
                     ) { Text("Create") }
                 }
                 Spacer(Modifier.height(4.dp))
-                FlowRow {
+                Column {
                     TAG_COLORS.chunked(8).forEach { row ->
                         Row {
                             row.forEach { (color, _) ->
@@ -203,27 +203,31 @@ fun SettingsPage(viewModel: SettingsViewModel) {
                             }
                             if (editingColorTagId.value == tag.id) {
                                 Spacer(Modifier.height(4.dp))
-                                FlowRow(modifier = Modifier.fillMaxWidth().padding(start = 20.dp)) {
-                                    TAG_COLORS.forEach { (c, _) ->
-                                        val selected = tag.color == c
-                                        Box(
-                                            modifier = Modifier
-                                                .padding(2.dp)
-                                                .size(20.dp)
-                                                .clip(CircleShape)
-                                                .background(Color(c))
-                                                .clickable {
-                                                    viewModel.onAction(SettingsViewModel.Action.SetTagColor(tag.id, if (selected) null else c))
-                                                    editingColorTagId.value = null
-                                                },
-                                            contentAlignment = Alignment.Center,
-                                        ) {
-                                            if (selected) {
-                                                Text(
-                                                    "✓",
-                                                    style = MaterialTheme.typography.bodySmall,
-                                                    color = if (c in LIGHT_CHECK_COLORS) Color.Black else Color.White,
-                                                )
+                                Column(modifier = Modifier.fillMaxWidth().padding(start = 20.dp)) {
+                                    TAG_COLORS.chunked(8).forEach { row ->
+                                        Row {
+                                            row.forEach { (c, _) ->
+                                                val selected = tag.color == c
+                                                Box(
+                                                    modifier = Modifier
+                                                        .padding(2.dp)
+                                                        .size(20.dp)
+                                                        .clip(CircleShape)
+                                                        .background(Color(c))
+                                                        .clickable {
+                                                            viewModel.onAction(SettingsViewModel.Action.SetTagColor(tag.id, if (selected) null else c))
+                                                            editingColorTagId.value = null
+                                                        },
+                                                    contentAlignment = Alignment.Center,
+                                                ) {
+                                                    if (selected) {
+                                                        Text(
+                                                            "✓",
+                                                            style = MaterialTheme.typography.bodySmall,
+                                                            color = if (c in LIGHT_CHECK_COLORS) Color.Black else Color.White,
+                                                        )
+                                                    }
+                                                }
                                             }
                                         }
                                     }

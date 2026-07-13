@@ -61,7 +61,7 @@ import com.asr.core.task.Task
 import com.asr.ui.LIGHT_CHECK_COLORS
 import com.asr.ui.TAG_COLORS
 import com.asr.ui.app.EmptyState
-import com.asr.ui.app.TagFilterChips
+import com.asr.ui.app.TagFilterDropdown
 import com.asr.ui.viewmodel.TaskFilter
 import com.asr.ui.viewmodel.TasksViewModel
 import kotlinx.datetime.LocalDate
@@ -130,7 +130,7 @@ fun TasksPage(viewModel: TasksViewModel) {
                 }
             }
 
-            TagFilterChips(tags = state.tags, modifier = Modifier.padding(top = 8.dp))
+            TagFilterDropdown(tags = state.tags, modifier = Modifier.padding(top = 8.dp))
 
             LazyColumn(modifier = Modifier.weight(1f)) {
                 items(flatTasks) { (task, depth) ->
@@ -253,24 +253,28 @@ fun TasksPage(viewModel: TasksViewModel) {
                             }
                             if (newTagName.isNotBlank()) {
                                 Spacer(Modifier.height(4.dp))
-                                FlowRow {
-                                    TAG_COLORS.forEach { (c, _) ->
-                                        val selected = newTagColor == c
-                                        Box(
-                                            modifier = Modifier
-                                                .padding(2.dp)
-                                                .size(16.dp)
-                                                .clip(CircleShape)
-                                                .background(Color(c))
-                                                .clickable { newTagColor = if (selected) null else c },
-                                            contentAlignment = Alignment.Center,
-                                        ) {
-                                            if (selected) {
-                                                Text(
-                                                    "✓",
-                                                    style = MaterialTheme.typography.bodySmall,
-                                                    color = if (c in LIGHT_CHECK_COLORS) Color.Black else Color.White,
-                                                )
+                                Column {
+                                    TAG_COLORS.chunked(8).forEach { row ->
+                                        Row {
+                                            row.forEach { (c, _) ->
+                                                val selected = newTagColor == c
+                                                Box(
+                                                    modifier = Modifier
+                                                        .padding(2.dp)
+                                                        .size(16.dp)
+                                                        .clip(CircleShape)
+                                                        .background(Color(c))
+                                                        .clickable { newTagColor = if (selected) null else c },
+                                                    contentAlignment = Alignment.Center,
+                                                ) {
+                                                    if (selected) {
+                                                        Text(
+                                                            "✓",
+                                                            style = MaterialTheme.typography.bodySmall,
+                                                            color = if (c in LIGHT_CHECK_COLORS) Color.Black else Color.White,
+                                                        )
+                                                    }
+                                                }
                                             }
                                         }
                                     }

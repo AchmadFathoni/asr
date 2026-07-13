@@ -32,7 +32,7 @@ import org.koin.compose.koinInject
 import com.asr.core.tag.Tag
 import com.asr.core.task.Task
 import com.asr.ui.app.EmptyState
-import com.asr.ui.app.TagFilterChips
+import com.asr.ui.app.TagFilterDropdown
 import com.asr.ui.habit.HabitItem
 import com.asr.ui.viewmodel.TodayViewModel
 import asr.shared.ui.generated.resources.*
@@ -54,7 +54,7 @@ fun TodayPage(viewModel: TodayViewModel) {
             Text("Today", style = MaterialTheme.typography.headlineMedium)
         }
         item {
-            TagFilterChips(tags = state.tags)
+            TagFilterDropdown(tags = state.tags)
         }
 
         // Tasks section
