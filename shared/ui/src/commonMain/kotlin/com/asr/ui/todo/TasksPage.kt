@@ -486,7 +486,7 @@ fun TaskRow(
             .padding(start = (depth * 24).dp)
             .graphicsLayer { scaleX = scale; scaleY = scale }
             .clickable {
-                if (!task.isDone) {
+                if (!task.isDone && !hasChildren) {
                     soundPlayer.play()
                     onToggle()
                     showUndoSnackbar?.invoke { onToggle() }
@@ -500,11 +500,15 @@ fun TaskRow(
             modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            SparkleCheck(isDone = task.isDone, onToggle = {
-                soundPlayer.play()
-                onToggle()
-                showUndoSnackbar?.invoke { onToggle() }
-            })
+            if (hasChildren) {
+                Spacer(Modifier.width(30.dp))
+            } else {
+                SparkleCheck(isDone = task.isDone, onToggle = {
+                    soundPlayer.play()
+                    onToggle()
+                    showUndoSnackbar?.invoke { onToggle() }
+                })
+            }
             if (hasChildren) {
                 TextButton(onClick = onToggleExpand, modifier = Modifier.padding(0.dp)) {
                     Text(if (isExpanded) "\u25BE" else "\u25B8")
@@ -518,11 +522,18 @@ fun TaskRow(
                 ),
             )
             if (progress != null && progress.second > 0) {
-                Text(
-                    "${progress.first}/${progress.second}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                Box(modifier = Modifier.size(28.dp), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(
+                        progress = { progress.first.toFloat() / progress.second },
+                        modifier = Modifier.fillMaxSize(),
+                        strokeWidth = 3.dp,
+                        trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                    )
+                    Text(
+                        "${progress.first}",
+                        style = MaterialTheme.typography.labelSmall,
+                    )
+                }
             }
             tags.forEach { tag ->
                 tag.color?.let { c ->

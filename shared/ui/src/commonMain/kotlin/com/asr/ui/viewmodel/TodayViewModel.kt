@@ -37,7 +37,7 @@ class TodayViewModel(
     private val _pendingDeleted = MutableStateFlow<List<Task>?>(null)
 
     private val _state: StateFlow<TodayState> = combine(
-        taskRepo.getUndoneTasksFlow(),
+        taskRepo.getTasksFlow(),
         habitRepo.getHabitsFlow(),
         habitRepo.getRecordsForDateFlow(today),
         tagRepo.getTagsFlow(),
@@ -45,7 +45,9 @@ class TodayViewModel(
             FilterWithMappings(f, ttm, htm, p)
         },
     ) { tasks, habits, records, tags, (filter, ttm, htm, pendingDeleted) ->
-        val baseTasks = tasks.filter { val due = it.dueDate; due == null || due <= today }
+        val parentTaskIds = tasks.filter { it.parentId != null }.map { it.parentId!! }.toSet()
+        val undoneTasks = tasks.filter { !it.isDone }
+        val baseTasks = undoneTasks.filter { val due = it.dueDate; due == null || due <= today }
         val baseHabits = habits.filter { it.shouldShowToday(today) }
         TodayState(
             tasks = Filters.tasks(baseTasks, ttm, filter.searchQuery, filter.selectedTagIds, null),
@@ -56,6 +58,7 @@ class TodayViewModel(
             pendingDeletedTasks = pendingDeleted,
             taskTagMappings = ttm,
             habitTagMappings = htm,
+            parentTaskIds = parentTaskIds,
             isLoading = false,
         )
     }.stateIn(
@@ -89,6 +92,12 @@ class TodayViewModel(
         when (action) {
             is Action.ToggleTask -> viewModelScope.launch {
                 taskRepo.toggleTask(action.taskId)
+                val task = taskRepo.getTaskById(action.taskId)
+                val parentId = task?.parentId ?: return@launch
+                val siblings = taskRepo.getSubTasks(parentId)
+                if (siblings.isNotEmpty() && siblings.all { it.isDone }) {
+                    taskRepo.toggleTask(parentId)
+                }
             }
             is Action.ToggleHabit -> viewModelScope.launch {
                 val existing = habitRepo.getRecordForDate(action.habitId, today)
@@ -130,5 +139,6 @@ data class TodayState(
     val pendingDeletedTasks: List<Task>? = null,
     val taskTagMappings: Map<Long, List<Long>> = emptyMap(),
     val habitTagMappings: Map<Long, List<Long>> = emptyMap(),
+    val parentTaskIds: Set<Long> = emptySet(),
     val isLoading: Boolean = true,
 )

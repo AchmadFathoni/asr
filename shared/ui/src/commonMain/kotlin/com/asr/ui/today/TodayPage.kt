@@ -107,6 +107,7 @@ fun TodayPage(viewModel: TodayViewModel) {
                 }
             }
             items(state.tasks) { task ->
+                val isParent = task.id in state.parentTaskIds
                 val scale by animateFloatAsState(
                     targetValue = if (task.isDone) 1.05f else 1f,
                     animationSpec = spring(dampingRatio = 0.5f, stiffness = 400f),
@@ -116,7 +117,7 @@ fun TodayPage(viewModel: TodayViewModel) {
                         .padding(vertical = 4.dp)
                         .graphicsLayer { scaleX = scale; scaleY = scale }
                         .clickable {
-                            if (!task.isDone) {
+                            if (!task.isDone && !isParent) {
                                 soundPlayer.play()
                                 viewModel.onAction(TodayViewModel.Action.ToggleTask(task.id))
                                 scope.launch {
@@ -135,17 +136,21 @@ fun TodayPage(viewModel: TodayViewModel) {
                         modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        SparkleCheck(
-                            isDone = task.isDone,
-                            onToggle = {
-                                soundPlayer.play()
-                                viewModel.onAction(TodayViewModel.Action.ToggleTask(task.id))
-                                scope.launch {
-                                    if (snackbarHostState.showSnackbar("Completed", "Undo", duration = SnackbarDuration.Short) == SnackbarResult.ActionPerformed)
-                                        viewModel.onAction(TodayViewModel.Action.ToggleTask(task.id))
-                                }
-                            },
-                        )
+                        if (isParent) {
+                            Spacer(Modifier.width(30.dp))
+                        } else {
+                            SparkleCheck(
+                                isDone = task.isDone,
+                                onToggle = {
+                                    soundPlayer.play()
+                                    viewModel.onAction(TodayViewModel.Action.ToggleTask(task.id))
+                                    scope.launch {
+                                        if (snackbarHostState.showSnackbar("Completed", "Undo", duration = SnackbarDuration.Short) == SnackbarResult.ActionPerformed)
+                                            viewModel.onAction(TodayViewModel.Action.ToggleTask(task.id))
+                                    }
+                                },
+                            )
+                        }
                         Text(
                             text = task.title,
                             modifier = Modifier.weight(1f).padding(horizontal = 8.dp),

@@ -40,6 +40,7 @@ class TasksViewModel(
             FilterWithMappings(f, m, p)
         },
     ) { all, tags, taskFilter, expandedIds, (filter, tagMappings, pendingDeleted) ->
+        val parentTaskIds = all.filter { it.parentId != null }.map { it.parentId!! }.toSet()
         val base = when (taskFilter) {
             TaskFilter.ALL -> all
             TaskFilter.ACTIVE -> all.filter { !it.isDone }
@@ -54,6 +55,7 @@ class TasksViewModel(
             filterState = filter,
             pendingDeletedTasks = pendingDeleted,
             taskTagMappings = tagMappings,
+            parentTaskIds = parentTaskIds,
             isLoading = false,
         )
     }.stateIn(
@@ -105,6 +107,12 @@ class TasksViewModel(
             }
             is Action.ToggleTask -> viewModelScope.launch {
                 taskRepo.toggleTask(action.taskId)
+                val task = taskRepo.getTaskById(action.taskId)
+                val parentId = task?.parentId ?: return@launch
+                val siblings = taskRepo.getSubTasks(parentId)
+                if (siblings.isNotEmpty() && siblings.all { it.isDone }) {
+                    taskRepo.toggleTask(parentId)
+                }
             }
             is Action.ToggleExpand -> {
                 val id = action.taskId
@@ -153,5 +161,6 @@ data class TasksState(
     val filterState: FilterState = FilterState(),
     val pendingDeletedTasks: List<Task>? = null,
     val taskTagMappings: Map<Long, List<Long>> = emptyMap(),
+    val parentTaskIds: Set<Long> = emptySet(),
     val isLoading: Boolean = true,
 )
