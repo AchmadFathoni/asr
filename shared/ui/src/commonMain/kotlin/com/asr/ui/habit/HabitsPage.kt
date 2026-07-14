@@ -350,6 +350,7 @@ fun HabitsPage(viewModel: HabitsViewModel) {
                                         val encoded = activeYearlyMonth * 100 + day
                                         if (encoded in selectedYearlyDates) selectedYearlyDates.remove(encoded) else selectedYearlyDates.add(encoded)
                                     },
+                                    maxDay = daysInMonth(LocalDate.now().year, activeYearlyMonth),
                                 )
                             }
                             Spacer(Modifier.height(8.dp))
@@ -731,12 +732,14 @@ fun HabitItem(
 private fun DayGrid(
     selectedDays: Set<Int>,
     onToggleDay: (Int) -> Unit,
+    maxDay: Int = 31,
 ) {
     for (rowStart in listOf(1, 8, 15, 22, 29)) {
+        if (rowStart > maxDay) continue
         Row(
             modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
         ) {
-            for (day in rowStart..(rowStart + 6).coerceAtMost(31)) {
+            for (day in rowStart..(rowStart + 6).coerceAtMost(maxDay)) {
                 val selected = day in selectedDays
                 Box(
                     modifier = Modifier.weight(1f).aspectRatio(1f)
@@ -749,7 +752,10 @@ private fun DayGrid(
                     Text(day.toString(), style = MaterialTheme.typography.bodyMedium)
                 }
             }
-            if (rowStart == 29) repeat(4) { Spacer(Modifier.weight(1f)) }
+            if (rowStart == 29) {
+                val shown = maxDay - 29 + 1
+                repeat(7 - shown) { Spacer(Modifier.weight(1f)) }
+            }
         }
     }
 }
