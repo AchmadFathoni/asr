@@ -448,12 +448,12 @@ fun HabitsPage(viewModel: HabitsViewModel) {
                                         } else {
                                             val date = LocalDate(today.year, today.month, day)
                                             val record = recordsByDate[date]
-                                            val bg = when (record?.state) {
-                                                HabitState.DONE -> Color(0xFF4CAF50)
-                                                HabitState.SKIPPED -> Color(0xFFFF9800)
-                                                else -> Color.Gray.copy(alpha = 0.15f)
-                                            }
-                                            val fc = if (habit.shouldShowToday(date)) Color.Black else Color.Gray
+                                val bg = when (record?.state) {
+                                    HabitState.DONE -> MaterialTheme.colorScheme.primary
+                                    HabitState.SKIPPED -> MaterialTheme.colorScheme.tertiary
+                                    else -> MaterialTheme.colorScheme.surfaceVariant
+                                }
+                                val fc = if (habit.shouldShowToday(date)) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
                                             Box(modifier = Modifier.weight(1f).padding(1.dp).background(bg, CircleShape).padding(4.dp), contentAlignment = Alignment.Center) {
                                                 Text("$day", color = fc)
                                             }
