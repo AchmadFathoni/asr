@@ -12,7 +12,7 @@ val appName = "ASR"
 val appVersionCode = providers.exec {
     commandLine("git", "rev-list", "--count", "HEAD")
 }.standardOutput.asText.get().trim().toInt()
-val appVersionName = "0.1.0"
+val appVersionName = "0.1.1"
 
 android {
     namespace = "com.asr"
