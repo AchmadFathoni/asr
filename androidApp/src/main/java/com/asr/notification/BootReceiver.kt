@@ -5,11 +5,18 @@ import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 import androidx.core.app.NotificationCompat
 
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        val title = intent.getStringExtra("title") ?: return
+        val action = intent.action
+        Log.d("ASR_Reminder", "BootReceiver.onReceive: action=$action extras=${intent.extras?.keySet()}")
+
+        val title = intent.getStringExtra("title") ?: run {
+            Log.d("ASR_Reminder", "BootReceiver: no title extra, ignoring")
+            return
+        }
         val body = intent.getStringExtra("body") ?: return
 
         val notification = NotificationCompat.Builder(context, AlarmSchedulerImpl.CHANNEL_ID)

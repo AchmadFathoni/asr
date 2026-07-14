@@ -7,6 +7,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.util.Log
 import com.asr.core.habit.Habit
 import com.asr.core.interfaces.AlarmScheduler
 import com.asr.core.task.Task
@@ -90,13 +91,17 @@ class AlarmSchedulerImpl(private val context: Context) : AlarmScheduler {
             if (timeInMillis <= System.currentTimeMillis()) add(java.util.Calendar.DAY_OF_YEAR, 1)
         }.timeInMillis
 
+        Log.d("ASR_Reminder", "scheduleAlarm: id=$id title=$title timeStr=$timeStr repeating=$repeating triggerTime=$triggerTime")
+
         if (repeating) {
             alarmManager.setRepeating(
                 AlarmManager.RTC_WAKEUP, triggerTime,
                 AlarmManager.INTERVAL_DAY, pending,
             )
+            Log.d("ASR_Reminder", "setRepeating scheduled for $title at $triggerTime")
         } else {
             alarmManager.set(AlarmManager.RTC_WAKEUP, triggerTime, pending)
+            Log.d("ASR_Reminder", "set scheduled for $title at $triggerTime")
         }
     }
 
