@@ -1,5 +1,5 @@
 package com.asr.core.interfaces
 
 interface SoundPlayer {
-    fun play()
+    fun play(pitch: Float = 1f)
 }

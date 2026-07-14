@@ -38,7 +38,7 @@ class HabitItemTest {
         stopKoin()
         startKoin {
             modules(module {
-                single<SoundPlayer> { object : SoundPlayer { override fun play() {} } }
+                single<SoundPlayer> { object : SoundPlayer { override fun play(pitch: Float) {} } }
             })
         }
     }

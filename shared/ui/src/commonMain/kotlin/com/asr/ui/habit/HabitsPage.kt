@@ -644,7 +644,7 @@ fun HabitItem(
                 OutlinedButton(
                     onClick = {
                         if (!isDone) {
-                            soundPlayer.play()
+                            soundPlayer.play(1f + (streak.coerceAtMost(10) * 0.05f))
                             onSetState(HabitState.DONE)
                             showDoneSnackbar?.invoke { onSetState(HabitState.NOT_DONE) }
                         }

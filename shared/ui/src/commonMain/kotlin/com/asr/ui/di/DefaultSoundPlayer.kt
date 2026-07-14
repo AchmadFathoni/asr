@@ -5,5 +5,5 @@ import org.koin.core.annotation.Single
 
 @Single(binds = [SoundPlayer::class])
 class DefaultSoundPlayer : SoundPlayer {
-    override fun play() {}
+    override fun play(pitch: Float) {}
 }
