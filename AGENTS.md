@@ -74,4 +74,4 @@ Custom XML vector drawables in `shared/ui/src/commonMain/composeResources/drawab
 - Focus areas: import/export validation, date edge cases, input validation
 
 ### Known Issues & TODOs
-- **CMP-10319**: TimePicker analog dial shows wrong selector color on desktop (Skia/OpenGL BlendMode bug). Filed 2026-06-09. Options to fix: `GraphicsApi.SOFTWARE_FAST` (try first), switch to `TimeInput`, upgrade CMP, or wait upstream.
+- **CMP-10319**: TimePicker analog dial shows wrong selector color on desktop (Skia/OpenGL BlendMode bug). [Filed 2026-06-09](https://youtrack.jetbrains.com/issue/CMP-10319). Options to fix: `GraphicsApi.SOFTWARE_FAST` (try first), switch to `TimeInput`, upgrade CMP, or wait upstream.
