@@ -72,3 +72,6 @@ Custom XML vector drawables in `shared/ui/src/commonMain/composeResources/drawab
 - Unit tests in `shared/core/src/commonTest/` (31 tests)
 - Android tests in `androidApp/src/test/`
 - Focus areas: import/export validation, date edge cases, input validation
+
+### Known Issues & TODOs
+- **CMP-10319**: TimePicker analog dial shows wrong selector color on desktop (Skia/OpenGL BlendMode bug). Filed 2026-06-09. Options to fix: `GraphicsApi.SOFTWARE_FAST` (try first), switch to `TimeInput`, upgrade CMP, or wait upstream.
