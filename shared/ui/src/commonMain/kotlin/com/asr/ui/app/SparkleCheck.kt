@@ -12,6 +12,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -21,6 +25,8 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import asr.shared.ui.generated.resources.Res
 import asr.shared.ui.generated.resources.sparkle
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.vectorResource
 
 @Composable
@@ -29,9 +35,12 @@ fun SparkleCheck(
     onToggle: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    var animating by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+
     val scale by animateFloatAsState(
-        targetValue = if (isDone) 1.0f else 0.75f,
-        animationSpec = spring(dampingRatio = 0.6f, stiffness = 600f),
+        targetValue = if (isDone || animating) 1.0f else 0.75f,
+        animationSpec = spring(dampingRatio = 0.3f, stiffness = 200f),
     )
     Box(
         modifier = modifier
@@ -39,23 +48,32 @@ fun SparkleCheck(
             .graphicsLayer { scaleX = scale; scaleY = scale }
             .clip(CircleShape)
             .background(
-                color = if (isDone) MaterialTheme.colorScheme.primary
+                color = if (isDone || animating) MaterialTheme.colorScheme.primary
                         else Color.Transparent,
             )
             .border(
                 width = 2.dp,
-                color = if (isDone) MaterialTheme.colorScheme.primary
+                color = if (isDone || animating) MaterialTheme.colorScheme.primary
                         else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f),
                 shape = CircleShape,
             )
-            .clickable(role = Role.Checkbox) { if (!isDone) onToggle() },
+            .clickable(role = Role.Checkbox) {
+                if (!isDone && !animating) {
+                    animating = true
+                    scope.launch {
+                        delay(250L)
+                        onToggle()
+                        animating = false
+                    }
+                }
+            },
         contentAlignment = Alignment.Center,
     ) {
         Icon(
             imageVector = vectorResource(Res.drawable.sparkle),
             contentDescription = if (isDone) "Done" else "Mark done",
             modifier = Modifier.size(16.dp),
-            tint = if (isDone) MaterialTheme.colorScheme.onPrimary
+            tint = if (isDone || animating) MaterialTheme.colorScheme.onPrimary
                    else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f),
         )
     }
