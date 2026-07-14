@@ -56,9 +56,6 @@ fun SettingsPage(viewModel: SettingsViewModel) {
     Column(
         modifier = Modifier.fillMaxSize().padding(16.dp).verticalScroll(rememberScrollState()),
     ) {
-        Text("Settings", style = MaterialTheme.typography.headlineMedium)
-        Spacer(Modifier.height(24.dp))
-
         SectionHeader("Appearance")
         Card(
             modifier = Modifier.fillMaxWidth(),

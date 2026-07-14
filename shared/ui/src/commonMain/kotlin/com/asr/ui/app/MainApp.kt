@@ -56,7 +56,7 @@ fun MainApp() {
                             contentDescription = "Today",
                         )
                     },
-                    label = { Text("Today") },
+                    label = { Text("Today", maxLines = 1) },
                 )
                 NavigationBarItem(
                     selected = selectedTab == AppRoute.Todo,
@@ -68,7 +68,7 @@ fun MainApp() {
                             contentDescription = "To-do",
                         )
                     },
-                    label = { Text("To-do") },
+                    label = { Text("To-do", maxLines = 1) },
                 )
                 NavigationBarItem(
                     selected = selectedTab == AppRoute.Habit,
@@ -80,7 +80,7 @@ fun MainApp() {
                             contentDescription = "Habit",
                         )
                     },
-                    label = { Text("Habit") },
+                    label = { Text("Habit", maxLines = 1) },
                 )
                 NavigationBarItem(
                     selected = selectedTab == AppRoute.Settings,
@@ -92,7 +92,7 @@ fun MainApp() {
                             contentDescription = "Settings",
                         )
                     },
-                    label = { Text("Settings") },
+                    label = { Text("Settings", maxLines = 1) },
                 )
             }
         },

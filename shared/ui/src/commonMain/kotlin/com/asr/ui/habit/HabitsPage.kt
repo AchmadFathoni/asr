@@ -114,8 +114,7 @@ fun HabitsPage(viewModel: HabitsViewModel) {
     ) { padding ->
         Column(modifier = Modifier.padding(padding).fillMaxSize().padding(16.dp)) {
             // Main habits list
-            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text("Habits", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.weight(1f))
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                 IconButton(onClick = { viewModel.onAction(HabitsViewModel.Action.ToggleFilterSheet) }) {
                     Icon(imageVector = vectorResource(Res.drawable.filter), contentDescription = "Filter")
                 }

@@ -112,8 +112,7 @@ fun TasksPage(viewModel: TasksViewModel) {
         },
     ) { padding ->
         Column(modifier = Modifier.padding(padding).fillMaxSize().padding(16.dp)) {
-            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text("To-do", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.weight(1f))
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                 IconButton(onClick = { viewModel.onAction(TasksViewModel.Action.ToggleFilterSheet) }) {
                     Icon(imageVector = vectorResource(Res.drawable.filter), contentDescription = "Filter")
                 }
