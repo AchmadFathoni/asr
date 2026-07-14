@@ -37,6 +37,7 @@ UI ← StateFlow<State> ← ViewModel ← Repository (Flow) ← Room
 | Command | Description |
 |---------|-------------|
 | `./gradlew assembleDebug` | Build debug APK |
+| `./gradlew installDebug` | Build + install on connected Android device |
 | `./gradlew test` | Run unit tests |
 | `./gradlew assembleRelease` | Build release APK |
 | `./scripts/gradlew ...` | Script that auto-patches AAPT2 via nix-ld, available inside dev shell |
@@ -53,8 +54,13 @@ Uses `kotlin.time.Clock.System` (Kotlin stdlib, available in KMP common) — not
 #### 3. `nix-ld` for NixOS compatibility
 The Android Gradle Plugin downloads prebuilt `aapt2` binaries from Maven that fail on NixOS due to missing dynamic linker paths. Fix: the dev shell sets `NIX_LD` + `NIX_LD_LIBRARY_PATH` and uses `nix-ld` as the ELF interpreter via `scripts/gradlew`. `nix-ld` redirects library resolution through `NIX_LD_LIBRARY_PATH`, so no re-patching is needed if library paths change. Set `ANDROID_HOME` to `./.android-sdk` so SDK downloads stay local.
 
+The same patching is applied to `adb` in the dev shell shellHook so `installDebug` works on NixOS.
+
 #### 4. Custom XML vector drawables via Compose Resources
 Custom XML vector drawables in `shared/ui/src/commonMain/composeResources/drawable/`, loaded with `vectorResource(Res.drawable.*)`. Generated resource package: `asr.shared.ui.generated.resources`. This sidesteps the `material-icons-core` version gap (1.7.3 vs Compose 1.11.1) entirely — same approach as Grit's 51 custom drawables.
+
+#### 5. `androidResources.enable = true` for AGP 9+
+The `shared:ui` KMP module must set `androidResources.enable = true` inside its `android {}` block (`shared/ui/build.gradle.kts:30`). Without this, Compose Multiplatform resource files (drawables, strings, etc.) in `composeResources/` are silently excluded from Android APK assets at runtime, causing `MissingResourceException`. Required for AGP 9.x+ with KMP shared modules.
 
 ### Code Style
 - UDF (Unidirectional Data Flow): sealed actions → ViewModel state

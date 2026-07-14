@@ -32,6 +32,6 @@ class AppModule {
     @Single
     fun provideTagDao(db: AppDatabase): TagDao = db.tagDao()
 
-    @Single(override = true)
+    @Single
     fun provideSoundPlayer(context: Context): SoundPlayer = AndroidSoundPlayer(context)
 }

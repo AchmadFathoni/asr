@@ -29,6 +29,7 @@ kotlin {
         namespace = "com.asr.shared.ui"
         compileSdk = libs.versions.compileSdk.get().toInt()
         minSdk = libs.versions.minSdk.get().toInt()
+        androidResources.enable = true
     }
 
     wasmJs {
