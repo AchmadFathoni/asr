@@ -554,11 +554,11 @@ fun HabitItem(
     )
     val sparkleScale by animateFloatAsState(
         targetValue = if (isDone) 1.0f else 0.8f,
-        animationSpec = spring(dampingRatio = 0.4f, stiffness = 300f),
+        animationSpec = spring(dampingRatio = 0.6f, stiffness = 600f),
     )
     val sparkleRotation by animateFloatAsState(
         targetValue = if (isDone) 360f else 0f,
-        animationSpec = spring(dampingRatio = 0.4f, stiffness = 300f),
+        animationSpec = spring(dampingRatio = 0.6f, stiffness = 600f),
     )
 
     Card(
