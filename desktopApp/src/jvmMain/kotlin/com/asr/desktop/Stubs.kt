@@ -13,6 +13,7 @@ import com.asr.core.backup.RestoreRepo
 import com.asr.core.backup.RestoreResult
 import com.asr.core.interfaces.AlarmScheduler
 import com.asr.core.settings.SettingsRepo
+import com.asr.core.settings.ThemeOption
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
@@ -140,10 +141,10 @@ class RestoreRepoStub : RestoreRepo {
 
 @Single(binds = [SettingsRepo::class])
 class SettingsRepoStub : SettingsRepo {
-    private var dark: Boolean? = true
+    private var theme: ThemeOption = ThemeOption.SYSTEM
 
-    override fun isDarkMode(): Boolean? = dark
-    override fun setDarkMode(isDark: Boolean?) { dark = isDark }
+    override fun getTheme(): ThemeOption = theme
+    override fun setTheme(t: ThemeOption) { theme = t }
 }
 
 @Single(binds = [AlarmScheduler::class])

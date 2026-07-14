@@ -34,7 +34,7 @@ fun MainApp() {
     val settingsVM = koinViewModel<SettingsViewModel>()
     val settingsState by settingsVM.state.collectAsState()
 
-    ASRTheme(darkMode = settingsState.isDarkMode) {
+    ASRTheme(theme = settingsState.theme) {
     var selectedTab by rememberSaveable { mutableStateOf(AppRoute.Today) }
 
     val todayVM = koinViewModel<TodayViewModel>()

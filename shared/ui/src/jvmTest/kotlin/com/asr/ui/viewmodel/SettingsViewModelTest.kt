@@ -4,6 +4,7 @@ import com.asr.core.backup.ExportRepo
 import com.asr.core.backup.RestoreRepo
 import com.asr.core.backup.RestoreResult
 import com.asr.core.settings.SettingsRepo
+import com.asr.core.settings.ThemeOption
 import com.asr.core.tag.Tag
 import com.asr.core.tag.TagRepo
 import kotlinx.coroutines.Dispatchers
@@ -20,10 +21,10 @@ import kotlin.test.assertEquals
 
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class SettingsViewModelTest {
-    private class FakeSettingsRepo(initial: Boolean?) {
-        private var dark: Boolean? = initial
-        fun isDarkMode(): Boolean? = dark
-        fun setDarkMode(isDark: Boolean?) { dark = isDark }
+    private class FakeSettingsRepo(initial: ThemeOption) {
+        private var theme: ThemeOption = initial
+        fun getTheme(): ThemeOption = theme
+        fun setTheme(t: ThemeOption) { theme = t }
     }
 
     private class FakeTagRepo : TagRepo {
@@ -51,8 +52,8 @@ class SettingsViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun createViewModel(initialDark: Boolean? = true): SettingsViewModel {
-        val repo = FakeSettingsRepo(initial = initialDark)
+    private fun createViewModel(initialTheme: ThemeOption = ThemeOption.SYSTEM): SettingsViewModel {
+        val repo = FakeSettingsRepo(initial = initialTheme)
         return SettingsViewModel(
             exportRepo = object : ExportRepo {
                 override suspend fun exportToJson() {}
@@ -62,39 +63,39 @@ class SettingsViewModelTest {
             },
             tagRepo = FakeTagRepo(),
             settingsRepo = object : SettingsRepo {
-                override fun isDarkMode(): Boolean? = repo.isDarkMode()
-                override fun setDarkMode(isDark: Boolean?) = repo.setDarkMode(isDark)
+                override fun getTheme(): ThemeOption = repo.getTheme()
+                override fun setTheme(t: ThemeOption) = repo.setTheme(t)
             },
         )
     }
 
     @Test
-    fun `setDarkMode false switches to explicit light`() = runBlocking {
-        val vm = createViewModel(initialDark = true)
+    fun `setTheme light switches to explicit light`() = runBlocking {
+        val vm = createViewModel(initialTheme = ThemeOption.DARK)
         vm.state.first()
-        vm.onAction(SettingsViewModel.Action.SetDarkMode(false))
-        assertEquals(false, vm.state.value.isDarkMode)
+        vm.onAction(SettingsViewModel.Action.SetTheme(ThemeOption.LIGHT))
+        assertEquals(ThemeOption.LIGHT, vm.state.value.theme)
     }
 
     @Test
-    fun `setDarkMode true switches to dark`() = runBlocking {
-        val vm = createViewModel(initialDark = false)
+    fun `setTheme dark switches to dark`() = runBlocking {
+        val vm = createViewModel(initialTheme = ThemeOption.LIGHT)
         vm.state.first()
-        vm.onAction(SettingsViewModel.Action.SetDarkMode(true))
-        assertEquals(true, vm.state.value.isDarkMode)
+        vm.onAction(SettingsViewModel.Action.SetTheme(ThemeOption.DARK))
+        assertEquals(ThemeOption.DARK, vm.state.value.theme)
     }
 
     @Test
-    fun `setDarkMode null falls back to system theme`() = runBlocking {
-        val vm = createViewModel(initialDark = true)
+    fun `setTheme system falls back to system theme`() = runBlocking {
+        val vm = createViewModel(initialTheme = ThemeOption.DARK)
         vm.state.first()
-        vm.onAction(SettingsViewModel.Action.SetDarkMode(null))
-        assertEquals(null, vm.state.value.isDarkMode)
+        vm.onAction(SettingsViewModel.Action.SetTheme(ThemeOption.SYSTEM))
+        assertEquals(ThemeOption.SYSTEM, vm.state.value.theme)
     }
 
     @Test
-    fun `initial dark mode from repo`() = runBlocking {
-        val vm = createViewModel(initialDark = true)
-        assertEquals(true, vm.state.first().isDarkMode)
+    fun `initial theme from repo`() = runBlocking {
+        val vm = createViewModel(initialTheme = ThemeOption.DARK)
+        assertEquals(ThemeOption.DARK, vm.state.first().theme)
     }
 }

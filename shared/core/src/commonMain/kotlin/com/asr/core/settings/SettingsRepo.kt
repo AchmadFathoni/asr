@@ -1,6 +1,8 @@
 package com.asr.core.settings
 
+enum class ThemeOption { SYSTEM, LIGHT, DARK }
+
 interface SettingsRepo {
-    fun isDarkMode(): Boolean?
-    fun setDarkMode(isDark: Boolean?)
+    fun getTheme(): ThemeOption
+    fun setTheme(theme: ThemeOption)
 }

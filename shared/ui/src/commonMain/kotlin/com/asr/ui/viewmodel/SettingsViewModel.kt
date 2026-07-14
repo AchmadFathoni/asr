@@ -8,6 +8,7 @@ import com.asr.core.backup.RestoreRepo
 import com.asr.core.backup.RestoreResult
 import com.asr.core.backup.RestoreState
 import com.asr.core.settings.SettingsRepo
+import com.asr.core.settings.ThemeOption
 import com.asr.core.tag.Tag
 import com.asr.core.tag.TagRepo
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,22 +31,22 @@ class SettingsViewModel(
     private val _restoreState = MutableStateFlow(RestoreState.IDLE)
     private val _newTagName = MutableStateFlow("")
     private val _newTagColor = MutableStateFlow<Long?>(null)
-    private val _isDarkMode = MutableStateFlow(settingsRepo.isDarkMode())
+    private val _theme = MutableStateFlow(settingsRepo.getTheme())
 
     val state: StateFlow<SettingsState> = combine(
         _exportState,
         _restoreState,
         tagRepo.getTagsFlow(),
         combine(_newTagName, _newTagColor) { n, c -> n to c },
-        _isDarkMode,
-    ) { exportState, restoreState, tags, (newName, newColor), isDark ->
+        _theme,
+    ) { exportState, restoreState, tags, (newName, newColor), theme ->
         SettingsState(
             exportState = exportState,
             restoreState = restoreState,
             tags = tags,
             newTagName = newName,
             newTagColor = newColor,
-            isDarkMode = isDark,
+            theme = theme,
         )
     }.stateIn(
         scope = viewModelScope,
@@ -61,7 +62,7 @@ class SettingsViewModel(
         data object CreateTag : Action
         data class DeleteTag(val id: Long) : Action
         data class SetTagColor(val tagId: Long, val color: Long?) : Action
-        data class SetDarkMode(val isDark: Boolean?) : Action
+        data class SetTheme(val theme: ThemeOption) : Action
     }
 
     fun onAction(action: Action) {
@@ -97,9 +98,9 @@ class SettingsViewModel(
                 val existing = tagRepo.getTagById(action.tagId) ?: return@launch
                 tagRepo.upsertTag(existing.copy(color = action.color))
             }
-            is Action.SetDarkMode -> {
-                _isDarkMode.value = action.isDark
-                settingsRepo.setDarkMode(action.isDark)
+            is Action.SetTheme -> {
+                _theme.value = action.theme
+                settingsRepo.setTheme(action.theme)
             }
         }
     }
@@ -111,5 +112,5 @@ data class SettingsState(
     val tags: List<Tag> = emptyList(),
     val newTagName: String = "",
     val newTagColor: Long? = null,
-    val isDarkMode: Boolean? = null,
+    val theme: ThemeOption = ThemeOption.SYSTEM,
 )

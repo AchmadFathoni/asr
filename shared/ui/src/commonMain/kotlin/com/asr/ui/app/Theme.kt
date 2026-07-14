@@ -1,6 +1,7 @@
 package com.asr.ui.app
 
 import androidx.compose.foundation.isSystemInDarkTheme
+import com.asr.core.settings.ThemeOption
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
@@ -117,8 +118,12 @@ private val AppShapes = Shapes(
 )
 
 @Composable
-fun ASRTheme(darkMode: Boolean? = null, content: @Composable () -> Unit) {
-    val isDark = darkMode ?: isSystemInDarkTheme()
+fun ASRTheme(theme: ThemeOption = ThemeOption.SYSTEM, content: @Composable () -> Unit) {
+    val isDark = when (theme) {
+        ThemeOption.DARK -> true
+        ThemeOption.LIGHT -> false
+        ThemeOption.SYSTEM -> isSystemInDarkTheme()
+    }
     MaterialTheme(
         colorScheme = if (isDark) DarkColors else LightColors,
         typography = AppTypography,

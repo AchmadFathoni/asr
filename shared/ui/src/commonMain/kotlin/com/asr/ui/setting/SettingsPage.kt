@@ -22,10 +22,11 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -33,6 +34,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -44,6 +46,7 @@ import com.asr.core.backup.RestoreState
 import com.asr.core.tag.Tag
 import com.asr.ui.LIGHT_CHECK_COLORS
 import com.asr.ui.TAG_COLORS
+import com.asr.core.settings.ThemeOption
 import com.asr.ui.viewmodel.SettingsViewModel
 
 @Composable
@@ -67,10 +70,10 @@ fun SettingsPage(viewModel: SettingsViewModel) {
                 modifier = Modifier.fillMaxWidth().padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text("Dark mode", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-                Switch(
-                    checked = state.isDarkMode == true,
-                    onCheckedChange = { viewModel.onAction(SettingsViewModel.Action.SetDarkMode(it)) },
+                Text("Theme", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+                ThemeDropdown(
+                    selected = state.theme,
+                    onSelected = { viewModel.onAction(SettingsViewModel.Action.SetTheme(it)) },
                 )
             }
         }
@@ -252,6 +255,41 @@ fun SettingsPage(viewModel: SettingsViewModel) {
             },
             dismissButton = { TextButton(onClick = { tagToDelete.value = null }) { Text("Cancel") } },
         )
+    }
+}
+
+@Composable
+private fun ThemeDropdown(selected: ThemeOption, onSelected: (ThemeOption) -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    Box {
+        Text(
+            text = when (selected) {
+                ThemeOption.SYSTEM -> "System"
+                ThemeOption.LIGHT -> "Light"
+                ThemeOption.DARK -> "Dark"
+            },
+            modifier = Modifier.clickable { expanded = true },
+            style = MaterialTheme.typography.bodyLarge,
+        )
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            ThemeOption.entries.forEach { option ->
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            when (option) {
+                                ThemeOption.SYSTEM -> "System"
+                                ThemeOption.LIGHT -> "Light"
+                                ThemeOption.DARK -> "Dark"
+                            }
+                        )
+                    },
+                    onClick = {
+                        onSelected(option)
+                        expanded = false
+                    },
+                )
+            }
+        }
     }
 }
 
