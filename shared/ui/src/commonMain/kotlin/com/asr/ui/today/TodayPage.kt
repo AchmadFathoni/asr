@@ -40,6 +40,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -50,6 +51,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import com.asr.core.interfaces.SoundPlayer
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import com.asr.core.task.Task
@@ -85,7 +87,8 @@ fun TodayPage(viewModel: TodayViewModel) {
     var previousAllDone by remember { mutableStateOf(false) }
     LaunchedEffect(state.allDone) {
         if (state.allDone && !previousAllDone) {
-            delay(5_000L) // wait for undo snackbar to dismiss first
+            snapshotFlow { snackbarHostState.currentSnackbarData }
+                .first { it == null }
             snackbarHostState.showSnackbar("All done for today!", duration = SnackbarDuration.Short)
         }
         previousAllDone = state.allDone
