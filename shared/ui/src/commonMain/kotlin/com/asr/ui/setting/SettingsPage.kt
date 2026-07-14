@@ -73,7 +73,7 @@ fun SettingsPage(viewModel: SettingsViewModel) {
                 Text("Dark mode", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
                 Switch(
                     checked = state.isDarkMode == true,
-                    onCheckedChange = { viewModel.onAction(SettingsViewModel.Action.SetDarkMode(if (it) true else null)) },
+                    onCheckedChange = { viewModel.onAction(SettingsViewModel.Action.SetDarkMode(it)) },
                 )
             }
         }
