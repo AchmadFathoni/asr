@@ -21,6 +21,13 @@ import org.koin.core.annotation.Single
 @Single(binds = [ExportRepo::class])
 class ExportImpl(private val db: AppDatabase) : ExportRepo {
 
+    private companion object {
+        private val json = Json {
+            prettyPrint = true
+            ignoreUnknownKeys = true
+        }
+    }
+
     override suspend fun exportToJson() {
         coroutineScope {
             val tasksDeferred = async { db.taskDao().getAllTasks() }
@@ -43,13 +50,10 @@ class ExportImpl(private val db: AppDatabase) : ExportRepo {
                 tags = tags.map { it.toSchema() },
             )
 
-            val json = Json {
-                prettyPrint = true
-                ignoreUnknownKeys = true
-            }.encodeToString(ExportSchema.serializer(), schema)
+            val jsonString = json.encodeToString(ExportSchema.serializer(), schema)
 
-            val timestamp = "${now.year}${now.monthNumber.toString().padStart(2, '0')}" +
-                "${now.dayOfMonth.toString().padStart(2, '0')}" +
+            val timestamp = "${now.year}${now.month.toString().padStart(2, '0')}" +
+                "${now.day.toString().padStart(2, '0')}" +
                 "${now.hour.toString().padStart(2, '0')}" +
                 "${now.minute.toString().padStart(2, '0')}" +
                 "${now.second.toString().padStart(2, '0')}"
@@ -59,7 +63,7 @@ class ExportImpl(private val db: AppDatabase) : ExportRepo {
                 defaultExtension = "json",
             )
 
-            file?.writeString(json)
+            file?.writeString(jsonString)
         }
     }
 }

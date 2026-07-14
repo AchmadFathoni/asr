@@ -24,14 +24,14 @@ class HabitRepository(private val habitDao: HabitDao) : HabitRepo {
         habitDao.getAllRecordsFlow().map { it.map { e -> e.toDomain() } }
 
     override fun getRecordsForDateFlow(date: LocalDate): Flow<List<HabitRecord>> =
-        habitDao.getRecordsForDateFlow(date.toEpochDays().toLong())
+            habitDao.getRecordsForDateFlow(date.toEpochDays())
             .map { it.map { e -> e.toDomain() } }
 
     override suspend fun getHabitById(id: Long): Habit? =
         habitDao.getHabitById(id)?.toDomain()
 
     override suspend fun getRecordForDate(habitId: Long, date: LocalDate): HabitRecord? =
-        habitDao.getRecordForDate(habitId, date.toEpochDays().toLong())?.toDomain()
+            habitDao.getRecordForDate(habitId, date.toEpochDays())?.toDomain()
 
     override suspend fun upsertHabit(habit: Habit): Long =
         habitDao.upsertHabit(habit.toEntity())
@@ -43,7 +43,7 @@ class HabitRepository(private val habitDao: HabitDao) : HabitRepo {
         habitDao.upsertRecord(record.toEntity())
 
     override suspend fun deleteRecord(habitId: Long, date: LocalDate) =
-        habitDao.deleteRecord(habitId, date.toEpochDays().toLong())
+            habitDao.deleteRecord(habitId, date.toEpochDays())
 
     override suspend fun getRecordsForHabit(habitId: Long): List<HabitRecord> =
         habitDao.getRecordsForHabit(habitId).map { it.toDomain() }
@@ -55,8 +55,8 @@ class HabitRepository(private val habitDao: HabitDao) : HabitRepo {
     ): Int =
         habitDao.getCompletionCount(
             habitId,
-            start.toEpochDays().toLong(),
-            end.toEpochDays().toLong(),
+            start.toEpochDays(),
+            end.toEpochDays(),
         ) ?: 0
 
     override suspend fun insertAll(habits: List<Habit>, records: List<HabitRecord>) {

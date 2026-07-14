@@ -29,6 +29,7 @@ captures/
 # Misc
 *.log
 *.hprof
+*.keystore
 
 # Skills (installed via `npx skills experimental_install` from skills-lock.json)
 .opencode/skills/

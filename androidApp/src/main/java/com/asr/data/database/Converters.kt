@@ -28,6 +28,6 @@ object Converters {
 
     @ColumnTypeConverter
     fun dateToTimestamp(date: LocalDate): Long {
-        return date.toEpochDays().toLong()
+        return date.toEpochDays()
     }
 }

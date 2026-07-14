@@ -40,6 +40,7 @@ UI ← StateFlow<State> ← ViewModel ← Repository (Flow) ← Room
 | `./gradlew installDebug` | Build + install on connected Android device |
 | `./gradlew test` | Run unit tests |
 | `./gradlew assembleRelease` | Build release APK |
+| `./gradlew installRelease` | Build + sign + install release on connected device |
 | `./scripts/gradlew ...` | Script that auto-patches AAPT2 via nix-ld, available inside dev shell |
 | `nix run .#gradlew -- ...` | Run via FHS environment (no patching needed) |
 
