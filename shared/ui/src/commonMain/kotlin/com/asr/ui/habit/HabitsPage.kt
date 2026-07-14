@@ -552,6 +552,14 @@ fun HabitItem(
         targetValue = if (isDone) 1.05f else 1f,
         animationSpec = spring(dampingRatio = 0.5f, stiffness = 400f),
     )
+    val sparkleScale by animateFloatAsState(
+        targetValue = if (isDone) 1.0f else 0.8f,
+        animationSpec = spring(dampingRatio = 0.4f, stiffness = 300f),
+    )
+    val sparkleRotation by animateFloatAsState(
+        targetValue = if (isDone) 360f else 0f,
+        animationSpec = spring(dampingRatio = 0.4f, stiffness = 300f),
+    )
 
     Card(
         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
@@ -593,7 +601,17 @@ fun HabitItem(
                         }
                     },
                     contentPadding = ButtonDefaults.TextButtonContentPadding,
-                ) { Text(if (isDone) "✓" else "+") }
+                ) {
+                    Icon(
+                        imageVector = vectorResource(Res.drawable.sparkle),
+                        contentDescription = if (isDone) "Done" else "Mark done",
+                        modifier = Modifier.size(20.dp).graphicsLayer {
+                            scaleX = sparkleScale; scaleY = sparkleScale; rotationZ = sparkleRotation
+                        },
+                        tint = if (isDone) MaterialTheme.colorScheme.primary
+                               else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                    )
+                }
                 if (!isSkipped) {
                     TextButton(onClick = { onSetState(HabitState.SKIPPED) }) { Text("Skip") }
                 }

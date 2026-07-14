@@ -71,6 +71,7 @@ import com.asr.ui.LIGHT_CHECK_COLORS
 import com.asr.ui.TAG_COLORS
 import com.asr.ui.app.EmptyState
 import com.asr.ui.app.FilterBottomSheet
+import com.asr.ui.app.SparkleCheck
 import com.asr.ui.viewmodel.TaskFilter
 import com.asr.ui.viewmodel.TasksViewModel
 import kotlinx.datetime.LocalDate
@@ -496,12 +497,10 @@ fun TaskRow(
             modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Checkbox(checked = task.isDone, onCheckedChange = {
-                if (!task.isDone) {
-                    soundPlayer.play()
-                    onToggle()
-                    showUndoSnackbar?.invoke { onToggle() }
-                }
+            SparkleCheck(isDone = task.isDone, onToggle = {
+                soundPlayer.play()
+                onToggle()
+                showUndoSnackbar?.invoke { onToggle() }
             })
             if (hasChildren) {
                 TextButton(onClick = onToggleExpand, modifier = Modifier.padding(0.dp)) {

@@ -44,6 +44,7 @@ import org.koin.compose.koinInject
 import com.asr.core.task.Task
 import com.asr.ui.app.EmptyState
 import com.asr.ui.app.FilterBottomSheet
+import com.asr.ui.app.SparkleCheck
 import com.asr.ui.habit.HabitItem
 import com.asr.ui.viewmodel.TodayViewModel
 import asr.shared.ui.generated.resources.*
@@ -126,16 +127,14 @@ fun TodayPage(viewModel: TodayViewModel) {
                         modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Checkbox(
-                            checked = task.isDone,
-                            onCheckedChange = {
-                                if (!task.isDone) {
-                                    soundPlayer.play()
-                                    viewModel.onAction(TodayViewModel.Action.ToggleTask(task.id))
-                                    scope.launch {
-                                            if (snackbarHostState.showSnackbar("Completed", "Undo", duration = SnackbarDuration.Short) == SnackbarResult.ActionPerformed)
-                                                        viewModel.onAction(TodayViewModel.Action.ToggleTask(task.id))
-                                    }
+                        SparkleCheck(
+                            isDone = task.isDone,
+                            onToggle = {
+                                soundPlayer.play()
+                                viewModel.onAction(TodayViewModel.Action.ToggleTask(task.id))
+                                scope.launch {
+                                    if (snackbarHostState.showSnackbar("Completed", "Undo", duration = SnackbarDuration.Short) == SnackbarResult.ActionPerformed)
+                                        viewModel.onAction(TodayViewModel.Action.ToggleTask(task.id))
                                 }
                             },
                         )
