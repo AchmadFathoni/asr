@@ -36,8 +36,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -46,6 +48,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import com.asr.core.interfaces.SoundPlayer
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import com.asr.core.task.Task
@@ -76,6 +79,15 @@ fun TodayPage(viewModel: TodayViewModel) {
             viewModel.onAction(TodayViewModel.Action.UndoDeleteDoneTasks)
         else
             viewModel.onAction(TodayViewModel.Action.DismissDeletedTasks)
+    }
+
+    var previousAllDone by remember { mutableStateOf(false) }
+    LaunchedEffect(state.allDone) {
+        if (state.allDone && !previousAllDone) {
+            delay(5_000L) // wait for undo snackbar to dismiss first
+            snackbarHostState.showSnackbar("All done for today!", duration = SnackbarDuration.Short)
+        }
+        previousAllDone = state.allDone
     }
 
     if (state.isLoading) {

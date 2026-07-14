@@ -49,6 +49,14 @@ class TodayViewModel(
         val undoneTasks = tasks.filter { !it.isDone }
         val baseTasks = undoneTasks.filter { val due = it.dueDate; due == null || due <= today }
         val baseHabits = habits.filter { it.shouldShowToday(today) }
+
+        val todayTasks = tasks.filter { val due = it.dueDate; due == null || due <= today }
+        val hasItems = todayTasks.isNotEmpty() || baseHabits.isNotEmpty()
+        val noFilter = filter.searchQuery.isBlank() && filter.selectedTagIds.isEmpty()
+        val allDone = noFilter && hasItems &&
+            todayTasks.all { it.isDone } &&
+            baseHabits.all { h -> records.firstOrNull { it.habitId == h.id }?.state == HabitState.DONE }
+
         TodayState(
             tasks = Filters.tasks(baseTasks, ttm, filter.searchQuery, filter.selectedTagIds, null),
             habits = Filters.habits(baseHabits, htm, filter.searchQuery, filter.selectedTagIds, null),
@@ -59,6 +67,7 @@ class TodayViewModel(
             taskTagMappings = ttm,
             habitTagMappings = htm,
             parentTaskIds = parentTaskIds,
+            allDone = allDone,
             isLoading = false,
         )
     }.stateIn(
@@ -93,10 +102,11 @@ class TodayViewModel(
             is Action.ToggleTask -> viewModelScope.launch {
                 taskRepo.toggleTask(action.taskId)
                 val task = taskRepo.getTaskById(action.taskId)
-                val parentId = task?.parentId ?: return@launch
-                val siblings = taskRepo.getSubTasks(parentId)
-                if (siblings.isNotEmpty() && siblings.all { it.isDone }) {
-                    taskRepo.toggleTask(parentId)
+                task?.parentId?.let { parentId ->
+                    val siblings = taskRepo.getSubTasks(parentId)
+                    if (siblings.isNotEmpty() && siblings.all { it.isDone }) {
+                        taskRepo.toggleTask(parentId)
+                    }
                 }
             }
             is Action.ToggleHabit -> viewModelScope.launch {
@@ -140,5 +150,6 @@ data class TodayState(
     val taskTagMappings: Map<Long, List<Long>> = emptyMap(),
     val habitTagMappings: Map<Long, List<Long>> = emptyMap(),
     val parentTaskIds: Set<Long> = emptySet(),
+    val allDone: Boolean = false,
     val isLoading: Boolean = true,
 )
