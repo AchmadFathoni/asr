@@ -43,12 +43,14 @@ import androidx.compose.material3.TimePickerDialog
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -60,6 +62,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import com.asr.core.interfaces.SoundPlayer
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import asr.shared.ui.generated.resources.*
@@ -105,6 +108,18 @@ fun TasksPage(viewModel: TasksViewModel) {
     val taskToDeleteHasChildren = taskToDelete?.let { subTaskMap.containsKey(it.id) } ?: false
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+
+    LaunchedEffect(Unit) {
+        snapshotFlow { state.pendingDeletedTasks }
+            .filterNotNull()
+            .collect { tasks ->
+                val result = snackbarHostState.showSnackbar("${tasks.size} tasks cleared", "Undo")
+                if (result == SnackbarResult.ActionPerformed)
+                    viewModel.onAction(TasksViewModel.Action.UndoDeleteDoneTasks)
+                else
+                    viewModel.onAction(TasksViewModel.Action.DismissDeletedTasks)
+            }
+    }
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },

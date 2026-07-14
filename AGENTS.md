@@ -5,7 +5,7 @@
 ### Quick Start (NixOS)
 ```bash
 direnv allow                 # Enter Nix dev shell (first time: downloads Android SDK ~1GB)
-gradlew assembleDebug         # Build APK (auto-patches AAPT2 via nix-ld)
+./scripts/gradlew assembleDebug  # Build APK (auto-patches AAPT2 via nix-ld)
 ```
 
 ### Technology Stack
@@ -39,8 +39,8 @@ UI ← StateFlow<State> ← ViewModel ← Repository (Flow) ← Room
 | `./gradlew assembleDebug` | Build debug APK |
 | `./gradlew test` | Run unit tests |
 | `./gradlew assembleRelease` | Build release APK |
-| `gradlew ...` | Shell function (auto-patches AAPT2 via nix-ld, available inside dev shell) |
-| `./scripts/gradlew ...` | Fallback wrapper for CI / non-direnv use |
+| `./scripts/gradlew ...` | Script that auto-patches AAPT2 via nix-ld, available inside dev shell |
+| `nix run .#gradlew -- ...` | Run via FHS environment (no patching needed) |
 
 ### Design Decisions
 
@@ -51,7 +51,7 @@ Following Grit's pattern: `startKoin<AppModule>` (reified generic) with `@Module
 Uses `kotlin.time.Clock.System` (Kotlin stdlib, available in KMP common) — not `kotlinx.datetime.Clock.System` (which doesn't exist). A single `TimeUtils.kt` in `shared:core` defines `LocalDate.now()`, `LocalDateTime.now()`, `LocalTime.now()` extension functions. All callers import `com.asr.core.now` and call `.now()` directly. No java.time needed.
 
 #### 3. `nix-ld` for NixOS compatibility
-The Android Gradle Plugin downloads prebuilt `aapt2` binaries from Maven that fail on NixOS due to missing dynamic linker paths. Fix: the dev shell sets `NIX_LD` + `NIX_LD_LIBRARY_PATH` and uses `nix-ld` as the ELF interpreter via `gradlew` (shell function in `shellHook`). `nix-ld` redirects library resolution through `NIX_LD_LIBRARY_PATH`, so no re-patching is needed if library paths change. Set `ANDROID_HOME` to `./.android-sdk` so SDK downloads stay local.
+The Android Gradle Plugin downloads prebuilt `aapt2` binaries from Maven that fail on NixOS due to missing dynamic linker paths. Fix: the dev shell sets `NIX_LD` + `NIX_LD_LIBRARY_PATH` and uses `nix-ld` as the ELF interpreter via `scripts/gradlew`. `nix-ld` redirects library resolution through `NIX_LD_LIBRARY_PATH`, so no re-patching is needed if library paths change. Set `ANDROID_HOME` to `./.android-sdk` so SDK downloads stay local.
 
 #### 4. Custom XML vector drawables via Compose Resources
 Custom XML vector drawables in `shared/ui/src/commonMain/composeResources/drawable/`, loaded with `vectorResource(Res.drawable.*)`. Generated resource package: `asr.shared.ui.generated.resources`. This sidesteps the `material-icons-core` version gap (1.7.3 vs Compose 1.11.1) entirely — same approach as Grit's 51 custom drawables.

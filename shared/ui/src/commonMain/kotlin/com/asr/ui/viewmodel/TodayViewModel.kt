@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
@@ -33,16 +34,17 @@ class TodayViewModel(
 ) : ViewModel() {
     private val today = LocalDate.now()
     private val _filter = MutableStateFlow(FilterState())
+    private val _pendingDeleted = MutableStateFlow<List<Task>?>(null)
 
     private val _state: StateFlow<TodayState> = combine(
         taskRepo.getUndoneTasksFlow(),
         habitRepo.getHabitsFlow(),
         habitRepo.getRecordsForDateFlow(today),
         tagRepo.getTagsFlow(),
-        combine(_filter, tagRepo.getTaskTagMappingsFlow(), tagRepo.getHabitTagMappingsFlow()) { f, ttm, htm ->
-            FilterWithMappings(f, ttm, htm)
+        combine(_filter, tagRepo.getTaskTagMappingsFlow(), tagRepo.getHabitTagMappingsFlow(), _pendingDeleted) { f, ttm, htm, p ->
+            FilterWithMappings(f, ttm, htm, p)
         },
-    ) { tasks, habits, records, tags, (filter, ttm, htm) ->
+    ) { tasks, habits, records, tags, (filter, ttm, htm, pendingDeleted) ->
         val baseTasks = tasks.filter { val due = it.dueDate; due == null || due <= today }
         val baseHabits = habits.filter { it.shouldShowToday(today) }
         TodayState(
@@ -51,6 +53,7 @@ class TodayViewModel(
             tags = tags,
             habitRecords = records.associateBy { it.habitId },
             filter = filter,
+            pendingDeletedTasks = pendingDeleted,
             isLoading = false,
         )
     }.stateIn(
@@ -65,12 +68,15 @@ class TodayViewModel(
         val filter: FilterState,
         val taskTagMappings: Map<Long, List<Long>>,
         val habitTagMappings: Map<Long, List<Long>>,
+        val pendingDeleted: List<Task>? = null,
     )
 
     sealed interface Action {
         data class ToggleTask(val taskId: Long) : Action
         data class ToggleHabit(val habitId: Long, val newState: HabitState) : Action
         data object DeleteDoneTasks : Action
+        data object UndoDeleteDoneTasks : Action
+        data object DismissDeletedTasks : Action
         data class SetSearchQuery(val query: String) : Action
         data class ToggleTag(val tagId: Long) : Action
         data object ClearTagFilter : Action
@@ -88,7 +94,17 @@ class TodayViewModel(
                 habitRepo.upsertRecord(habitRecordWithNewState(existing, habit, today, action.newState))
             }
             is Action.DeleteDoneTasks -> viewModelScope.launch {
+                val doneTasks = taskRepo.getDoneTasksFlow().first()
                 taskRepo.deleteDoneTasks()
+                _pendingDeleted.value = doneTasks
+            }
+            is Action.UndoDeleteDoneTasks -> viewModelScope.launch {
+                val tasks = _pendingDeleted.value ?: return@launch
+                tasks.forEach { taskRepo.upsertTask(it) }
+                _pendingDeleted.value = null
+            }
+            is Action.DismissDeletedTasks -> {
+                _pendingDeleted.value = null
             }
             is Action.SetSearchQuery -> _filter.value = _filter.value.copy(searchQuery = action.query)
             is Action.ToggleTag -> {
@@ -109,5 +125,6 @@ data class TodayState(
     val tags: List<Tag> = emptyList(),
     val habitRecords: Map<Long, HabitRecord> = emptyMap(),
     val filter: FilterState = FilterState(),
+    val pendingDeletedTasks: List<Task>? = null,
     val isLoading: Boolean = true,
 )

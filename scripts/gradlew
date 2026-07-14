@@ -2,10 +2,11 @@
 set -euo pipefail
 
 # Fallback patching for CI / non-direnv use.
-# Dev shell handles this automatically via shellHook + gradlew function.
-NIX_LD="${NIX_LD:-"$(patchelf --print-interpreter "$(which bash)")"}"
+# Dev shell handles this automatically via shellHook.
+INTERP="$(command -v nix-ld || true)"
+INTERP="${INTERP:-${NIX_LD:-"$(patchelf --print-interpreter "$(which bash)")"}}"
 while IFS= read -r -d '' bin; do
-  patchelf --set-interpreter "$NIX_LD" "$bin" 2>/dev/null || true
+  patchelf --set-interpreter "$INTERP" "$bin" 2>/dev/null || true
 done < <(find "$PWD/.gradle-home/caches" "$PWD/.android-sdk/build-tools" -name aapt2 -type f -print0 2>/dev/null)
 
 cd "$(dirname "$0")/.."

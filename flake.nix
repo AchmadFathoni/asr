@@ -15,6 +15,7 @@
           inherit system;
           config.allowUnfree = true;
         };
+        nixld = pkgs."nix-ld";
       in
       {
         devShells.default = pkgs.mkShellNoCC {
@@ -25,9 +26,9 @@
             gh
             zlib
             ncurses
-            gcc
             patchelf
-          ] ++ [ pkgs."nix-ld" ];
+            nixld
+          ];
 
           JAVA_HOME = "${pkgs.jdk21}";
 
@@ -43,27 +44,21 @@
 
             # nix-ld: run prebuilt Linux binaries on NixOS
             export NIX_LD="${pkgs.glibc}/lib/ld-linux-x86-64.so.2"
-            export NIX_LD_LIBRARY_PATH="${pkgs.zlib}/lib:${pkgs.ncurses}/lib:${pkgs.gcc.lib}/lib"
+            export NIX_LD_LIBRARY_PATH="${pkgs.zlib}/lib:${pkgs.ncurses}/lib:${pkgs.gcc.cc.lib}/lib"
 
-            patch_aapt2() {
-              while IFS= read -r -d '' bin; do
-                patchelf --set-interpreter "${pkgs."nix-ld"}/bin/nix-ld" "$bin" 2>/dev/null || true
-              done < <(find "$PWD/.gradle-home/caches" "$PWD/.android-sdk/build-tools" -name aapt2 -type f -print0 2>/dev/null)
-            }
-            patch_aapt2
-
-            gradlew() {
-              patch_aapt2
-              "$PWD/gradlew" "$@"
-            }
+            # Patch any existing aapt2 binaries
+            find "$PWD/.gradle-home/caches" "$PWD/.android-sdk/build-tools" \
+              -name aapt2 -type f 2>/dev/null | while read -r bin; do
+              patchelf --set-interpreter "${nixld}/bin/nix-ld" "$bin" 2>/dev/null || true
+            done
 
             echo ""
             echo "ASR dev shell ready"
             echo "  JAVA_HOME=$JAVA_HOME"
             echo "  ANDROID_HOME=$ANDROID_HOME"
             echo ""
-            echo "  Build: gradlew assembleDebug"
-            echo "  Tests: gradlew test"
+            echo "  Build: ./scripts/gradlew assembleDebug"
+            echo "  Tests: ./scripts/gradlew test"
             echo ""
           '';
         };

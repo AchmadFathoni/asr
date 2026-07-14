@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
@@ -28,14 +29,17 @@ class TasksViewModel(
     private val _taskFilter = MutableStateFlow(TaskFilter.ACTIVE)
     private val _expandedIds = MutableStateFlow<Set<Long>>(emptySet())
     private val _filter = MutableStateFlow(FilterState())
+    private val _pendingDeleted = MutableStateFlow<List<Task>?>(null)
 
     private val _state: StateFlow<TasksState> = combine(
         taskRepo.getTasksFlow(),
         tagRepo.getTagsFlow(),
         _taskFilter,
         _expandedIds,
-        combine(_filter, tagRepo.getTaskTagMappingsFlow()) { f, m -> FilterWithMappings(f, m) },
-    ) { all, tags, taskFilter, expandedIds, (filter, tagMappings) ->
+        combine(_filter, tagRepo.getTaskTagMappingsFlow(), _pendingDeleted) { f, m, p ->
+            FilterWithMappings(f, m, p)
+        },
+    ) { all, tags, taskFilter, expandedIds, (filter, tagMappings, pendingDeleted) ->
         val base = when (taskFilter) {
             TaskFilter.ALL -> all
             TaskFilter.ACTIVE -> all.filter { !it.isDone }
@@ -48,6 +52,7 @@ class TasksViewModel(
             tags = tags,
             expandedTaskIds = expandedIds,
             filterState = filter,
+            pendingDeletedTasks = pendingDeleted,
             isLoading = false,
         )
     }.stateIn(
@@ -61,6 +66,7 @@ class TasksViewModel(
     private data class FilterWithMappings(
         val filter: FilterState,
         val tagMappings: Map<Long, List<Long>>,
+        val pendingDeleted: List<Task>? = null,
     )
 
     sealed interface Action {
@@ -71,6 +77,8 @@ class TasksViewModel(
         data class SetFilter(val filter: TaskFilter) : Action
         data class CreateTag(val name: String, val color: Long? = null) : Action
         data object DeleteDoneTasks : Action
+        data object UndoDeleteDoneTasks : Action
+        data object DismissDeletedTasks : Action
         data class SetSearchQuery(val query: String) : Action
         data class ToggleTag(val tagId: Long) : Action
         data object ClearTagFilter : Action
@@ -108,7 +116,17 @@ class TasksViewModel(
                 if (action.name.isNotBlank()) tagRepo.upsertTag(Tag(name = action.name, color = action.color))
             }
             is Action.DeleteDoneTasks -> viewModelScope.launch {
+                val doneTasks = taskRepo.getDoneTasksFlow().first()
                 taskRepo.deleteDoneTasks()
+                _pendingDeleted.value = doneTasks
+            }
+            is Action.UndoDeleteDoneTasks -> viewModelScope.launch {
+                val tasks = _pendingDeleted.value ?: return@launch
+                tasks.forEach { taskRepo.upsertTask(it) }
+                _pendingDeleted.value = null
+            }
+            is Action.DismissDeletedTasks -> {
+                _pendingDeleted.value = null
             }
             is Action.SetSearchQuery -> _filter.value = _filter.value.copy(searchQuery = action.query)
             is Action.ToggleTag -> {
@@ -132,5 +150,6 @@ data class TasksState(
     val tags: List<Tag> = emptyList(),
     val expandedTaskIds: Set<Long> = emptySet(),
     val filterState: FilterState = FilterState(),
+    val pendingDeletedTasks: List<Task>? = null,
     val isLoading: Boolean = true,
 )
