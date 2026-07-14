@@ -1,7 +1,9 @@
 package com.asr.ui.habit
 
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -46,6 +48,7 @@ import androidx.compose.material3.TimePicker
 import androidx.compose.material3.TimePickerDialog
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
@@ -62,6 +65,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import com.asr.core.interfaces.SoundPlayer
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import kotlinx.datetime.LocalDate
@@ -110,21 +114,22 @@ fun HabitsPage(viewModel: HabitsViewModel) {
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        floatingActionButton = {
-            FloatingActionButton(onClick = {
-                newHabitTitle = ""; newHabitDescription = ""; newHabitReminder = ""
-                newFreq = HabitFrequency.DAILY; newCount = "1"
-                newDaysOfWeek.clear(); newDayOfMonth = null; newMonthOfYear = null
-                selectedTagIds = emptySet(); newTagName = ""; newTagColor = null
-                editingHabit = null
-                showAddDialog = true
-            }) {
-                Icon(imageVector = vectorResource(Res.drawable.add), contentDescription = "Add habit")
-            }
-        },
     ) { padding ->
         Column(modifier = Modifier.padding(padding).fillMaxSize().padding(16.dp)) {
-            // Main habits list
+            val isEmpty = state.habits.isEmpty() && !state.isLoading
+            var pulseUp by remember { mutableStateOf(false) }
+            val pulseScale by animateFloatAsState(
+                targetValue = if (pulseUp) 1.2f else 1f,
+                animationSpec = tween(700, easing = FastOutSlowInEasing),
+            )
+            if (isEmpty) {
+                LaunchedEffect(Unit) {
+                    while (true) {
+                        pulseUp = !pulseUp
+                        delay(700)
+                    }
+                }
+            }
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                 val filterActive = state.filter.searchQuery.isNotBlank() || state.filter.selectedTagIds.isNotEmpty() || state.filter.filterDate != null
                 Box {
@@ -138,6 +143,20 @@ fun HabitsPage(viewModel: HabitsViewModel) {
                             .clip(CircleShape)
                             .background(MaterialTheme.colorScheme.primary)
                     )
+                }
+                IconButton(
+                    onClick = {
+                        newHabitTitle = ""; newHabitDescription = ""; newHabitReminder = ""
+                        newFreq = HabitFrequency.DAILY; newCount = "1"
+                        newDaysOfWeek.clear(); newDayOfMonth = null; newMonthOfYear = null
+                        selectedTagIds = emptySet(); newTagName = ""; newTagColor = null
+                        editingHabit = null
+                        showAddDialog = true
+                    },
+                    modifier = if (isEmpty) Modifier.graphicsLayer { scaleX = pulseScale; scaleY = pulseScale }
+                               else Modifier,
+                ) {
+                    Icon(imageVector = vectorResource(Res.drawable.add), contentDescription = "Add habit")
                 }
             }
                 Spacer(Modifier.height(8.dp))

@@ -1,7 +1,9 @@
 package com.asr.ui.todo
 
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -62,6 +64,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import com.asr.core.interfaces.SoundPlayer
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import asr.shared.ui.generated.resources.*
@@ -125,18 +128,22 @@ fun TasksPage(viewModel: TasksViewModel) {
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        floatingActionButton = {
-            FloatingActionButton(onClick = {
-                newTaskTitle = ""; newTaskDescription = ""; newTaskReminder = ""
-                newDueDate = null; newTaskParentId = null
-                selectedTagIds = emptySet(); newTagName = ""; newTagColor = null
-                editingTask = null; showAddDialog = true
-            }) {
-                Icon(imageVector = vectorResource(Res.drawable.add), contentDescription = "Add task")
-            }
-        },
     ) { padding ->
         Column(modifier = Modifier.padding(padding).fillMaxSize().padding(16.dp)) {
+            val isEmpty = flatTasks.isEmpty() && !state.isLoading
+            var pulseUp by remember { mutableStateOf(false) }
+            val pulseScale by animateFloatAsState(
+                targetValue = if (pulseUp) 1.2f else 1f,
+                animationSpec = tween(700, easing = FastOutSlowInEasing),
+            )
+            if (isEmpty) {
+                LaunchedEffect(Unit) {
+                    while (true) {
+                        pulseUp = !pulseUp
+                        delay(700)
+                    }
+                }
+            }
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                 val filterActive = state.filterState.searchQuery.isNotBlank() || state.filterState.selectedTagIds.isNotEmpty() || state.filterState.filterDate != null
                 Box {
@@ -150,6 +157,18 @@ fun TasksPage(viewModel: TasksViewModel) {
                             .clip(CircleShape)
                             .background(MaterialTheme.colorScheme.primary)
                     )
+                }
+                IconButton(
+                    onClick = {
+                        newTaskTitle = ""; newTaskDescription = ""; newTaskReminder = ""
+                        newDueDate = null; newTaskParentId = null
+                        selectedTagIds = emptySet(); newTagName = ""; newTagColor = null
+                        editingTask = null; showAddDialog = true
+                    },
+                    modifier = if (isEmpty) Modifier.graphicsLayer { scaleX = pulseScale; scaleY = pulseScale }
+                               else Modifier,
+                ) {
+                    Icon(imageVector = vectorResource(Res.drawable.add), contentDescription = "Add task")
                 }
             }
             Spacer(Modifier.height(8.dp))
