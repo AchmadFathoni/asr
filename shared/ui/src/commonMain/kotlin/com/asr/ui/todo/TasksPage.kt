@@ -50,7 +50,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -62,8 +61,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import com.asr.core.interfaces.SoundPlayer
-import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import org.koin.compose.koinInject
 import asr.shared.ui.generated.resources.*
 import com.asr.core.now
@@ -109,16 +108,15 @@ fun TasksPage(viewModel: TasksViewModel) {
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
-    LaunchedEffect(Unit) {
-        snapshotFlow { state.pendingDeletedTasks }
-            .filterNotNull()
-            .collect { tasks ->
-                val result = snackbarHostState.showSnackbar("${tasks.size} tasks cleared", "Undo")
-                if (result == SnackbarResult.ActionPerformed)
-                    viewModel.onAction(TasksViewModel.Action.UndoDeleteDoneTasks)
-                else
-                    viewModel.onAction(TasksViewModel.Action.DismissDeletedTasks)
-            }
+    LaunchedEffect(state.pendingDeletedTasks) {
+        val tasks = state.pendingDeletedTasks ?: return@LaunchedEffect
+        val result = withTimeoutOrNull(10_000L) {
+            snackbarHostState.showSnackbar("${tasks.size} tasks cleared", "Undo")
+        }
+        if (result == SnackbarResult.ActionPerformed)
+            viewModel.onAction(TasksViewModel.Action.UndoDeleteDoneTasks)
+        else
+            viewModel.onAction(TasksViewModel.Action.DismissDeletedTasks)
     }
 
     Scaffold(
