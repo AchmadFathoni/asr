@@ -8,6 +8,31 @@ plugins {
     alias(libs.plugins.android.kotlin.multiplatform.library)
 }
 
+val appVersionNameProvider = providers.gradleProperty("app.versionName")
+val appVersionCodeProvider = providers.exec {
+    commandLine("git", "rev-list", "--count", "HEAD")
+}.standardOutput.asText.map { it.trim() }
+
+val generateAppVersion = tasks.register("generateAppVersion") {
+    val outputDir = layout.buildDirectory.dir("generated/version/src/commonMain/kotlin/com/asr/core")
+    outputs.dir(outputDir)
+
+    doLast {
+        val out = outputDir.get().asFile
+        out.mkdirs()
+        out.resolve("AppVersion.kt").writeText(
+            """
+            package com.asr.core
+
+            object AppVersion {
+                val build: String = "${appVersionCodeProvider.get()}"
+                val release: String = "${appVersionNameProvider.get()}"
+            }
+            """.trimIndent(),
+        )
+    }
+}
+
 kotlin {
     compilerOptions {
         freeCompilerArgs.add("-Xcontext-sensitive-resolution")
@@ -35,10 +60,21 @@ kotlin {
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.kotlinx.coroutines)
         }
+        commonMain {
+            kotlin.srcDir(layout.buildDirectory.dir("generated/version/src/commonMain/kotlin"))
+        }
 
         commonTest.dependencies {
             implementation(kotlin("test"))
             implementation(libs.kotlinx.coroutines)
+        }
+    }
+
+    targets.configureEach {
+        compilations.configureEach {
+            compileTaskProvider.configure {
+                dependsOn(generateAppVersion)
+            }
         }
     }
 }

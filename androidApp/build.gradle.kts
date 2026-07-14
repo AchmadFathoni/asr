@@ -12,7 +12,7 @@ val appName = "ASR"
 val appVersionCode = providers.exec {
     commandLine("git", "rev-list", "--count", "HEAD")
 }.standardOutput.asText.get().trim().toInt()
-val appVersionName = "0.2.0"
+val appVersionName = providers.gradleProperty("app.versionName").get()
 
 android {
     namespace = "com.asr"
