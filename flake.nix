@@ -29,6 +29,7 @@
             ncurses
             patchelf
             nixld
+            git-filter-repo
           ];
 
           JAVA_HOME = "${pkgs.jdk21}";
