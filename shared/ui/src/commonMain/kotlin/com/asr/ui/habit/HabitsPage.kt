@@ -30,6 +30,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -69,7 +70,7 @@ import com.asr.core.now
 import com.asr.ui.LIGHT_CHECK_COLORS
 import com.asr.ui.TAG_COLORS
 import com.asr.ui.app.EmptyState
-import com.asr.ui.app.TagFilterDropdown
+import com.asr.ui.app.FilterBottomSheet
 import com.asr.ui.viewmodel.HabitsViewModel
 import org.jetbrains.compose.resources.vectorResource
 
@@ -94,8 +95,6 @@ fun HabitsPage(viewModel: HabitsViewModel) {
     var selectedTagIds by remember { mutableStateOf(setOf<Long>()) }
     var newTagName by remember { mutableStateOf("") }
     var newTagColor by remember { mutableStateOf<Long?>(null) }
-    var searchQuery by remember { mutableStateOf("") }
-
     val dayNames = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
     val monthNames = listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
 
@@ -115,19 +114,15 @@ fun HabitsPage(viewModel: HabitsViewModel) {
     ) { padding ->
         Column(modifier = Modifier.padding(padding).fillMaxSize().padding(16.dp)) {
             // Main habits list
-            Text("Habits", style = MaterialTheme.typography.headlineMedium)
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text("Habits", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.weight(1f))
+                IconButton(onClick = { viewModel.onAction(HabitsViewModel.Action.ToggleFilterSheet) }) {
+                    Icon(imageVector = vectorResource(Res.drawable.calendar_month), contentDescription = "Filter")
+                }
+            }
                 Spacer(Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = searchQuery,
-                    onValueChange = { searchQuery = it },
-                    placeholder = { Text("Search habits") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                TagFilterDropdown(tags = state.tags, modifier = Modifier.padding(top = 4.dp, bottom = 4.dp))
 
-                val filteredHabits = if (searchQuery.isBlank()) state.habits
-                    else state.habits.filter { it.title.contains(searchQuery, ignoreCase = true) }
+                val filteredHabits = state.habits
 
                 if (state.isLoading) {
                     CircularProgressIndicator(
@@ -499,6 +494,24 @@ fun HabitsPage(viewModel: HabitsViewModel) {
             dismissButton = { TextButton(onClick = { habitToDelete = null }) { Text("Cancel") } },
         )
     }
+
+    FilterBottomSheet(
+        show = state.filter.showFilterSheet,
+        searchQuery = state.filter.searchQuery,
+        onSearchQueryChange = { viewModel.onAction(HabitsViewModel.Action.SetSearchQuery(it)) },
+        tags = state.tags,
+        selectedTagIds = state.filter.selectedTagIds,
+        onTagToggle = { viewModel.onAction(HabitsViewModel.Action.ToggleTag(it)) },
+        filterDate = state.filter.filterDate,
+        showDateFilter = true,
+        onDateChange = { viewModel.onAction(HabitsViewModel.Action.SetFilterDate(it)) },
+        onReset = {
+            viewModel.onAction(HabitsViewModel.Action.SetSearchQuery(""))
+            viewModel.onAction(HabitsViewModel.Action.ClearTagFilter)
+            viewModel.onAction(HabitsViewModel.Action.SetFilterDate(null))
+        },
+        onDismiss = { viewModel.onAction(HabitsViewModel.Action.ToggleFilterSheet) },
+    )
 }
 
 @Composable

@@ -7,13 +7,15 @@ import com.asr.core.tag.TagRepo
 import com.asr.core.interfaces.AlarmScheduler
 import com.asr.core.task.Task
 import com.asr.core.task.TaskRepo
-import com.asr.ui.app.TagFilterState
+import com.asr.ui.app.FilterState
+import com.asr.ui.app.Filters
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.datetime.LocalDate
 import org.koin.core.annotation.KoinViewModel
 import org.koin.core.annotation.Provided
 
@@ -23,29 +25,29 @@ class TasksViewModel(
     @Provided private val tagRepo: TagRepo,
     @Provided private val alarmScheduler: AlarmScheduler,
 ) : ViewModel() {
-    private val _filter = MutableStateFlow(TaskFilter.ACTIVE)
+    private val _taskFilter = MutableStateFlow(TaskFilter.ACTIVE)
     private val _expandedIds = MutableStateFlow<Set<Long>>(emptySet())
+    private val _filter = MutableStateFlow(FilterState())
 
     private val _state: StateFlow<TasksState> = combine(
         taskRepo.getTasksFlow(),
         tagRepo.getTagsFlow(),
-        _filter,
+        _taskFilter,
         _expandedIds,
-        combine(tagRepo.getTaskTagMappingsFlow(), TagFilterState.selectedTagIds) { m, ids -> m to ids },
-    ) { all, tags, filter, expandedIds, (tagMappings, filterTagIds) ->
-        val base = when (filter) {
+        combine(_filter, tagRepo.getTaskTagMappingsFlow()) { f, m -> FilterWithMappings(f, m) },
+    ) { all, tags, taskFilter, expandedIds, (filter, tagMappings) ->
+        val base = when (taskFilter) {
             TaskFilter.ALL -> all
             TaskFilter.ACTIVE -> all.filter { !it.isDone }
             TaskFilter.DONE -> all.filter { it.isDone }
         }
-        val tasks = if (filterTagIds.isEmpty()) base
-            else base.filter { tagMappings[it.id]?.any { t -> t in filterTagIds } == true }
 
         TasksState(
-            tasks = tasks,
-            filter = filter,
+            tasks = Filters.tasks(base, tagMappings, filter.searchQuery, filter.selectedTagIds, filter.filterDate),
+            filter = taskFilter,
             tags = tags,
             expandedTaskIds = expandedIds,
+            filterState = filter,
             isLoading = false,
         )
     }.stateIn(
@@ -56,6 +58,11 @@ class TasksViewModel(
 
     val state = _state
 
+    private data class FilterWithMappings(
+        val filter: FilterState,
+        val tagMappings: Map<Long, List<Long>>,
+    )
+
     sealed interface Action {
         data class UpsertTask(val task: Task, val tagIds: List<Long> = emptyList()) : Action
         data class DeleteTask(val task: Task) : Action
@@ -64,6 +71,11 @@ class TasksViewModel(
         data class SetFilter(val filter: TaskFilter) : Action
         data class CreateTag(val name: String, val color: Long? = null) : Action
         data object DeleteDoneTasks : Action
+        data class SetSearchQuery(val query: String) : Action
+        data class ToggleTag(val tagId: Long) : Action
+        data object ClearTagFilter : Action
+        data class SetFilterDate(val date: LocalDate?) : Action
+        data object ToggleFilterSheet : Action
     }
 
     fun onAction(action: Action) {
@@ -91,13 +103,23 @@ class TasksViewModel(
                     _expandedIds.value - id
                 else _expandedIds.value + id
             }
-            is Action.SetFilter -> _filter.value = action.filter
+            is Action.SetFilter -> _taskFilter.value = action.filter
             is Action.CreateTag -> viewModelScope.launch {
                 if (action.name.isNotBlank()) tagRepo.upsertTag(Tag(name = action.name, color = action.color))
             }
             is Action.DeleteDoneTasks -> viewModelScope.launch {
                 taskRepo.deleteDoneTasks()
             }
+            is Action.SetSearchQuery -> _filter.value = _filter.value.copy(searchQuery = action.query)
+            is Action.ToggleTag -> {
+                val ids = _filter.value.selectedTagIds
+                _filter.value = _filter.value.copy(
+                    selectedTagIds = if (action.tagId in ids) ids - action.tagId else ids + action.tagId
+                )
+            }
+            is Action.ClearTagFilter -> _filter.value = _filter.value.copy(selectedTagIds = emptySet())
+            is Action.SetFilterDate -> _filter.value = _filter.value.copy(filterDate = action.date)
+            is Action.ToggleFilterSheet -> _filter.value = _filter.value.copy(showFilterSheet = !_filter.value.showFilterSheet)
         }
     }
 }
@@ -109,5 +131,6 @@ data class TasksState(
     val filter: TaskFilter = TaskFilter.ACTIVE,
     val tags: List<Tag> = emptyList(),
     val expandedTaskIds: Set<Long> = emptySet(),
+    val filterState: FilterState = FilterState(),
     val isLoading: Boolean = true,
 )

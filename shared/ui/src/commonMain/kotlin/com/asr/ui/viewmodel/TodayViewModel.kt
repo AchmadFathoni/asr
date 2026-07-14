@@ -13,7 +13,9 @@ import com.asr.core.tag.Tag
 import com.asr.core.tag.TagRepo
 import com.asr.core.task.Task
 import com.asr.core.task.TaskRepo
-import com.asr.ui.app.TagFilterState
+import com.asr.ui.app.FilterState
+import com.asr.ui.app.Filters
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -30,29 +32,25 @@ class TodayViewModel(
     @Provided private val tagRepo: TagRepo,
 ) : ViewModel() {
     private val today = LocalDate.now()
+    private val _filter = MutableStateFlow(FilterState())
 
     private val _state: StateFlow<TodayState> = combine(
         taskRepo.getUndoneTasksFlow(),
         habitRepo.getHabitsFlow(),
         habitRepo.getRecordsForDateFlow(today),
         tagRepo.getTagsFlow(),
-        combine(
-            tagRepo.getTaskTagMappingsFlow(),
-            tagRepo.getHabitTagMappingsFlow(),
-            TagFilterState.selectedTagIds,
-        ) { ttm, htm, ids -> Triple(ttm, htm, ids) },
-    ) { tasks, habits, records, tags, (ttm, htm, filterTagIds) ->
+        combine(_filter, tagRepo.getTaskTagMappingsFlow(), tagRepo.getHabitTagMappingsFlow()) { f, ttm, htm ->
+            FilterWithMappings(f, ttm, htm)
+        },
+    ) { tasks, habits, records, tags, (filter, ttm, htm) ->
         val baseTasks = tasks.filter { val due = it.dueDate; due == null || due <= today }
         val baseHabits = habits.filter { it.shouldShowToday(today) }
-        val tasksFiltered = if (filterTagIds.isEmpty()) baseTasks
-            else baseTasks.filter { ttm[it.id]?.any { t -> t in filterTagIds } == true }
-        val habitsFiltered = if (filterTagIds.isEmpty()) baseHabits
-            else baseHabits.filter { htm[it.id]?.any { t -> t in filterTagIds } == true }
         TodayState(
-            tasks = tasksFiltered,
-            habits = habitsFiltered,
+            tasks = Filters.tasks(baseTasks, ttm, filter.searchQuery, filter.selectedTagIds, null),
+            habits = Filters.habits(baseHabits, htm, filter.searchQuery, filter.selectedTagIds, null),
             tags = tags,
             habitRecords = records.associateBy { it.habitId },
+            filter = filter,
             isLoading = false,
         )
     }.stateIn(
@@ -63,10 +61,20 @@ class TodayViewModel(
 
     val state = _state
 
+    private data class FilterWithMappings(
+        val filter: FilterState,
+        val taskTagMappings: Map<Long, List<Long>>,
+        val habitTagMappings: Map<Long, List<Long>>,
+    )
+
     sealed interface Action {
         data class ToggleTask(val taskId: Long) : Action
         data class ToggleHabit(val habitId: Long, val newState: HabitState) : Action
         data object DeleteDoneTasks : Action
+        data class SetSearchQuery(val query: String) : Action
+        data class ToggleTag(val tagId: Long) : Action
+        data object ClearTagFilter : Action
+        data object ToggleFilterSheet : Action
     }
 
     fun onAction(action: Action) {
@@ -82,6 +90,15 @@ class TodayViewModel(
             is Action.DeleteDoneTasks -> viewModelScope.launch {
                 taskRepo.deleteDoneTasks()
             }
+            is Action.SetSearchQuery -> _filter.value = _filter.value.copy(searchQuery = action.query)
+            is Action.ToggleTag -> {
+                val ids = _filter.value.selectedTagIds
+                _filter.value = _filter.value.copy(
+                    selectedTagIds = if (action.tagId in ids) ids - action.tagId else ids + action.tagId
+                )
+            }
+            is Action.ClearTagFilter -> _filter.value = _filter.value.copy(selectedTagIds = emptySet())
+            is Action.ToggleFilterSheet -> _filter.value = _filter.value.copy(showFilterSheet = !_filter.value.showFilterSheet)
         }
     }
 }
@@ -91,5 +108,6 @@ data class TodayState(
     val habits: List<Habit> = emptyList(),
     val tags: List<Tag> = emptyList(),
     val habitRecords: Map<Long, HabitRecord> = emptyMap(),
+    val filter: FilterState = FilterState(),
     val isLoading: Boolean = true,
 )

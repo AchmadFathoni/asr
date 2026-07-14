@@ -16,6 +16,8 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -29,13 +31,13 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import com.asr.core.interfaces.SoundPlayer
 import org.koin.compose.koinInject
-import com.asr.core.tag.Tag
 import com.asr.core.task.Task
 import com.asr.ui.app.EmptyState
-import com.asr.ui.app.TagFilterDropdown
+import com.asr.ui.app.FilterBottomSheet
 import com.asr.ui.habit.HabitItem
 import com.asr.ui.viewmodel.TodayViewModel
 import asr.shared.ui.generated.resources.*
+import org.jetbrains.compose.resources.vectorResource
 
 @Composable
 fun TodayPage(viewModel: TodayViewModel) {
@@ -51,10 +53,12 @@ fun TodayPage(viewModel: TodayViewModel) {
 
     LazyColumn(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         item {
-            Text("Today", style = MaterialTheme.typography.headlineMedium)
-        }
-        item {
-            TagFilterDropdown(tags = state.tags)
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text("Today", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.weight(1f))
+                IconButton(onClick = { viewModel.onAction(TodayViewModel.Action.ToggleFilterSheet) }) {
+                    Icon(imageVector = vectorResource(Res.drawable.calendar_month), contentDescription = "Filter")
+                }
+            }
         }
 
         // Tasks section
@@ -134,4 +138,21 @@ fun TodayPage(viewModel: TodayViewModel) {
             }
         }
     }
+
+    FilterBottomSheet(
+        show = state.filter.showFilterSheet,
+        searchQuery = state.filter.searchQuery,
+        onSearchQueryChange = { viewModel.onAction(TodayViewModel.Action.SetSearchQuery(it)) },
+        tags = state.tags,
+        selectedTagIds = state.filter.selectedTagIds,
+        onTagToggle = { viewModel.onAction(TodayViewModel.Action.ToggleTag(it)) },
+        filterDate = null,
+        showDateFilter = false,
+        onDateChange = {},
+        onReset = {
+            viewModel.onAction(TodayViewModel.Action.SetSearchQuery(""))
+            viewModel.onAction(TodayViewModel.Action.ClearTagFilter)
+        },
+        onDismiss = { viewModel.onAction(TodayViewModel.Action.ToggleFilterSheet) },
+    )
 }

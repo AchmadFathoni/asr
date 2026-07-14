@@ -29,6 +29,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -62,7 +63,7 @@ import com.asr.core.task.Task
 import com.asr.ui.LIGHT_CHECK_COLORS
 import com.asr.ui.TAG_COLORS
 import com.asr.ui.app.EmptyState
-import com.asr.ui.app.TagFilterDropdown
+import com.asr.ui.app.FilterBottomSheet
 import com.asr.ui.viewmodel.TaskFilter
 import com.asr.ui.viewmodel.TasksViewModel
 import kotlinx.datetime.LocalDate
@@ -111,7 +112,12 @@ fun TasksPage(viewModel: TasksViewModel) {
         },
     ) { padding ->
         Column(modifier = Modifier.padding(padding).fillMaxSize().padding(16.dp)) {
-            Text("To-do", style = MaterialTheme.typography.headlineMedium)
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text("To-do", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.weight(1f))
+                IconButton(onClick = { viewModel.onAction(TasksViewModel.Action.ToggleFilterSheet) }) {
+                    Icon(imageVector = vectorResource(Res.drawable.calendar_month), contentDescription = "Filter")
+                }
+            }
             Spacer(Modifier.height(8.dp))
 
             Row {
@@ -129,8 +135,6 @@ fun TasksPage(viewModel: TasksViewModel) {
                     }
                 }
             }
-
-            TagFilterDropdown(tags = state.tags, modifier = Modifier.padding(top = 8.dp))
 
             LazyColumn(modifier = Modifier.weight(1f)) {
                 items(flatTasks) { (task, depth) ->
@@ -404,6 +408,24 @@ fun TasksPage(viewModel: TasksViewModel) {
             dismissButton = { TextButton(onClick = { taskToDelete = null }) { Text("Cancel") } },
         )
     }
+
+    FilterBottomSheet(
+        show = state.filterState.showFilterSheet,
+        searchQuery = state.filterState.searchQuery,
+        onSearchQueryChange = { viewModel.onAction(TasksViewModel.Action.SetSearchQuery(it)) },
+        tags = state.tags,
+        selectedTagIds = state.filterState.selectedTagIds,
+        onTagToggle = { viewModel.onAction(TasksViewModel.Action.ToggleTag(it)) },
+        filterDate = state.filterState.filterDate,
+        showDateFilter = true,
+        onDateChange = { viewModel.onAction(TasksViewModel.Action.SetFilterDate(it)) },
+        onReset = {
+            viewModel.onAction(TasksViewModel.Action.SetSearchQuery(""))
+            viewModel.onAction(TasksViewModel.Action.ClearTagFilter)
+            viewModel.onAction(TasksViewModel.Action.SetFilterDate(null))
+        },
+        onDismiss = { viewModel.onAction(TasksViewModel.Action.ToggleFilterSheet) },
+    )
 }
 
 @Composable

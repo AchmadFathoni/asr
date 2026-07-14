@@ -12,14 +12,13 @@ import com.asr.core.interfaces.AlarmScheduler
 import com.asr.core.now
 import com.asr.core.tag.Tag
 import com.asr.core.tag.TagRepo
-import com.asr.ui.app.TagFilterState
+import com.asr.ui.app.FilterState
+import com.asr.ui.app.Filters
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
 import org.koin.core.annotation.KoinViewModel
@@ -34,22 +33,22 @@ class HabitsViewModel(
     private val today = LocalDate.now()
 
     private val _selected = MutableStateFlow(SelectedHabit())
+    private val _filter = MutableStateFlow(FilterState())
 
     private val _state: StateFlow<HabitsState> = combine(
         habitRepo.getHabitsFlow(),
         habitRepo.getRecordsFlow(),
         habitRepo.getRecordsForDateFlow(today),
         tagRepo.getTagsFlow(),
-        combine(_selected, tagRepo.getHabitTagMappingsFlow(), TagFilterState.selectedTagIds) { s, m, ids -> Triple(s, m, ids) },
-    ) { habits, allRecords, records, tags, (selected, tagMappings, filterTagIds) ->
-        val filtered = if (filterTagIds.isEmpty()) habits
-            else habits.filter { tagMappings[it.id]?.any { t -> t in filterTagIds } == true }
+        combine(_filter, _selected, tagRepo.getHabitTagMappingsFlow()) { f, s, m -> FilterStateWithHistory(f, s, m) },
+    ) { habits, allRecords, records, tags, (filter, selected, tagMappings) ->
         HabitsState(
-            habits = filtered,
+            habits = Filters.habits(habits, tagMappings, filter.searchQuery, filter.selectedTagIds, filter.filterDate),
             allRecords = allRecords,
             todayRecords = records.associateBy { it.habitId },
             streaks = habits.associate { it.id to it.computeStreak(allRecords, today) },
             tags = tags,
+            filter = filter,
             selectedHabitId = selected.habitId,
             selectedHabitHistory = selected.history,
             isLoading = false,
@@ -69,6 +68,11 @@ class HabitsViewModel(
         data class ViewHabitHistory(val habitId: Long) : Action
         data class CreateTag(val name: String, val color: Long? = null) : Action
         data class MoveHabit(val habitId: Long, val direction: Int) : Action
+        data class SetSearchQuery(val query: String) : Action
+        data class ToggleTag(val tagId: Long) : Action
+        data object ClearTagFilter : Action
+        data class SetFilterDate(val date: LocalDate?) : Action
+        data object ToggleFilterSheet : Action
     }
 
     fun onAction(action: Action) {
@@ -111,6 +115,16 @@ class HabitsViewModel(
                     _selected.value = SelectedHabit(action.habitId, history)
                 }
             }
+            is Action.SetSearchQuery -> _filter.value = _filter.value.copy(searchQuery = action.query)
+            is Action.ToggleTag -> {
+                val ids = _filter.value.selectedTagIds
+                _filter.value = _filter.value.copy(
+                    selectedTagIds = if (action.tagId in ids) ids - action.tagId else ids + action.tagId
+                )
+            }
+            is Action.ClearTagFilter -> _filter.value = _filter.value.copy(selectedTagIds = emptySet())
+            is Action.SetFilterDate -> _filter.value = _filter.value.copy(filterDate = action.date)
+            is Action.ToggleFilterSheet -> _filter.value = _filter.value.copy(showFilterSheet = !_filter.value.showFilterSheet)
         }
     }
 }
@@ -120,12 +134,19 @@ private data class SelectedHabit(
     val history: List<HabitRecord> = emptyList(),
 )
 
+private data class FilterStateWithHistory(
+    val filter: FilterState,
+    val selected: SelectedHabit,
+    val tagMappings: Map<Long, List<Long>>,
+)
+
 data class HabitsState(
     val habits: List<Habit> = emptyList(),
     val allRecords: List<HabitRecord> = emptyList(),
     val todayRecords: Map<Long, HabitRecord> = emptyMap(),
     val streaks: Map<Long, Int> = emptyMap(),
     val tags: List<Tag> = emptyList(),
+    val filter: FilterState = FilterState(),
     val selectedHabitId: Long? = null,
     val selectedHabitHistory: List<HabitRecord> = emptyList(),
     val isLoading: Boolean = true,
