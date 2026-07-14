@@ -1,5 +1,6 @@
 package com.asr.ui.app
 
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -97,7 +98,7 @@ fun MainApp() {
             }
         },
     ) { padding ->
-        Surface(modifier = Modifier.padding(padding)) {
+        Surface(modifier = Modifier.padding(padding).fillMaxSize()) {
             when (selectedTab) {
                 AppRoute.Today -> TodayPage(todayVM)
                 AppRoute.Todo -> TasksPage(tasksVM)
