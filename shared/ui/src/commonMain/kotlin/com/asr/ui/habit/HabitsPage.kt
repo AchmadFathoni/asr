@@ -261,6 +261,13 @@ fun HabitsPage(viewModel: HabitsViewModel) {
                 Column(Modifier.verticalScroll(rememberScrollState())) {
                     OutlinedTextField(value = newHabitTitle, onValueChange = { newHabitTitle = it },
                         label = { Text("Title") }, singleLine = true)
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = newHabitDescription,
+                        onValueChange = { newHabitDescription = it },
+                        label = { Text("Description (optional)") },
+                        maxLines = 3,
+                    )
                     Spacer(Modifier.height(12.dp))
 
                     Card(modifier = Modifier.fillMaxWidth()) {
@@ -328,17 +335,14 @@ fun HabitsPage(viewModel: HabitsViewModel) {
                                     },
                                 )
                             }
+                            Spacer(Modifier.height(8.dp))
+                            TextButton(onClick = { showTimePicker = true }) {
+                                Text(if (newHabitReminder.isNotBlank()) "⏰ $newHabitReminder" else "Set reminder")
+                            }
                         }
                     }
 
                     Spacer(Modifier.height(12.dp))
-                    OutlinedTextField(
-                        value = newHabitDescription,
-                        onValueChange = { newHabitDescription = it },
-                        label = { Text("Description (optional)") },
-                        maxLines = 3,
-                    )
-                    Spacer(Modifier.height(8.dp))
                     Text("Tags", style = MaterialTheme.typography.labelMedium)
                     Spacer(Modifier.height(4.dp))
                     Column {
@@ -416,10 +420,7 @@ fun HabitsPage(viewModel: HabitsViewModel) {
                             }
                         }
                     }
-                    Spacer(Modifier.height(8.dp))
-                    TextButton(onClick = { showTimePicker = true }) {
-                        Text(if (newHabitReminder.isNotBlank()) "⏰ $newHabitReminder" else "Set reminder")
-                    }
+
                 }
             },
             confirmButton = {
