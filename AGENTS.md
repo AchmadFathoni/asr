@@ -33,6 +33,13 @@ UI ← StateFlow<State> ← ViewModel ← Repository (Flow) ← Room
 :androidApp    — Room DB, platform actuals, DI, widgets, notifications
 ```
 
+### Release
+```bash
+gh release create v<version> --title "v<version>" --notes "<notes>"
+gh release upload v<version> androidApp/build/outputs/apk/release/androidApp-release.apk
+```
+Only upload **release** APK (`androidApp-release.apk`), never debug.
+
 ### Commands
 | Command | Description |
 |---------|-------------|
