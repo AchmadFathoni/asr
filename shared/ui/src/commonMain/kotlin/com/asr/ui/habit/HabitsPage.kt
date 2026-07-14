@@ -601,9 +601,17 @@ fun HabitItem(
                 Text("$currentCount / ${habit.frequencyCount} ${habit.frequencyType.name.lowercase().replaceFirstChar { it.uppercase() }}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
-                if (streak > 0) Text("🔥 $streak",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary)
+                if (streak > 0) Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = vectorResource(Res.drawable.fire),
+                        contentDescription = "Streak",
+                        modifier = Modifier.size(16.dp),
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                    Text(" $streak",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary)
+                }
             }
             Row {
                 OutlinedButton(
