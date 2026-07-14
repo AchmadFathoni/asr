@@ -597,13 +597,11 @@ fun HabitItem(
         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
             .graphicsLayer { scaleX = scale; scaleY = scale },
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(
-                alpha = when {
-                    isSkipped -> 0.2f
-                    isDone -> 0.5f
-                    else -> 0.3f
-                }
-            ),
+            containerColor = when (isDone || isSkipped) {
+                isSkipped -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f)
+                isDone -> MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.4f)
+                else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+            },
         ),
     ) {
         Row(modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)) {
