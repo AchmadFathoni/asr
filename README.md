@@ -29,9 +29,12 @@ Architecture and patterns drawn from two excellent open-source projects:
 ```bash
 direnv allow                         # Enter Nix dev shell
 ./scripts/gradlew assembleDebug      # Build debug APK (patches AAPT2 for NixOS)
-./gradlew :desktopApp:run            # Run desktop version for development
+./scripts/gradlew installDebug       # Build + install on connected Android device with USB debugging
+./scripts/gradlew :desktopApp:run    # Run desktop version for development
 ./scripts/gradlew test               # Run tests
 ```
+
+> **USB debug:** Enable Developer options & USB debugging on your Android device, connect via USB, confirm with `adb devices`. The dev shell provides `adb` via `android-tools` and auto-patches it for NixOS.
 
 ## Architecture
 
@@ -51,7 +54,7 @@ desktopApp    — JVM desktop entry for development
 | Date/Time | kotlinx-datetime + kotlin.time.Clock.System |
 | File I/O | FileKit |
 | Widgets | Glance |
-| Tests | kotlin.test (31 tests) |
+| Tests | kotlin.test (commonTest + jvmTest) |
 
 ## License
 
