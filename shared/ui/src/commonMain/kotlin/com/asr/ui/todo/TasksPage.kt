@@ -29,6 +29,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -62,7 +63,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import com.asr.core.interfaces.SoundPlayer
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeoutOrNull
 import org.koin.compose.koinInject
 import asr.shared.ui.generated.resources.*
 import com.asr.core.now
@@ -110,9 +110,11 @@ fun TasksPage(viewModel: TasksViewModel) {
 
     LaunchedEffect(state.pendingDeletedTasks) {
         val tasks = state.pendingDeletedTasks ?: return@LaunchedEffect
-        val result = withTimeoutOrNull(10_000L) {
-            snackbarHostState.showSnackbar("${tasks.size} tasks cleared", "Undo")
-        }
+        val result = snackbarHostState.showSnackbar(
+            message = "${tasks.size} tasks cleared",
+            actionLabel = "Undo",
+            duration = SnackbarDuration.Short,
+        )
         if (result == SnackbarResult.ActionPerformed)
             viewModel.onAction(TasksViewModel.Action.UndoDeleteDoneTasks)
         else
@@ -169,7 +171,7 @@ fun TasksPage(viewModel: TasksViewModel) {
                         onToggle = { viewModel.onAction(TasksViewModel.Action.ToggleTask(task.id)) },
                         showUndoSnackbar = { undo ->
                             scope.launch {
-                                if (snackbarHostState.showSnackbar("Completed", "Undo") == SnackbarResult.ActionPerformed)
+                                if (snackbarHostState.showSnackbar("Completed", "Undo", duration = SnackbarDuration.Short) == SnackbarResult.ActionPerformed)
                                     undo()
                             }
                         },

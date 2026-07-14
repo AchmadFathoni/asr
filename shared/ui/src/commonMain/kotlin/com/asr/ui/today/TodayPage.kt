@@ -22,6 +22,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
@@ -39,7 +40,6 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import com.asr.core.interfaces.SoundPlayer
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeoutOrNull
 import org.koin.compose.koinInject
 import com.asr.core.task.Task
 import com.asr.ui.app.EmptyState
@@ -58,9 +58,11 @@ fun TodayPage(viewModel: TodayViewModel) {
 
     LaunchedEffect(state.pendingDeletedTasks) {
         val tasks = state.pendingDeletedTasks ?: return@LaunchedEffect
-        val result = withTimeoutOrNull(10_000L) {
-            snackbarHostState.showSnackbar("${tasks.size} tasks cleared", "Undo")
-        }
+        val result = snackbarHostState.showSnackbar(
+            message = "${tasks.size} tasks cleared",
+            actionLabel = "Undo",
+            duration = SnackbarDuration.Short,
+        )
         if (result == SnackbarResult.ActionPerformed)
             viewModel.onAction(TodayViewModel.Action.UndoDeleteDoneTasks)
         else
@@ -109,8 +111,8 @@ fun TodayPage(viewModel: TodayViewModel) {
                                 soundPlayer.play()
                                 viewModel.onAction(TodayViewModel.Action.ToggleTask(task.id))
                                 scope.launch {
-                                    if (snackbarHostState.showSnackbar("Completed", "Undo") == SnackbarResult.ActionPerformed)
-                                        viewModel.onAction(TodayViewModel.Action.ToggleTask(task.id))
+                                        if (snackbarHostState.showSnackbar("Completed", "Undo", duration = SnackbarDuration.Short) == SnackbarResult.ActionPerformed)
+                                                    viewModel.onAction(TodayViewModel.Action.ToggleTask(task.id))
                                 }
                             }
                         },
@@ -131,8 +133,8 @@ fun TodayPage(viewModel: TodayViewModel) {
                                     soundPlayer.play()
                                     viewModel.onAction(TodayViewModel.Action.ToggleTask(task.id))
                                     scope.launch {
-                                        if (snackbarHostState.showSnackbar("Completed", "Undo") == SnackbarResult.ActionPerformed)
-                                            viewModel.onAction(TodayViewModel.Action.ToggleTask(task.id))
+                                            if (snackbarHostState.showSnackbar("Completed", "Undo", duration = SnackbarDuration.Short) == SnackbarResult.ActionPerformed)
+                                                        viewModel.onAction(TodayViewModel.Action.ToggleTask(task.id))
                                     }
                                 }
                             },
@@ -162,8 +164,8 @@ fun TodayPage(viewModel: TodayViewModel) {
                     onSetState = { viewModel.onAction(TodayViewModel.Action.ToggleHabit(habit.id, it)) },
                     showDoneSnackbar = { undo ->
                         scope.launch {
-                            if (snackbarHostState.showSnackbar("Completed", "Undo") == SnackbarResult.ActionPerformed)
-                                undo()
+                                        if (snackbarHostState.showSnackbar("Completed", "Undo", duration = SnackbarDuration.Short) == SnackbarResult.ActionPerformed)
+                                                undo()
                         }
                     },
                 )
