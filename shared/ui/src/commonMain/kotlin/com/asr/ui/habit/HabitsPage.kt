@@ -106,7 +106,8 @@ fun HabitsPage(viewModel: HabitsViewModel) {
     var newFreq by remember { mutableStateOf(HabitFrequency.DAILY) }
     val newDaysOfWeek = remember { mutableStateListOf<Int>() }
     val newDaysOfMonth = remember { mutableStateListOf<Int>() }
-    var yearlyText by remember { mutableStateOf("") }
+    val selectedYearlyDates = remember { mutableStateListOf<Int>() }
+    var activeYearlyMonth by remember { mutableStateOf(1) }
     var showTimePicker by remember { mutableStateOf(false) }
     var periodExpanded by remember { mutableStateOf(false) }
     var editingHabit by remember { mutableStateOf<Habit?>(null) }
@@ -116,15 +117,6 @@ fun HabitsPage(viewModel: HabitsViewModel) {
     var newTagColor by remember { mutableStateOf<Long?>(null) }
     val dayNames = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
     val monthNames = listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
-
-    fun parseYearly(text: String): Set<Int> =
-        text.split(",").mapNotNull { s ->
-            val parts = s.trim().split("/")
-            val month = parts.getOrNull(0)?.toIntOrNull() ?: return@mapNotNull null
-            val day = parts.getOrNull(1)?.toIntOrNull() ?: return@mapNotNull null
-            if (month !in 1..12 || day !in 1..31) return@mapNotNull null
-            month * 100 + day
-        }.toSet()
 
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -166,7 +158,7 @@ fun HabitsPage(viewModel: HabitsViewModel) {
                     onClick = {
                         newHabitTitle = ""; newHabitDescription = ""; newHabitReminder = ""
                         newFreq = HabitFrequency.DAILY
-                        newDaysOfWeek.clear(); newDaysOfMonth.clear(); yearlyText = ""
+                        newDaysOfWeek.clear(); newDaysOfMonth.clear(); selectedYearlyDates.clear(); activeYearlyMonth = 1
                         selectedTagIds = emptySet(); newTagName = ""; newTagColor = null
                         editingHabit = null
                         showAddDialog = true
@@ -236,7 +228,7 @@ fun HabitsPage(viewModel: HabitsViewModel) {
                                     newFreq = habit.frequencyType
                                     newDaysOfWeek.clear(); newDaysOfWeek.addAll(habit.daysOfWeek)
                                     newDaysOfMonth.clear(); newDaysOfMonth.addAll(habit.daysOfMonth)
-                                    yearlyText = habit.yearlyDates.sorted().joinToString(", ") { "${it / 100}/${it % 100}" }
+                                    selectedYearlyDates.clear(); selectedYearlyDates.addAll(habit.yearlyDates); activeYearlyMonth = 1
                                     selectedTagIds = emptySet(); newTagName = ""; newTagColor = null
                                     showAddDialog = true
                                 },
@@ -309,57 +301,32 @@ fun HabitsPage(viewModel: HabitsViewModel) {
                                 Spacer(Modifier.height(8.dp))
                                 Text("On days:", style = MaterialTheme.typography.labelMedium)
                                 Spacer(Modifier.height(4.dp))
-                                for (rowStart in listOf(1, 8, 15, 22, 29)) {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
-                                    ) {
-                                        for (day in rowStart..(rowStart + 6).coerceAtMost(31)) {
-                                            val selected = day in newDaysOfMonth
-                                            Box(
-                                                modifier = Modifier.weight(1f).aspectRatio(1f)
-                                                    .padding(2.dp)
-                                                    .clip(CircleShape)
-                                                    .background(if (selected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent)
-                                                    .clickable { if (selected) newDaysOfMonth.remove(day) else newDaysOfMonth.add(day) },
-                                                contentAlignment = Alignment.Center,
-                                            ) {
-                                                Text(day.toString(), style = MaterialTheme.typography.bodyMedium)
-                                            }
-                                        }
-                                        if (rowStart == 29) repeat(4) { Spacer(Modifier.weight(1f)) }
-                                    }
-                                }
-
+                                DayGrid(
+                                    selectedDays = newDaysOfMonth.toSet(),
+                                    onToggleDay = { day -> if (day in newDaysOfMonth) newDaysOfMonth.remove(day) else newDaysOfMonth.add(day) },
+                                )
                             }
                             if (newFreq == HabitFrequency.YEARLY) {
                                 Spacer(Modifier.height(8.dp))
                                 Text("On dates:", style = MaterialTheme.typography.labelMedium)
                                 Spacer(Modifier.height(4.dp))
-                                OutlinedTextField(
-                                    value = yearlyText,
-                                    onValueChange = { yearlyText = it },
-                                    label = { Text("month/day, e.g. 1/15, 7/4") },
-                                    singleLine = false,
-                                    maxLines = 2,
-                                    modifier = Modifier.fillMaxWidth(),
-                                )
-                                val yDates = parseYearly(yearlyText)
-                                if (yDates.isNotEmpty()) {
-                                    Spacer(Modifier.height(4.dp))
-                                    FlowRow {
-                                        yDates.sorted().forEach { date ->
-                                            val m = date / 100; val d = date % 100
-                                            FilterChip(
-                                                selected = true,
-                                                onClick = {
-                                                    val remaining = yDates - date
-                                                    yearlyText = remaining.sorted().joinToString(", ") { "${it / 100}/${it % 100}" }
-                                                },
-                                                label = { Text("${monthNames[m - 1]} $d ✕") },
-                                            )
-                                        }
+                                FlowRow {
+                                    monthNames.forEachIndexed { i, name ->
+                                        val m = i + 1
+                                        FilterChip(
+                                            selected = activeYearlyMonth == m,
+                                            onClick = { activeYearlyMonth = m },
+                                            label = { Text(name) },
+                                        )
                                     }
                                 }
+                                DayGrid(
+                                    selectedDays = selectedYearlyDates.filter { it / 100 == activeYearlyMonth }.map { it % 100 }.toSet(),
+                                    onToggleDay = { day ->
+                                        val encoded = activeYearlyMonth * 100 + day
+                                        if (encoded in selectedYearlyDates) selectedYearlyDates.remove(encoded) else selectedYearlyDates.add(encoded)
+                                    },
+                                )
                             }
                         }
                     }
@@ -466,7 +433,7 @@ fun HabitsPage(viewModel: HabitsViewModel) {
                                 frequencyCount = 1,
                                 daysOfWeek = newDaysOfWeek.toSet(),
                                 daysOfMonth = newDaysOfMonth.toSet(),
-                                yearlyDates = parseYearly(yearlyText),
+                                yearlyDates = selectedYearlyDates.toSet(),
                                 reminderTime = newHabitReminder.ifBlank { null },
                             ) ?: Habit(
                                 title = newHabitTitle,
@@ -474,7 +441,7 @@ fun HabitsPage(viewModel: HabitsViewModel) {
                                 frequencyCount = 1,
                                 daysOfWeek = newDaysOfWeek.toSet(),
                                 daysOfMonth = newDaysOfMonth.toSet(),
-                                yearlyDates = parseYearly(yearlyText),
+                                yearlyDates = selectedYearlyDates.toSet(),
                                 description = newHabitDescription,
                                 reminderTime = newHabitReminder.ifBlank { null },
                             )
@@ -482,7 +449,7 @@ fun HabitsPage(viewModel: HabitsViewModel) {
                             showAddDialog = false
                         }
                     },
-                    enabled = newHabitTitle.isNotBlank() && (newFreq != HabitFrequency.WEEKLY || newDaysOfWeek.isNotEmpty()) && (newFreq != HabitFrequency.MONTHLY || newDaysOfMonth.isNotEmpty()) && (newFreq != HabitFrequency.YEARLY || parseYearly(yearlyText).isNotEmpty()),
+                    enabled = newHabitTitle.isNotBlank() && (newFreq != HabitFrequency.WEEKLY || newDaysOfWeek.isNotEmpty()) && (newFreq != HabitFrequency.MONTHLY || newDaysOfMonth.isNotEmpty()) && (newFreq != HabitFrequency.YEARLY || selectedYearlyDates.isNotEmpty()),
                 ) { Text(if (editingHabit != null) "Save" else "Add") }
             },
             dismissButton = { TextButton(onClick = { showAddDialog = false }) { Text("Cancel") } },
@@ -738,6 +705,33 @@ fun HabitItem(
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun DayGrid(
+    selectedDays: Set<Int>,
+    onToggleDay: (Int) -> Unit,
+) {
+    for (rowStart in listOf(1, 8, 15, 22, 29)) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+        ) {
+            for (day in rowStart..(rowStart + 6).coerceAtMost(31)) {
+                val selected = day in selectedDays
+                Box(
+                    modifier = Modifier.weight(1f).aspectRatio(1f)
+                        .padding(2.dp)
+                        .clip(CircleShape)
+                        .background(if (selected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent)
+                        .clickable { onToggleDay(day) },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(day.toString(), style = MaterialTheme.typography.bodyMedium)
+                }
+            }
+            if (rowStart == 29) repeat(4) { Spacer(Modifier.weight(1f)) }
         }
     }
 }
