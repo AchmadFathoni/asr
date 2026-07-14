@@ -46,6 +46,7 @@ import com.asr.core.backup.RestoreState
 import com.asr.core.tag.Tag
 import com.asr.ui.LIGHT_CHECK_COLORS
 import com.asr.ui.TAG_COLORS
+import com.asr.core.AppVersion
 import com.asr.core.settings.ThemeOption
 import com.asr.ui.viewmodel.SettingsViewModel
 
@@ -268,7 +269,13 @@ fun SettingsPage(viewModel: SettingsViewModel) {
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    "Build ${AppVersion.build} · v${AppVersion.release}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(4.dp))
                 Text(
                     "Made by Achmad Fathoni with DeepSeek",
                     style = MaterialTheme.typography.bodySmall,
