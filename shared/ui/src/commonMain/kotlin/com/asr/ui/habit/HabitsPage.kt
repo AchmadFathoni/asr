@@ -74,7 +74,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.asr.core.interfaces.SoundPlayer
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -338,7 +337,7 @@ fun HabitsPage(viewModel: HabitsViewModel) {
                                                             .clickable { activeYearlyMonth = m },
                                                         contentAlignment = Alignment.Center,
                                                     ) {
-                                                        Text(name, fontSize = 11.sp, color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface)
+                                                        Text(name, style = MaterialTheme.typography.bodyMedium, color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface)
                                                     }
                                                 }
                                             }
