@@ -146,7 +146,20 @@ fun TasksPage(viewModel: TasksViewModel) {
                     }
                 }
             }
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                TaskFilter.entries.forEach { filter ->
+                    FilterChip(
+                        selected = state.filter == filter,
+                        onClick = { viewModel.onAction(TasksViewModel.Action.SetFilter(filter)) },
+                        label = { Text(filter.name.lowercase().replaceFirstChar { it.uppercase() }) },
+                    )
+                }
+                if (state.filter == TaskFilter.DONE) {
+                    TextButton(onClick = { viewModel.onAction(TasksViewModel.Action.DeleteDoneTasks) }) {
+                        Text("Clear done", style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+                Spacer(Modifier.weight(1f))
                 val filterActive = state.filterState.searchQuery.isNotBlank() || state.filterState.selectedTagIds.isNotEmpty() || state.filterState.filterDate != null
                 Box {
                     IconButton(onClick = { viewModel.onAction(TasksViewModel.Action.ToggleFilterSheet) }) {
@@ -174,22 +187,6 @@ fun TasksPage(viewModel: TasksViewModel) {
                 }
             }
             Spacer(Modifier.height(8.dp))
-
-            Row {
-                TaskFilter.entries.forEach { filter ->
-                    FilterChip(
-                        selected = state.filter == filter,
-                        onClick = { viewModel.onAction(TasksViewModel.Action.SetFilter(filter)) },
-                        label = { Text(filter.name.lowercase().replaceFirstChar { it.uppercase() }) },
-                    )
-                }
-                if (state.filter == TaskFilter.DONE) {
-                    Spacer(Modifier.weight(1f))
-                    TextButton(onClick = { viewModel.onAction(TasksViewModel.Action.DeleteDoneTasks) }) {
-                        Text("Clear done", style = MaterialTheme.typography.bodySmall)
-                    }
-                }
-            }
 
             LazyColumn(modifier = Modifier.weight(1f)) {
                 items(flatTasks) { (task, depth) ->
