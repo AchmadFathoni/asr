@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
@@ -69,6 +70,7 @@ class HabitsViewModel(
         data class ViewHabitHistory(val habitId: Long) : Action
         data class CreateTag(val name: String, val color: Long? = null) : Action
         data class MoveHabit(val habitId: Long, val direction: Int) : Action
+        data class ReorderHabits(val habitIds: List<Long>) : Action
         data class SetSearchQuery(val query: String) : Action
         data class ToggleTag(val tagId: Long) : Action
         data object ClearTagFilter : Action
@@ -126,6 +128,15 @@ class HabitsViewModel(
             is Action.ClearTagFilter -> _filter.value = _filter.value.copy(selectedTagIds = emptySet())
             is Action.SetFilterDate -> _filter.value = _filter.value.copy(filterDate = action.date)
             is Action.ToggleFilterSheet -> _filter.value = _filter.value.copy(showFilterSheet = !_filter.value.showFilterSheet)
+            is Action.ReorderHabits -> viewModelScope.launch {
+                val habits = habitRepo.getHabitsFlow().first().associateBy { it.id }
+                action.habitIds.forEachIndexed { index, id ->
+                    val habit = habits[id] ?: return@forEachIndexed
+                    if (habit.order != index) {
+                        habitRepo.upsertHabit(habit.copy(order = index))
+                    }
+                }
+            }
         }
     }
 }

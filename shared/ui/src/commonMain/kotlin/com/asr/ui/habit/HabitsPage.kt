@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -44,6 +45,8 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.TimePickerDialog
@@ -63,7 +66,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextOverflow
+import sh.calvin.reorderable.ReorderableItem
+import sh.calvin.reorderable.rememberReorderableLazyListState
 import androidx.compose.ui.unit.dp
 import com.asr.core.interfaces.SoundPlayer
 import kotlinx.coroutines.delay
@@ -171,41 +178,67 @@ fun HabitsPage(viewModel: HabitsViewModel) {
                     )
                 }
 
-                LazyColumn(modifier = Modifier.weight(1f)) {
-                    items(filteredHabits) { habit ->
+                var localHabits by remember(filteredHabits) { mutableStateOf(filteredHabits) }
+                val lazyListState = rememberLazyListState()
+                val reorderableState = rememberReorderableLazyListState(
+                    lazyListState = lazyListState,
+                    onMove = { from, to ->
+                        localHabits = localHabits.toMutableList().apply {
+                            add(to.index, removeAt(from.index))
+                        }
+                    },
+                )
+                LaunchedEffect(filteredHabits) {
+                    if (!reorderableState.isAnyItemDragging) localHabits = filteredHabits
+                }
+                LaunchedEffect(localHabits) {
+                    if (!reorderableState.isAnyItemDragging &&
+                        localHabits.map { it.id } != filteredHabits.map { it.id }
+                    ) {
+                        viewModel.onAction(HabitsViewModel.Action.ReorderHabits(localHabits.map { it.id }))
+                    }
+                }
+
+                LazyColumn(
+                    state = lazyListState,
+                    modifier = Modifier.weight(1f),
+                ) {
+                    items(localHabits, key = { it.id }) { habit ->
                         val record = state.todayRecords[habit.id]
-                        HabitItem(
-                            habit = habit,
-                            record = record,
-                            onSetState = { s ->
-                                viewModel.onAction(HabitsViewModel.Action.SetRecordState(habit.id, s))
-                            },
-                            showDoneSnackbar = { undo ->
-                                scope.launch {
-                                    if (snackbarHostState.showSnackbar("Completed", "Undo", duration = SnackbarDuration.Short) == SnackbarResult.ActionPerformed)
-                                        undo()
-                                }
-                            },
-                            onViewHistory = { viewModel.onAction(HabitsViewModel.Action.ViewHabitHistory(habit.id)) },
-                            onEdit = {
-                                editingHabit = habit
-                                newHabitTitle = habit.title
-                                newHabitDescription = habit.description
-                                newHabitReminder = habit.reminderTime ?: ""
-                                newFreq = habit.frequencyType
-                                newCount = habit.frequencyCount.toString()
-                                newDaysOfWeek.clear(); newDaysOfWeek.addAll(habit.daysOfWeek)
-                                newDayOfMonth = habit.dayOfMonth
-                                newMonthOfYear = habit.monthOfYear
-                                selectedTagIds = emptySet(); newTagName = ""; newTagColor = null
-                                showAddDialog = true
-                            },
-                            onMoveUp = if (filteredHabits.firstOrNull() != habit) {{ viewModel.onAction(HabitsViewModel.Action.MoveHabit(habit.id, -1)) }} else null,
-                            onMoveDown = if (filteredHabits.lastOrNull() != habit) {{ viewModel.onAction(HabitsViewModel.Action.MoveHabit(habit.id, 1)) }} else null,
-                            streak = state.streaks[habit.id] ?: 0,
-                        onDelete = { habitToDelete = habit },
-                        tags = state.tags.filter { state.habitTagMappings[habit.id]?.contains(it.id) == true },
-                    )
+                        ReorderableItem(state = reorderableState, key = habit.id) { isDragging ->
+                            HabitItem(
+                                habit = habit,
+                                record = record,
+                                onSetState = { s ->
+                                    viewModel.onAction(HabitsViewModel.Action.SetRecordState(habit.id, s))
+                                },
+                                showDoneSnackbar = { undo ->
+                                    scope.launch {
+                                        if (snackbarHostState.showSnackbar("Completed", "Undo", duration = SnackbarDuration.Short) == SnackbarResult.ActionPerformed)
+                                            undo()
+                                    }
+                                },
+                                onViewHistory = { viewModel.onAction(HabitsViewModel.Action.ViewHabitHistory(habit.id)) },
+                                onEdit = {
+                                    editingHabit = habit
+                                    newHabitTitle = habit.title
+                                    newHabitDescription = habit.description
+                                    newHabitReminder = habit.reminderTime ?: ""
+                                    newFreq = habit.frequencyType
+                                    newCount = habit.frequencyCount.toString()
+                                    newDaysOfWeek.clear(); newDaysOfWeek.addAll(habit.daysOfWeek)
+                                    newDayOfMonth = habit.dayOfMonth
+                                    newMonthOfYear = habit.monthOfYear
+                                    selectedTagIds = emptySet(); newTagName = ""; newTagColor = null
+                                    showAddDialog = true
+                                },
+                                streak = state.streaks[habit.id] ?: 0,
+                            onDelete = { habitToDelete = habit },
+                            tags = state.tags.filter { state.habitTagMappings[habit.id]?.contains(it.id) == true },
+                            showDragHandle = true,
+                            dragHandleModifier = Modifier.draggableHandle(),
+                        )
+                        }
                         HorizontalDivider()
                     }
                     if (filteredHabits.isEmpty() && !state.isLoading) {
@@ -490,7 +523,7 @@ fun HabitsPage(viewModel: HabitsViewModel) {
                             }
                             var day = 1
                             while (day <= monthLen) {
-                                Row {
+            FlowRow {
                                     for (col in 0..6) {
                                         if ((day == 1 && col < startOffset) || day > monthLen) {
                                             Box(modifier = Modifier.weight(1f).padding(2.dp))
@@ -571,10 +604,10 @@ fun HabitItem(
     onViewHistory: (() -> Unit)? = null,
     onEdit: (() -> Unit)? = null,
     onDelete: (() -> Unit)? = null,
-    onMoveUp: (() -> Unit)? = null,
-    onMoveDown: (() -> Unit)? = null,
     streak: Int = 0,
     tags: List<Tag> = emptyList(),
+    dragHandleModifier: Modifier = Modifier,
+    showDragHandle: Boolean = false,
 ) {
     val soundPlayer = koinInject<SoundPlayer>()
     val currentState = record?.state ?: HabitState.NOT_DONE
@@ -606,9 +639,19 @@ fun HabitItem(
             },
         ),
     ) {
-        Row(modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)) {
+        Row(modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+            verticalAlignment = Alignment.CenterVertically) {
+            if (showDragHandle) {
+                Text(
+                    "≡",
+                    modifier = dragHandleModifier.padding(end = 4.dp),
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
+                )
+            }
             Column(modifier = Modifier.weight(1f)) {
                 Text(habit.title,
+                    maxLines = 2, overflow = TextOverflow.Ellipsis,
                     style = MaterialTheme.typography.bodyLarge.copy(
                         textDecoration = if (isDone) TextDecoration.LineThrough else null))
                 if (tags.isNotEmpty()) {
@@ -642,7 +685,7 @@ fun HabitItem(
                         color = MaterialTheme.colorScheme.primary)
                 }
             }
-            Row {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 OutlinedButton(
                     onClick = {
                         if (!isDone) {
@@ -666,11 +709,25 @@ fun HabitItem(
                 if (!isSkipped) {
                     TextButton(onClick = { onSetState(HabitState.SKIPPED) }) { Text("Skip") }
                 }
-                onMoveUp?.let { TextButton(onClick = it) { Text("↑") } }
-                onMoveDown?.let { TextButton(onClick = it) { Text("↓") } }
-                onViewHistory?.let { TextButton(onClick = it) { Text("Log") } }
-                onEdit?.let { TextButton(onClick = it) { Text("Edit") } }
-                onDelete?.let { TextButton(onClick = it) { Text("Del") } }
+                if (onViewHistory != null || onEdit != null || onDelete != null) {
+                    Box {
+                        var expanded by remember { mutableStateOf(false) }
+                        IconButton(onClick = { expanded = true }) {
+                            Text("⋮", fontWeight = FontWeight.Bold)
+                        }
+                        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                            onViewHistory?.let {
+                                DropdownMenuItem(text = { Text("Log") }, onClick = { expanded = false; it() })
+                            }
+                            onEdit?.let {
+                                DropdownMenuItem(text = { Text("Edit") }, onClick = { expanded = false; it() })
+                            }
+                            onDelete?.let {
+                                DropdownMenuItem(text = { Text("Delete") }, onClick = { expanded = false; it() })
+                            }
+                        }
+                    }
+                }
             }
         }
     }

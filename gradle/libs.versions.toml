@@ -46,6 +46,7 @@ koin-compose-viewmodel-navigation = { module = "io.insert-koin:koin-compose-view
 koin-annotations = { module = "io.insert-koin:koin-annotations", version.ref = "koin" }
 koin-android = { module = "io.insert-koin:koin-android", version.ref = "koin" }
 filekit-core = { module = "io.github.vinceglb:filekit-core", version.ref = "filekit" }
+reorderable = { module = "sh.calvin.reorderable:reorderable", version = "3.1.0" }
 filekit-dialogs = { module = "io.github.vinceglb:filekit-dialogs", version.ref = "filekit" }
 androidx-room-runtime = { module = "androidx.room3:room3-runtime", version.ref = "room3" }
 androidx-room-compiler = { module = "androidx.room3:room3-compiler", version.ref = "room3" }

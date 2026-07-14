@@ -57,6 +57,7 @@ kotlin {
             implementation(libs.koin.compose.viewmodel)
             implementation(libs.koin.compose.viewmodel.navigation)
             implementation(libs.koin.annotations)
+            implementation(libs.reorderable)
         }
 
         jvmTest.dependencies {

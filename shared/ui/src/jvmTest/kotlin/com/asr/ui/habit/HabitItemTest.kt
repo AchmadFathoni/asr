@@ -114,7 +114,7 @@ class HabitItemTest {
     }
 
     @Test
-    fun `shows optional action buttons only when callbacks provided`() {
+    fun `shows overflow menu when optional callbacks provided`() {
         composeTestRule.setContent {
             HabitItem(
                 habit = habit,
@@ -124,8 +124,7 @@ class HabitItemTest {
                 onDelete = {},
             )
         }
-        composeTestRule.onNodeWithText("Edit").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Del").assertIsDisplayed()
+        composeTestRule.onNodeWithText("⋮").assertIsDisplayed()
         composeTestRule.onAllNodesWithText("Log").assertCountEquals(0)
         composeTestRule.onAllNodesWithText("↑").assertCountEquals(0)
     }
