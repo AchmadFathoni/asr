@@ -76,7 +76,7 @@ fun MainApp() {
                     alwaysShowLabel = true,
                     icon = {
                         Icon(
-                            imageVector = vectorResource(Res.drawable.check_circle),
+                            imageVector = vectorResource(Res.drawable.repeat),
                             contentDescription = "Habit",
                         )
                     },

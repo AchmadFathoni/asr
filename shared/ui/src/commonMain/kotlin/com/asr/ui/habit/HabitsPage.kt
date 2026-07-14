@@ -163,7 +163,7 @@ fun HabitsPage(viewModel: HabitsViewModel) {
                     if (filteredHabits.isEmpty() && !state.isLoading) {
                         item {
                             EmptyState(
-                                icon = Res.drawable.check_circle,
+                                icon = Res.drawable.repeat,
                                 text = "No habits. Tap + to add one.",
                             )
                         }
