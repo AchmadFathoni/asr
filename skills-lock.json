@@ -1,6 +1,12 @@
 {
   "version": 1,
   "skills": {
+    "kotlin-specialist": {
+      "source": "jeffallan/claude-skills",
+      "sourceType": "github",
+      "skillPath": "skills/kotlin-specialist/SKILL.md",
+      "computedHash": "7119693c0ce1ebf7de447ccafef33cd319b9a8bfc057b6dfcb137caac2fea274"
+    },
     "ui-ux-pro-max": {
       "source": "nextlevelbuilder/ui-ux-pro-max-skill",
       "sourceType": "github",
