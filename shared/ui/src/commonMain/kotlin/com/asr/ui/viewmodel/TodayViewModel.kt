@@ -54,6 +54,8 @@ class TodayViewModel(
             habitRecords = records.associateBy { it.habitId },
             filter = filter,
             pendingDeletedTasks = pendingDeleted,
+            taskTagMappings = ttm,
+            habitTagMappings = htm,
             isLoading = false,
         )
     }.stateIn(
@@ -126,5 +128,7 @@ data class TodayState(
     val habitRecords: Map<Long, HabitRecord> = emptyMap(),
     val filter: FilterState = FilterState(),
     val pendingDeletedTasks: List<Task>? = null,
+    val taskTagMappings: Map<Long, List<Long>> = emptyMap(),
+    val habitTagMappings: Map<Long, List<Long>> = emptyMap(),
     val isLoading: Boolean = true,
 )

@@ -73,6 +73,7 @@ import com.asr.core.habit.HabitState
 import com.asr.core.habit.daysInMonth
 import com.asr.core.habit.shouldShowToday
 import com.asr.core.now
+import com.asr.core.tag.Tag
 import com.asr.ui.LIGHT_CHECK_COLORS
 import com.asr.ui.TAG_COLORS
 import com.asr.ui.app.EmptyState
@@ -171,8 +172,9 @@ fun HabitsPage(viewModel: HabitsViewModel) {
                             onMoveUp = if (filteredHabits.firstOrNull() != habit) {{ viewModel.onAction(HabitsViewModel.Action.MoveHabit(habit.id, -1)) }} else null,
                             onMoveDown = if (filteredHabits.lastOrNull() != habit) {{ viewModel.onAction(HabitsViewModel.Action.MoveHabit(habit.id, 1)) }} else null,
                             streak = state.streaks[habit.id] ?: 0,
-                            onDelete = { habitToDelete = habit },
-                        )
+                        onDelete = { habitToDelete = habit },
+                        tags = state.tags.filter { state.habitTagMappings[habit.id]?.contains(it.id) == true },
+                    )
                         HorizontalDivider()
                     }
                     if (filteredHabits.isEmpty() && !state.isLoading) {
@@ -541,6 +543,7 @@ fun HabitItem(
     onMoveUp: (() -> Unit)? = null,
     onMoveDown: (() -> Unit)? = null,
     streak: Int = 0,
+    tags: List<Tag> = emptyList(),
 ) {
     val soundPlayer = koinInject<SoundPlayer>()
     val currentState = record?.state ?: HabitState.NOT_DONE
@@ -579,6 +582,17 @@ fun HabitItem(
                 Text(habit.title,
                     style = MaterialTheme.typography.bodyLarge.copy(
                         textDecoration = if (isDone) TextDecoration.LineThrough else null))
+                if (tags.isNotEmpty()) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        tags.forEach { tag ->
+                            tag.color?.let { c ->
+                                Spacer(Modifier.width(3.dp))
+                                Box(Modifier.size(8.dp).clip(CircleShape).background(Color(c)))
+                            }
+                        }
+                    }
+                    Spacer(Modifier.height(2.dp))
+                }
                 LinearProgressIndicator(
                     progress = { currentCount.toFloat() / habit.frequencyCount.coerceAtLeast(1) },
                     modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),

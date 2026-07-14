@@ -66,6 +66,7 @@ import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import asr.shared.ui.generated.resources.*
 import com.asr.core.now
+import com.asr.core.tag.Tag
 import com.asr.core.task.Task
 import com.asr.ui.LIGHT_CHECK_COLORS
 import com.asr.ui.TAG_COLORS
@@ -199,6 +200,7 @@ fun TasksPage(viewModel: TasksViewModel) {
                             newTaskParentId = null
                             showAddDialog = true
                         },
+                        tags = state.tags.filter { state.taskTagMappings[task.id]?.contains(it.id) == true },
                     )
                 }
 
@@ -470,6 +472,7 @@ fun TaskRow(
     onDelete: () -> Unit,
     onAddSub: () -> Unit,
     onEdit: () -> Unit,
+    tags: List<Tag> = emptyList(),
 ) {
     val soundPlayer = koinInject<SoundPlayer>()
     val scale by animateFloatAsState(
@@ -520,6 +523,12 @@ fun TaskRow(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+            }
+            tags.forEach { tag ->
+                tag.color?.let { c ->
+                    Spacer(Modifier.width(2.dp))
+                    Box(Modifier.size(8.dp).clip(CircleShape).background(Color(c)))
+                }
             }
             TextButton(onClick = onAddSub) { Text("+") }
             TextButton(onClick = onEdit) { Text("Edit") }

@@ -51,6 +51,7 @@ class HabitsViewModel(
             filter = filter,
             selectedHabitId = selected.habitId,
             selectedHabitHistory = selected.history,
+            habitTagMappings = tagMappings,
             isLoading = false,
         )
     }.stateIn(
@@ -149,5 +150,6 @@ data class HabitsState(
     val filter: FilterState = FilterState(),
     val selectedHabitId: Long? = null,
     val selectedHabitHistory: List<HabitRecord> = emptyList(),
+    val habitTagMappings: Map<Long, List<Long>> = emptyMap(),
     val isLoading: Boolean = true,
 )

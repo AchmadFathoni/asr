@@ -53,6 +53,7 @@ class TasksViewModel(
             expandedTaskIds = expandedIds,
             filterState = filter,
             pendingDeletedTasks = pendingDeleted,
+            taskTagMappings = tagMappings,
             isLoading = false,
         )
     }.stateIn(
@@ -151,5 +152,6 @@ data class TasksState(
     val expandedTaskIds: Set<Long> = emptySet(),
     val filterState: FilterState = FilterState(),
     val pendingDeletedTasks: List<Task>? = null,
+    val taskTagMappings: Map<Long, List<Long>> = emptyMap(),
     val isLoading: Boolean = true,
 )
