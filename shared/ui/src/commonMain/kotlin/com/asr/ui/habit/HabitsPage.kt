@@ -126,8 +126,18 @@ fun HabitsPage(viewModel: HabitsViewModel) {
         Column(modifier = Modifier.padding(padding).fillMaxSize().padding(16.dp)) {
             // Main habits list
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                IconButton(onClick = { viewModel.onAction(HabitsViewModel.Action.ToggleFilterSheet) }) {
-                    Icon(imageVector = vectorResource(Res.drawable.filter), contentDescription = "Filter")
+                val filterActive = state.filter.searchQuery.isNotBlank() || state.filter.selectedTagIds.isNotEmpty() || state.filter.filterDate != null
+                Box {
+                    IconButton(onClick = { viewModel.onAction(HabitsViewModel.Action.ToggleFilterSheet) }) {
+                        Icon(imageVector = vectorResource(Res.drawable.filter), contentDescription = "Filter")
+                    }
+                    if (filterActive) Box(
+                        Modifier.align(Alignment.TopEnd)
+                            .padding(top = 6.dp, end = 6.dp)
+                            .size(8.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primary)
+                    )
                 }
             }
                 Spacer(Modifier.height(8.dp))
