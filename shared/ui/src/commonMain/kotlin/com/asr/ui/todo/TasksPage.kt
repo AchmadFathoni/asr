@@ -115,7 +115,7 @@ fun TasksPage(viewModel: TasksViewModel) {
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text("To-do", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.weight(1f))
                 IconButton(onClick = { viewModel.onAction(TasksViewModel.Action.ToggleFilterSheet) }) {
-                    Icon(imageVector = vectorResource(Res.drawable.calendar_month), contentDescription = "Filter")
+                    Icon(imageVector = vectorResource(Res.drawable.filter), contentDescription = "Filter")
                 }
             }
             Spacer(Modifier.height(8.dp))

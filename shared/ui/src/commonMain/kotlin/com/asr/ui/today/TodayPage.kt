@@ -56,7 +56,7 @@ fun TodayPage(viewModel: TodayViewModel) {
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text("Today", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.weight(1f))
                 IconButton(onClick = { viewModel.onAction(TodayViewModel.Action.ToggleFilterSheet) }) {
-                    Icon(imageVector = vectorResource(Res.drawable.calendar_month), contentDescription = "Filter")
+                    Icon(imageVector = vectorResource(Res.drawable.filter), contentDescription = "Filter")
                 }
             }
         }
