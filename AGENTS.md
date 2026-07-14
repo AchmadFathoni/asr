@@ -41,6 +41,7 @@ gh release upload v<version> androidApp/build/outputs/apk/release/androidApp-rel
 Only upload **release** APK (`androidApp-release.apk`), never debug.
 
 ### Commands
+don't expect build success information when using -w
 | Command | Description |
 |---------|-------------|
 | `./gradlew assembleDebug -w` | Build debug APK (warn level, hides UP-TO-DATE) |

@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -264,7 +266,7 @@ fun HabitsPage(viewModel: HabitsViewModel) {
             onDismissRequest = { showAddDialog = false },
             title = { Text(if (editingHabit != null) "Edit Habit" else "New Habit") },
             text = {
-                Column {
+                Column(Modifier.verticalScroll(rememberScrollState())) {
                     OutlinedTextField(value = newHabitTitle, onValueChange = { newHabitTitle = it },
                         label = { Text("Title") }, singleLine = true)
                     Spacer(Modifier.height(12.dp))
