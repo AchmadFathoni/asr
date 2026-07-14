@@ -12,7 +12,6 @@ import com.asr.core.backup.ExportRepo
 import com.asr.core.backup.RestoreRepo
 import com.asr.core.backup.RestoreResult
 import com.asr.core.interfaces.AlarmScheduler
-import com.asr.core.interfaces.SoundPlayer
 import com.asr.core.settings.SettingsRepo
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -145,11 +144,6 @@ class SettingsRepoStub : SettingsRepo {
 
     override fun isDarkMode(): Boolean? = dark
     override fun setDarkMode(isDark: Boolean?) { dark = isDark }
-}
-
-@Single(binds = [SoundPlayer::class])
-class SoundPlayerStub : SoundPlayer {
-    override fun play() {}
 }
 
 @Single(binds = [AlarmScheduler::class])

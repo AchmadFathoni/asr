@@ -12,6 +12,10 @@ plugins {
     alias(libs.plugins.koin.compiler)
 }
 
+koinCompiler {
+    strictSafety.set(false)
+}
+
 kotlin {
     compilerOptions {
         freeCompilerArgs.add("-Xcontext-sensitive-resolution")
@@ -57,8 +61,14 @@ kotlin {
         jvmTest.dependencies {
             implementation(kotlin("test"))
             implementation(libs.kotlinx.coroutines.test)
+            implementation(libs.compose.ui.test)
+            implementation("org.jetbrains.skiko:skiko-awt-runtime-linux-x64:0.144.6")
         }
     }
+}
+
+tasks.named<Test>("jvmTest") {
+    jvmArgs("-Dorg.jetbrains.skiko.headless=true")
 }
 
 dependencies {
