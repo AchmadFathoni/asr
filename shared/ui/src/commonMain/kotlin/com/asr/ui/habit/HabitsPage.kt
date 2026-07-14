@@ -323,14 +323,23 @@ fun HabitsPage(viewModel: HabitsViewModel) {
                                 Spacer(Modifier.height(8.dp))
                                 Text("On dates:", style = MaterialTheme.typography.labelMedium)
                                 Spacer(Modifier.height(4.dp))
-                                FlowRow {
-                                    monthNames.forEachIndexed { i, name ->
-                                        val m = i + 1
-                                        FilterChip(
-                                            selected = activeYearlyMonth == m,
-                                            onClick = { activeYearlyMonth = m },
-                                            label = { Text(name) },
-                                        )
+                                Column {
+                                    monthNames.chunked(4).forEach { row ->
+                                        Row(Modifier.fillMaxWidth()) {
+                                            row.forEach { name ->
+                                                val m = monthNames.indexOf(name) + 1
+                                                val selected = activeYearlyMonth == m
+                                                Box(
+                                                    modifier = Modifier.weight(1f).aspectRatio(1f).padding(2.dp)
+                                                        .clip(CircleShape)
+                                                        .background(if (selected) MaterialTheme.colorScheme.primary else Color.Transparent)
+                                                        .clickable { activeYearlyMonth = m },
+                                                    contentAlignment = Alignment.Center,
+                                                ) {
+                                                    Text(name, color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface)
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                                 DayGrid(
