@@ -73,8 +73,8 @@ class HabitRepository(private val habitDao: HabitDao) : HabitRepo {
         frequencyType = HabitFrequency.valueOf(frequencyType),
         frequencyCount = frequencyCount,
         daysOfWeek = if (daysOfWeek.isNotBlank()) daysOfWeek.split(",").mapNotNull { it.toIntOrNull() }.toSet() else emptySet(),
-        dayOfMonth = dayOfMonth,
-        monthOfYear = monthOfYear,
+        daysOfMonth = if (daysOfMonth.isNotBlank()) daysOfMonth.split(",").mapNotNull { it.toIntOrNull() }.toSet() else emptySet(),
+        yearlyDates = if (yearlyDates.isNotBlank()) yearlyDates.split(",").mapNotNull { it.toIntOrNull() }.toSet() else emptySet(),
         order = order,
         reminderTime = reminderTime,
     )
@@ -87,8 +87,8 @@ class HabitRepository(private val habitDao: HabitDao) : HabitRepo {
         frequencyCount = frequencyCount,
         dayOfWeek = daysOfWeek.firstOrNull(),
         daysOfWeek = daysOfWeek.joinToString(","),
-        dayOfMonth = dayOfMonth,
-        monthOfYear = monthOfYear,
+        daysOfMonth = daysOfMonth.joinToString(","),
+        yearlyDates = yearlyDates.joinToString(","),
         order = order,
         reminderTime = reminderTime,
     )

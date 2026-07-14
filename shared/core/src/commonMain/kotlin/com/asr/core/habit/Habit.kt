@@ -11,8 +11,8 @@ data class Habit(
     val frequencyType: HabitFrequency = HabitFrequency.DAILY,
     val frequencyCount: Int = 1,
     val daysOfWeek: Set<Int> = emptySet(),
-    val dayOfMonth: Int? = null,
-    val monthOfYear: Int? = null,
+    val daysOfMonth: Set<Int> = emptySet(),
+    val yearlyDates: Set<Int> = emptySet(),
     val order: Int = 0,
     val reminderTime: String? = null,
 )
@@ -29,13 +29,13 @@ fun Habit.shouldShowToday(today: LocalDate): Boolean = when (frequencyType) {
     HabitFrequency.DAILY -> true
     HabitFrequency.WEEKLY -> if (daysOfWeek.isEmpty()) true else today.dayOfWeek.ordinal + 1 in daysOfWeek
     HabitFrequency.MONTHLY -> {
-        val dom = dayOfMonth ?: return true
-        today.day == kotlin.math.min(dom, daysInMonth(today.year, today.month.ordinal + 1))
+        if (daysOfMonth.isEmpty()) return true
+        val maxDay = daysInMonth(today.year, today.month.ordinal + 1)
+        today.day in daysOfMonth.map { kotlin.math.min(it, maxDay) }
     }
     HabitFrequency.YEARLY -> {
-        val moy = monthOfYear ?: return true
-        val dom = dayOfMonth ?: return true
-        today.month.ordinal + 1 == moy && today.day == kotlin.math.min(dom, daysInMonth(today.year, moy))
+        if (yearlyDates.isEmpty()) return true
+        (today.month.ordinal + 1) * 100 + today.day in yearlyDates
     }
 }
 

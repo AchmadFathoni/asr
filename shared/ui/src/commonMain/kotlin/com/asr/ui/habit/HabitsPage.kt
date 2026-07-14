@@ -102,13 +102,12 @@ fun HabitsPage(viewModel: HabitsViewModel) {
     var newHabitDescription by remember { mutableStateOf("") }
     var newHabitReminder by remember { mutableStateOf("") }
     var newFreq by remember { mutableStateOf(HabitFrequency.DAILY) }
-    var newCount by remember { mutableStateOf("1") }
     val newDaysOfWeek = remember { mutableStateListOf<Int>() }
-    var newDayOfMonth by remember { mutableStateOf<Int?>(null) }
-    var newMonthOfYear by remember { mutableStateOf<Int?>(null) }
+    val newDaysOfMonth = remember { mutableStateListOf<Int>() }
+    val newYearlyDates = remember { mutableStateListOf<Int>() }
+    var selectedYearlyMonth by remember { mutableStateOf<Int?>(null) }
     var showTimePicker by remember { mutableStateOf(false) }
-    var showMonthPicker by remember { mutableStateOf(false) }
-    var showFreqPicker by remember { mutableStateOf(false) }
+    var periodExpanded by remember { mutableStateOf(false) }
     var editingHabit by remember { mutableStateOf<Habit?>(null) }
     var habitToDelete by remember { mutableStateOf<Habit?>(null) }
     var selectedTagIds by remember { mutableStateOf(setOf<Long>()) }
@@ -156,8 +155,8 @@ fun HabitsPage(viewModel: HabitsViewModel) {
                 IconButton(
                     onClick = {
                         newHabitTitle = ""; newHabitDescription = ""; newHabitReminder = ""
-                        newFreq = HabitFrequency.DAILY; newCount = "1"
-                        newDaysOfWeek.clear(); newDayOfMonth = null; newMonthOfYear = null
+                        newFreq = HabitFrequency.DAILY
+                        newDaysOfWeek.clear(); newDaysOfMonth.clear(); newYearlyDates.clear(); selectedYearlyMonth = null
                         selectedTagIds = emptySet(); newTagName = ""; newTagColor = null
                         editingHabit = null
                         showAddDialog = true
@@ -225,10 +224,10 @@ fun HabitsPage(viewModel: HabitsViewModel) {
                                     newHabitDescription = habit.description
                                     newHabitReminder = habit.reminderTime ?: ""
                                     newFreq = habit.frequencyType
-                                    newCount = habit.frequencyCount.toString()
                                     newDaysOfWeek.clear(); newDaysOfWeek.addAll(habit.daysOfWeek)
-                                    newDayOfMonth = habit.dayOfMonth
-                                    newMonthOfYear = habit.monthOfYear
+                                    newDaysOfMonth.clear(); newDaysOfMonth.addAll(habit.daysOfMonth)
+                                    newYearlyDates.clear(); newYearlyDates.addAll(habit.yearlyDates)
+                                    selectedYearlyMonth = null
                                     selectedTagIds = emptySet(); newTagName = ""; newTagColor = null
                                     showAddDialog = true
                                 },
@@ -261,59 +260,122 @@ fun HabitsPage(viewModel: HabitsViewModel) {
                 Column {
                     OutlinedTextField(value = newHabitTitle, onValueChange = { newHabitTitle = it },
                         label = { Text("Title") }, singleLine = true)
-                    Spacer(Modifier.height(8.dp))
-                    TextButton(
-                        onClick = { showFreqPicker = true },
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Text("Period: ${newFreq.name.lowercase().replaceFirstChar { it.uppercase() }}")
-                    }
-                    if (newFreq == HabitFrequency.WEEKLY) {
-                        Spacer(Modifier.height(4.dp))
-                        FlowRow {
-                            dayNames.forEachIndexed { i, name ->
-                                val dayNum = i + 1
-                                FilterChip(
-                                    selected = dayNum in newDaysOfWeek,
-                                    onClick = { if (dayNum in newDaysOfWeek) newDaysOfWeek.remove(dayNum) else newDaysOfWeek.add(dayNum) },
-                                    label = { Text(name) },
-                                )
+                    Spacer(Modifier.height(12.dp))
+
+                    Card(modifier = Modifier.fillMaxWidth()) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Text("Schedule", style = MaterialTheme.typography.titleSmall)
+                            Spacer(Modifier.height(8.dp))
+
+                            Box(modifier = Modifier.fillMaxWidth()) {
+                                OutlinedButton(onClick = { periodExpanded = true }, modifier = Modifier.fillMaxWidth()) {
+                                    Text("${newFreq.name.lowercase().replaceFirstChar { it.uppercase() }} ▼")
+                                }
+                                DropdownMenu(expanded = periodExpanded, onDismissRequest = { periodExpanded = false }) {
+                                    HabitFrequency.entries.forEach { f ->
+                                        DropdownMenuItem(
+                                            text = { Text(f.name.lowercase().replaceFirstChar { it.uppercase() }) },
+                                            onClick = { newFreq = f; periodExpanded = false },
+                                        )
+                                    }
+                                }
                             }
+
+                            if (newFreq == HabitFrequency.WEEKLY) {
+                                Spacer(Modifier.height(8.dp))
+                                Text("On:", style = MaterialTheme.typography.labelMedium)
+                                Spacer(Modifier.height(4.dp))
+                                FlowRow {
+                                    dayNames.forEachIndexed { i, name ->
+                                        val dayNum = i + 1
+                                        FilterChip(
+                                            selected = dayNum in newDaysOfWeek,
+                                            onClick = { if (dayNum in newDaysOfWeek) newDaysOfWeek.remove(dayNum) else newDaysOfWeek.add(dayNum) },
+                                            label = { Text(name) },
+                                        )
+                                    }
+                                }
+                            }
+                            if (newFreq == HabitFrequency.MONTHLY) {
+                                Spacer(Modifier.height(8.dp))
+                                Text("On days:", style = MaterialTheme.typography.labelMedium)
+                                Spacer(Modifier.height(4.dp))
+                                FlowRow {
+                                    (1..31).forEach { day ->
+                                        FilterChip(
+                                            selected = day in newDaysOfMonth,
+                                            onClick = { if (day in newDaysOfMonth) newDaysOfMonth.remove(day) else newDaysOfMonth.add(day) },
+                                            label = { Text(day.toString()) },
+                                        )
+                                    }
+                                }
+                            }
+                            if (newFreq == HabitFrequency.YEARLY) {
+                                Spacer(Modifier.height(8.dp))
+                                Text("Select dates:", style = MaterialTheme.typography.labelMedium)
+                                Spacer(Modifier.height(4.dp))
+                                FlowRow {
+                                    monthNames.forEachIndexed { i, name ->
+                                        val m = i + 1
+                                        FilterChip(
+                                            selected = m == selectedYearlyMonth,
+                                            onClick = { selectedYearlyMonth = if (m == selectedYearlyMonth) null else m },
+                                            label = { Text(name) },
+                                        )
+                                    }
+                                }
+                                if (selectedYearlyMonth != null) {
+                                    Spacer(Modifier.height(4.dp))
+                                    Text("${monthNames[selectedYearlyMonth!! - 1]} days:", style = MaterialTheme.typography.labelSmall)
+                                    Spacer(Modifier.height(4.dp))
+                                    FlowRow {
+                                        (1..31).forEach { day ->
+                                            val encoded = selectedYearlyMonth!! * 100 + day
+                                            FilterChip(
+                                                selected = encoded in newYearlyDates,
+                                                onClick = { if (encoded in newYearlyDates) newYearlyDates.remove(encoded) else newYearlyDates.add(encoded) },
+                                                label = { Text(day.toString()) },
+                                            )
+                                        }
+                                    }
+                                }
+                                if (newYearlyDates.isNotEmpty()) {
+                                    Spacer(Modifier.height(4.dp))
+                                    Text("Selected: ${newYearlyDates.sorted().joinToString(", ") {
+                                        val m = it / 100; val d = it % 100
+                                        "${monthNames[m - 1]} $d"
+                                    }}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
+
+                            Spacer(Modifier.height(8.dp))
+                            Text(
+                                text = when (newFreq) {
+                                    HabitFrequency.DAILY -> "Repeats daily"
+                                    HabitFrequency.WEEKLY -> {
+                                        val days = newDaysOfWeek.sorted().map { dayNames[it - 1] }
+                                        if (days.isEmpty()) "Select days of the week"
+                                        else "Every ${days.joinToString(", ")}"
+                                    }
+                                    HabitFrequency.MONTHLY -> {
+                                        if (newDaysOfMonth.isEmpty()) "Select days of the month"
+                                        else "Every month on ${newDaysOfMonth.sorted().joinToString(", ")}"
+                                    }
+                                    HabitFrequency.YEARLY -> {
+                                        if (newYearlyDates.isEmpty()) "Select dates"
+                                        else newYearlyDates.sorted().joinToString(", ") {
+                                            val m = it / 100; val d = it % 100
+                                            "${monthNames[m - 1]} $d"
+                                        }
+                                    }
+                                },
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
                         }
                     }
-                    if (newFreq == HabitFrequency.MONTHLY) {
-                        Spacer(Modifier.height(4.dp))
-                        OutlinedTextField(
-                            value = newDayOfMonth?.toString() ?: "",
-                            onValueChange = {
-                                val n = it.toIntOrNull()
-                                if (it.isEmpty() || (n != null && n in 1..31)) newDayOfMonth = n
-                            },
-                            label = { Text("Day of month (1-31)") },
-                            singleLine = true,
-                        )
-                    }
-                    if (newFreq == HabitFrequency.YEARLY) {
-                        Spacer(Modifier.height(4.dp))
-                        TextButton(onClick = { showMonthPicker = true }, modifier = Modifier.fillMaxWidth()) {
-                            Text(monthNames.getOrElse((newMonthOfYear ?: 1) - 1) { "Select month" })
-                        }
-                        Spacer(Modifier.height(4.dp))
-                        OutlinedTextField(
-                            value = newDayOfMonth?.toString() ?: "",
-                            onValueChange = {
-                                val n = it.toIntOrNull()
-                                if (it.isEmpty() || (n != null && n in 1..31)) newDayOfMonth = n
-                            },
-                            label = { Text("Day of month (1-31)") },
-                            singleLine = true,
-                        )
-                    }
-                    Spacer(Modifier.height(8.dp))
-                    OutlinedTextField(value = newCount,
-                        onValueChange = { if (it.all { c -> c.isDigit() } && it.length <= 2) newCount = it },
-                        label = { Text("Times per period") }, singleLine = true)
-                    Spacer(Modifier.height(8.dp))
+
+                    Spacer(Modifier.height(12.dp))
                     OutlinedTextField(
                         value = newHabitDescription,
                         onValueChange = { newHabitDescription = it },
@@ -405,32 +467,34 @@ fun HabitsPage(viewModel: HabitsViewModel) {
                 }
             },
             confirmButton = {
-                TextButton(onClick = {
-                    val count = newCount.toIntOrNull() ?: 1
-                    if (newHabitTitle.isNotBlank() && count > 0) {
-                        val habit = editingHabit?.copy(
-                            title = newHabitTitle,
-                            description = newHabitDescription,
-                            frequencyType = newFreq,
-                            frequencyCount = count,
-                            daysOfWeek = newDaysOfWeek.toSet(),
-                            dayOfMonth = newDayOfMonth,
-                            monthOfYear = newMonthOfYear,
-                            reminderTime = newHabitReminder.ifBlank { null },
-                        ) ?: Habit(
-                            title = newHabitTitle,
-                            frequencyType = newFreq,
-                            frequencyCount = count,
-                            daysOfWeek = newDaysOfWeek.toSet(),
-                            dayOfMonth = newDayOfMonth,
-                            monthOfYear = newMonthOfYear,
-                            description = newHabitDescription,
-                            reminderTime = newHabitReminder.ifBlank { null },
-                        )
-                        viewModel.onAction(HabitsViewModel.Action.UpsertHabit(habit, selectedTagIds.toList()))
-                        showAddDialog = false
-                    }
-                }) { Text(if (editingHabit != null) "Save" else "Add") }
+                TextButton(
+                    onClick = {
+                        if (newHabitTitle.isNotBlank()) {
+                            val habit = editingHabit?.copy(
+                                title = newHabitTitle,
+                                description = newHabitDescription,
+                                frequencyType = newFreq,
+                                frequencyCount = 1,
+                                daysOfWeek = newDaysOfWeek.toSet(),
+                                daysOfMonth = newDaysOfMonth.toSet(),
+                                yearlyDates = newYearlyDates.toSet(),
+                                reminderTime = newHabitReminder.ifBlank { null },
+                            ) ?: Habit(
+                                title = newHabitTitle,
+                                frequencyType = newFreq,
+                                frequencyCount = 1,
+                                daysOfWeek = newDaysOfWeek.toSet(),
+                                daysOfMonth = newDaysOfMonth.toSet(),
+                                yearlyDates = newYearlyDates.toSet(),
+                                description = newHabitDescription,
+                                reminderTime = newHabitReminder.ifBlank { null },
+                            )
+                            viewModel.onAction(HabitsViewModel.Action.UpsertHabit(habit, selectedTagIds.toList()))
+                            showAddDialog = false
+                        }
+                    },
+                    enabled = newHabitTitle.isNotBlank() && (newFreq != HabitFrequency.WEEKLY || newDaysOfWeek.isNotEmpty()) && (newFreq != HabitFrequency.MONTHLY || newDaysOfMonth.isNotEmpty()) && (newFreq != HabitFrequency.YEARLY || newYearlyDates.isNotEmpty()),
+                ) { Text(if (editingHabit != null) "Save" else "Add") }
             },
             dismissButton = { TextButton(onClick = { showAddDialog = false }) { Text("Cancel") } },
         )
@@ -457,50 +521,6 @@ fun HabitsPage(viewModel: HabitsViewModel) {
         ) {
             TimePicker(state = timePickerState)
         }
-    }
-
-    if (showMonthPicker) {
-        AlertDialog(
-            onDismissRequest = { showMonthPicker = false },
-            title = { Text("Select month") },
-            text = {
-                Column {
-                    monthNames.forEachIndexed { i, name ->
-                        TextButton(
-                            onClick = {
-                                newMonthOfYear = i + 1
-                                showMonthPicker = false
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                        ) { Text(name) }
-                    }
-                }
-            },
-            dismissButton = { TextButton(onClick = { showMonthPicker = false }) { Text("Cancel") } },
-            confirmButton = {},
-        )
-    }
-
-    if (showFreqPicker) {
-        AlertDialog(
-            onDismissRequest = { showFreqPicker = false },
-            title = { Text("Select period") },
-            text = {
-                Column {
-                    HabitFrequency.entries.forEach { f ->
-                        TextButton(
-                            onClick = {
-                                newFreq = f
-                                showFreqPicker = false
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                        ) { Text(f.name.lowercase().replaceFirstChar { it.uppercase() }) }
-                    }
-                }
-            },
-            dismissButton = { TextButton(onClick = { showFreqPicker = false }) { Text("Cancel") } },
-            confirmButton = {},
-        )
     }
 
     state.selectedHabitId?.let { habitId ->

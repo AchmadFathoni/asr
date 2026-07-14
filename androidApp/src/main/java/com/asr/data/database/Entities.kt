@@ -25,8 +25,8 @@ data class HabitEntity(
     val frequencyCount: Int = 1,
     val dayOfWeek: Int? = null,
     val daysOfWeek: String = "",
-    val dayOfMonth: Int? = null,
-    val monthOfYear: Int? = null,
+    val daysOfMonth: String = "",
+    val yearlyDates: String = "",
     @ColumnInfo(name = "order_index") val order: Int = 0,
     val reminderTime: String? = null,
 )

@@ -366,92 +366,83 @@ class BusinessLogicTest {
 
     @Test fun monthlyShowsOnCorrectDay() {
         val d15 = LocalDate(2026, 7, 15)
-        val h = Habit(title = "M", frequencyType = HabitFrequency.MONTHLY, dayOfMonth = 15)
+        val h = Habit(title = "M", frequencyType = HabitFrequency.MONTHLY, daysOfMonth = setOf(15))
         assertTrue(h.shouldShowToday( d15))
     }
 
     @Test fun monthlyHiddenOnWrongDay() {
         val d16 = LocalDate(2026, 7, 16)
-        val h = Habit(title = "M", frequencyType = HabitFrequency.MONTHLY, dayOfMonth = 15)
+        val h = Habit(title = "M", frequencyType = HabitFrequency.MONTHLY, daysOfMonth = setOf(15))
         assertFalse(h.shouldShowToday( d16))
     }
 
-    @Test fun monthlyNullDayAlwaysShows() {
-        assertTrue(Habit(title = "M", frequencyType = HabitFrequency.MONTHLY, dayOfMonth = null).shouldShowToday(LocalDate(2026, 7, 13)))
+    @Test fun monthlyEmptySetAlwaysShows() {
+        assertTrue(Habit(title = "M", frequencyType = HabitFrequency.MONTHLY, daysOfMonth = emptySet()).shouldShowToday(LocalDate(2026, 7, 13)))
     }
 
     @Test fun monthlyDay31ClampsInApril() {
-        val h = Habit(title = "M", frequencyType = HabitFrequency.MONTHLY, dayOfMonth = 31)
-        val apr30 = LocalDate(2026, 4, 30) // April has 30 days, 31 clamps to 30
+        val h = Habit(title = "M", frequencyType = HabitFrequency.MONTHLY, daysOfMonth = setOf(31))
+        val apr30 = LocalDate(2026, 4, 30)
         assertTrue(h.shouldShowToday( apr30))
         val apr29 = LocalDate(2026, 4, 29)
         assertFalse(h.shouldShowToday( apr29))
     }
 
     @Test fun monthlyDay31ClampsInFebruaryNonLeap() {
-        val h = Habit(title = "M", frequencyType = HabitFrequency.MONTHLY, dayOfMonth = 31)
-        val feb28 = LocalDate(2025, 2, 28) // 2025 not leap
+        val h = Habit(title = "M", frequencyType = HabitFrequency.MONTHLY, daysOfMonth = setOf(31))
+        val feb28 = LocalDate(2025, 2, 28)
         assertTrue(h.shouldShowToday( feb28))
         val feb27 = LocalDate(2025, 2, 27)
         assertFalse(h.shouldShowToday( feb27))
     }
 
     @Test fun monthlyDay31ShowsInJanuary() {
-        val h = Habit(title = "M", frequencyType = HabitFrequency.MONTHLY, dayOfMonth = 31)
+        val h = Habit(title = "M", frequencyType = HabitFrequency.MONTHLY, daysOfMonth = setOf(31))
         assertTrue(h.shouldShowToday( LocalDate(2026, 1, 31)))
     }
 
     @Test fun monthlyLeapYearFeb29() {
-        val h = Habit(title = "M", frequencyType = HabitFrequency.MONTHLY, dayOfMonth = 29)
-        assertTrue(h.shouldShowToday( LocalDate(2024, 2, 29))) // 2024 is leap
-        assertTrue(h.shouldShowToday( LocalDate(2025, 2, 28))) // 2025: 29 clamps to 28
+        val h = Habit(title = "M", frequencyType = HabitFrequency.MONTHLY, daysOfMonth = setOf(29))
+        assertTrue(h.shouldShowToday( LocalDate(2024, 2, 29)))
+        assertTrue(h.shouldShowToday( LocalDate(2025, 2, 28)))
+    }
+
+    @Test fun monthlyMultipleDays() {
+        val h = Habit(title = "M", frequencyType = HabitFrequency.MONTHLY, daysOfMonth = setOf(1, 15))
+        assertTrue(h.shouldShowToday( LocalDate(2026, 7, 1)))
+        assertTrue(h.shouldShowToday( LocalDate(2026, 7, 15)))
+        assertFalse(h.shouldShowToday( LocalDate(2026, 7, 7)))
     }
 
     @Test fun yearlyShowsOnCorrectMonthAndDay() {
-        val h = Habit(title = "Y", frequencyType = HabitFrequency.YEARLY, monthOfYear = 7, dayOfMonth = 4)
+        val h = Habit(title = "Y", frequencyType = HabitFrequency.YEARLY, yearlyDates = setOf(704))
         assertTrue(h.shouldShowToday( LocalDate(2026, 7, 4)))
     }
 
     @Test fun yearlyHiddenOnWrongMonth() {
-        val h = Habit(title = "Y", frequencyType = HabitFrequency.YEARLY, monthOfYear = 7, dayOfMonth = 4)
+        val h = Habit(title = "Y", frequencyType = HabitFrequency.YEARLY, yearlyDates = setOf(704))
         assertFalse(h.shouldShowToday( LocalDate(2026, 8, 4)))
     }
 
     @Test fun yearlyHiddenOnWrongDay() {
-        val h = Habit(title = "Y", frequencyType = HabitFrequency.YEARLY, monthOfYear = 7, dayOfMonth = 4)
+        val h = Habit(title = "Y", frequencyType = HabitFrequency.YEARLY, yearlyDates = setOf(704))
         assertFalse(h.shouldShowToday( LocalDate(2026, 7, 5)))
     }
 
-    @Test fun yearlyNullMonthAlwaysShows() {
-        assertTrue(Habit(title = "Y", frequencyType = HabitFrequency.YEARLY, monthOfYear = null, dayOfMonth = 15).shouldShowToday(LocalDate(2026, 7, 13)))
+    @Test fun yearlyEmptySetAlwaysShows() {
+        assertTrue(Habit(title = "Y", frequencyType = HabitFrequency.YEARLY, yearlyDates = emptySet()).shouldShowToday(LocalDate(2026, 7, 13)))
     }
 
-    @Test fun yearlyNullDayAlwaysShows() {
-        assertTrue(Habit(title = "Y", frequencyType = HabitFrequency.YEARLY, monthOfYear = 7, dayOfMonth = null).shouldShowToday(LocalDate(2026, 7, 13)))
-    }
-
-    @Test fun yearlyFeb29InLeapYear() {
-        val h = Habit(title = "Y", frequencyType = HabitFrequency.YEARLY, monthOfYear = 2, dayOfMonth = 29)
-        assertTrue(h.shouldShowToday( LocalDate(2024, 2, 29)))
-    }
-
-    @Test fun yearlyFeb29InNonLeapYearClamps() {
-        val h = Habit(title = "Y", frequencyType = HabitFrequency.YEARLY, monthOfYear = 2, dayOfMonth = 29)
-        assertTrue(h.shouldShowToday( LocalDate(2025, 2, 28)))
-        assertFalse(h.shouldShowToday( LocalDate(2025, 2, 27)))
+    @Test fun yearlyShowsOnMultipleDates() {
+        val h = Habit(title = "Y", frequencyType = HabitFrequency.YEARLY, yearlyDates = setOf(101, 1225))
+        assertTrue(h.shouldShowToday( LocalDate(2026, 1, 1)))
+        assertTrue(h.shouldShowToday( LocalDate(2026, 12, 25)))
+        assertFalse(h.shouldShowToday( LocalDate(2026, 7, 4)))
     }
 
     @Test fun yearlyDec31() {
-        val h = Habit(title = "Y", frequencyType = HabitFrequency.YEARLY, monthOfYear = 12, dayOfMonth = 31)
+        val h = Habit(title = "Y", frequencyType = HabitFrequency.YEARLY, yearlyDates = setOf(1231))
         assertTrue(h.shouldShowToday( LocalDate(2026, 12, 31)))
-    }
-
-    @Test fun yearlyMonthZeroNeverMatches() {
-        assertFalse(Habit(title = "Y", frequencyType = HabitFrequency.YEARLY, monthOfYear = 0, dayOfMonth = 15).shouldShowToday(LocalDate(2026, 7, 15)))
-    }
-
-    @Test fun yearlyMonthThirteenNeverMatches() {
-        assertFalse(Habit(title = "Y", frequencyType = HabitFrequency.YEARLY, monthOfYear = 13, dayOfMonth = 15).shouldShowToday(LocalDate(2026, 7, 15)))
     }
 
     @Test fun dailyStreakConsecutive() {
