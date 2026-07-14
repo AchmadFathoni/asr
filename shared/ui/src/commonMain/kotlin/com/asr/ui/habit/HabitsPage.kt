@@ -115,7 +115,7 @@ fun HabitsPage(viewModel: HabitsViewModel) {
     var selectedTagIds by remember { mutableStateOf(setOf<Long>()) }
     var newTagName by remember { mutableStateOf("") }
     var newTagColor by remember { mutableStateOf<Long?>(null) }
-    val dayNames = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+    val dayNames = listOf("M", "T", "W", "T", "F", "S", "S")
     val monthNames = listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
 
     val snackbarHostState = remember { SnackbarHostState() }
@@ -293,16 +293,22 @@ fun HabitsPage(viewModel: HabitsViewModel) {
                                 Spacer(Modifier.height(8.dp))
                                 Text("On:", style = MaterialTheme.typography.labelMedium)
                                 Spacer(Modifier.height(4.dp))
-                                FlowRow {
+                                Row(Modifier.fillMaxWidth()) {
                                     dayNames.forEachIndexed { i, name ->
                                         val dayNum = i + 1
-                                        FilterChip(
-                                            selected = dayNum in newDaysOfWeek,
-                                            onClick = { if (dayNum in newDaysOfWeek) newDaysOfWeek.remove(dayNum) else newDaysOfWeek.add(dayNum) },
-                                            label = { Text(name) },
-                                        )
+                                        val selected = dayNum in newDaysOfWeek
+                                        Box(
+                                            modifier = Modifier.weight(1f).aspectRatio(1f).padding(2.dp)
+                                                .clip(CircleShape)
+                                                .background(if (selected) MaterialTheme.colorScheme.primary else Color.Transparent)
+                                                .clickable { if (selected) newDaysOfWeek.remove(dayNum) else newDaysOfWeek.add(dayNum) },
+                                            contentAlignment = Alignment.Center,
+                                        ) {
+                                            Text(name, color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface)
+                                        }
                                     }
                                 }
+                                if (newDaysOfWeek.isEmpty()) Text("Select at least one day", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
                             }
                             if (newFreq == HabitFrequency.MONTHLY) {
                                 Spacer(Modifier.height(8.dp))
