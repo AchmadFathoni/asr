@@ -4,6 +4,7 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.asr.core.habit.Habit
@@ -49,7 +50,7 @@ class HabitItemTest {
     }
 
     @Test
-    fun `shows plus button and skip when not done`() {
+    fun `shows done button and skip when not done`() {
         composeTestRule.setContent {
             HabitItem(
                 habit = habit,
@@ -57,12 +58,12 @@ class HabitItemTest {
                 onSetState = {},
             )
         }
-        composeTestRule.onNodeWithText("+").assertIsDisplayed()
+        composeTestRule.onNodeWithContentDescription("Mark done").assertIsDisplayed()
         composeTestRule.onNodeWithText("Skip").assertIsDisplayed()
     }
 
     @Test
-    fun `clicking plus fires done state`() {
+    fun `clicking done button fires done state`() {
         var captured: HabitState? = null
         composeTestRule.setContent {
             HabitItem(
@@ -71,12 +72,12 @@ class HabitItemTest {
                 onSetState = { captured = it },
             )
         }
-        composeTestRule.onNodeWithText("+").performClick()
+        composeTestRule.onNodeWithContentDescription("Mark done").performClick()
         assert(captured == HabitState.DONE) { "expected DONE, got $captured" }
     }
 
     @Test
-    fun `shows checkmark instead of plus when done`() {
+    fun `shows done icon when done`() {
         composeTestRule.setContent {
             HabitItem(
                 habit = habit,
@@ -84,8 +85,7 @@ class HabitItemTest {
                 onSetState = {},
             )
         }
-        composeTestRule.onAllNodesWithText("+").assertCountEquals(0)
-        composeTestRule.onNodeWithText("✓").assertIsDisplayed()
+        composeTestRule.onNodeWithContentDescription("Done").assertIsDisplayed()
     }
 
     @Test
@@ -110,7 +110,7 @@ class HabitItemTest {
                 streak = 5,
             )
         }
-        composeTestRule.onNodeWithText("🔥 5").assertIsDisplayed()
+        composeTestRule.onNodeWithText(" 5").assertIsDisplayed()
     }
 
     @Test
