@@ -240,6 +240,42 @@ fun SettingsPage(viewModel: SettingsViewModel) {
                 }
             }
         }
+
+        Spacer(Modifier.height(24.dp))
+
+        SectionHeader("About")
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+            ),
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    "ASR — Todo & Habit App",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    "\"By the time, indeed mankind is in loss, except for those who believe and do righteous deeds and advise each other to truth and advise each other to patience.\"",
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+                    ),
+                )
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    "— Surah Al-Asr (103)",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    "Made by Achmad Fathoni with DeepSeek",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
     }
 
     tagToDelete.value?.let { tag ->
