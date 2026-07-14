@@ -30,5 +30,7 @@ captures/
 *.log
 *.hprof
 
-# Skills (source code regenerated from skills-lock.json)
+# Skills (installed via `npx skills experimental_install` from skills-lock.json)
 .opencode/skills/
+.agents/skills/
+.claude/skills/
