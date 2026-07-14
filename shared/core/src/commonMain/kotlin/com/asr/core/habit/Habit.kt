@@ -30,12 +30,12 @@ fun Habit.shouldShowToday(today: LocalDate): Boolean = when (frequencyType) {
     HabitFrequency.WEEKLY -> if (daysOfWeek.isEmpty()) true else today.dayOfWeek.ordinal + 1 in daysOfWeek
     HabitFrequency.MONTHLY -> {
         val dom = dayOfMonth ?: return true
-        today.dayOfMonth == kotlin.math.min(dom, daysInMonth(today.year, today.monthNumber))
+        today.day == kotlin.math.min(dom, daysInMonth(today.year, today.month.ordinal + 1))
     }
     HabitFrequency.YEARLY -> {
         val moy = monthOfYear ?: return true
         val dom = dayOfMonth ?: return true
-        today.monthNumber == moy && today.dayOfMonth == kotlin.math.min(dom, daysInMonth(today.year, moy))
+        today.month.ordinal + 1 == moy && today.day == kotlin.math.min(dom, daysInMonth(today.year, moy))
     }
 }
 
