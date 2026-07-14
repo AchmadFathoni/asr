@@ -7,6 +7,16 @@
 
 Simple, intuitive task and habit tracker for Android.
 
+- **Tasks** — one-time todos with due dates, hierarchical subtasks, completion tracking
+- **Habits** — recurring (daily/weekly/monthly) with frequency counts, streaks, monthly calendar history
+- **Today dashboard** — combined view of due tasks + today's habits, undo snackbar, celebration on full completion
+- **Tags** — colored labels via many-to-many junction tables, filter across tasks and habits
+- **Filter & search** — query by title/description, filter by tag or date on every tab
+- **Import/Export** — full JSON export/import with schema versioning
+- **Reminders** — per-item alarm via Android `AlarmManager` + notification
+- **Sound effects** — completion sound with pitch rising on streak
+- **Theme** — light/dark/system, persisted
+
 ## Credits
 
 Architecture and patterns drawn from two excellent open-source projects:
