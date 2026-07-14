@@ -106,7 +106,6 @@ fun HabitsPage(viewModel: HabitsViewModel) {
     val newDaysOfMonth = remember { mutableStateListOf<Int>() }
     var yearlyText by remember { mutableStateOf("") }
     var showTimePicker by remember { mutableStateOf(false) }
-    var showMonthDayPicker by remember { mutableStateOf(false) }
     var periodExpanded by remember { mutableStateOf(false) }
     var editingHabit by remember { mutableStateOf<Habit?>(null) }
     var habitToDelete by remember { mutableStateOf<Habit?>(null) }
@@ -308,21 +307,27 @@ fun HabitsPage(viewModel: HabitsViewModel) {
                                 Spacer(Modifier.height(8.dp))
                                 Text("On days:", style = MaterialTheme.typography.labelMedium)
                                 Spacer(Modifier.height(4.dp))
-                                OutlinedButton(onClick = { showMonthDayPicker = true }, modifier = Modifier.fillMaxWidth()) {
-                                    Text(if (newDaysOfMonth.isEmpty()) "Pick days" else newDaysOfMonth.sorted().joinToString(", "))
-                                }
-                                if (newDaysOfMonth.isNotEmpty()) {
-                                    Spacer(Modifier.height(4.dp))
-                                    FlowRow {
-                                        newDaysOfMonth.sorted().forEach { day ->
-                                            FilterChip(
-                                                selected = true,
-                                                onClick = { newDaysOfMonth.remove(day) },
-                                                label = { Text("$day ✕") },
-                                            )
+                                for (rowStart in listOf(1, 8, 15, 22, 29)) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                                    ) {
+                                        for (day in rowStart..(rowStart + 6).coerceAtMost(31)) {
+                                            val selected = day in newDaysOfMonth
+                                            Box(
+                                                modifier = Modifier.weight(1f).aspectRatio(1f)
+                                                    .padding(2.dp)
+                                                    .clip(CircleShape)
+                                                    .background(if (selected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent)
+                                                    .clickable { if (selected) newDaysOfMonth.remove(day) else newDaysOfMonth.add(day) },
+                                                contentAlignment = Alignment.Center,
+                                            ) {
+                                                Text(day.toString(), style = MaterialTheme.typography.bodyMedium)
+                                            }
                                         }
+                                        if (rowStart == 29) repeat(4) { Spacer(Modifier.weight(1f)) }
                                     }
                                 }
+
                             }
                             if (newFreq == HabitFrequency.YEARLY) {
                                 Spacer(Modifier.height(8.dp))
@@ -354,29 +359,6 @@ fun HabitsPage(viewModel: HabitsViewModel) {
                                     }
                                 }
                             }
-
-                            Spacer(Modifier.height(8.dp))
-                            Text(
-                                text = when (newFreq) {
-                                    HabitFrequency.DAILY -> "Repeats daily"
-                                    HabitFrequency.WEEKLY -> {
-                                        val days = newDaysOfWeek.sorted().map { dayNames[it - 1] }
-                                        if (days.isEmpty()) "Select days of the week"
-                                        else "Every ${days.joinToString(", ")}"
-                                    }
-                                    HabitFrequency.MONTHLY -> {
-                                        if (newDaysOfMonth.isEmpty()) "Pick days"
-                                        else "Every month on ${newDaysOfMonth.sorted().joinToString(", ")}"
-                                    }
-                                    HabitFrequency.YEARLY -> {
-                                        val d = parseYearly(yearlyText).sorted()
-                                        if (d.isEmpty()) "Enter dates"
-                                        else d.joinToString(", ") { "${monthNames[it / 100 - 1]} ${it % 100}" }
-                                    }
-                                },
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
                         }
                     }
 
@@ -502,39 +484,6 @@ fun HabitsPage(viewModel: HabitsViewModel) {
                 ) { Text(if (editingHabit != null) "Save" else "Add") }
             },
             dismissButton = { TextButton(onClick = { showAddDialog = false }) { Text("Cancel") } },
-        )
-    }
-
-    if (showMonthDayPicker) {
-        AlertDialog(
-            onDismissRequest = { showMonthDayPicker = false },
-            title = { Text("Month days") },
-            text = {
-                Column {
-                    for (rowStart in listOf(1, 8, 15, 22, 29)) {
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            modifier = Modifier.padding(vertical = 2.dp),
-                        ) {
-                            for (day in rowStart..(rowStart + 6).coerceAtMost(31)) {
-                                val selected = day in newDaysOfMonth
-                                Box(
-                                    modifier = Modifier.size(44.dp)
-                                        .clip(CircleShape)
-                                        .background(if (selected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent)
-                                        .clickable { if (selected) newDaysOfMonth.remove(day) else newDaysOfMonth.add(day) },
-                                    contentAlignment = Alignment.Center,
-                                ) {
-                                    Text(day.toString(), style = MaterialTheme.typography.bodyMedium)
-                                }
-                            }
-                            if (rowStart == 29) repeat(4) { Spacer(Modifier.size(44.dp)) }
-                        }
-                    }
-                }
-            },
-            confirmButton = { TextButton(onClick = { showMonthDayPicker = false }) { Text("Done") } },
-            dismissButton = { TextButton(onClick = { showMonthDayPicker = false }) { Text("Cancel") } },
         )
     }
 
