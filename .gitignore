@@ -29,4 +29,6 @@ captures/
 # Misc
 *.log
 *.hprof
-.agents/skills/ui-ux-pro-max/scripts/__pycache__/
+
+# Skills (source code regenerated from skills-lock.json)
+.opencode/skills/
