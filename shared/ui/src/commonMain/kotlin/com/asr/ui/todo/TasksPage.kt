@@ -27,6 +27,9 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -44,6 +47,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -56,6 +60,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import com.asr.core.interfaces.SoundPlayer
+import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import asr.shared.ui.generated.resources.*
 import com.asr.core.now
@@ -98,8 +103,11 @@ fun TasksPage(viewModel: TasksViewModel) {
     }
 
     val taskToDeleteHasChildren = taskToDelete?.let { subTaskMap.containsKey(it.id) } ?: false
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
             FloatingActionButton(onClick = {
                 newTaskTitle = ""; newTaskDescription = ""; newTaskReminder = ""
@@ -146,6 +154,12 @@ fun TasksPage(viewModel: TasksViewModel) {
                         isExpanded = task.id in state.expandedTaskIds,
                         progress = progress,
                         onToggle = { viewModel.onAction(TasksViewModel.Action.ToggleTask(task.id)) },
+                        showUndoSnackbar = { undo ->
+                            scope.launch {
+                                if (snackbarHostState.showSnackbar("Completed", "Undo") == SnackbarResult.ActionPerformed)
+                                    undo()
+                            }
+                        },
                         onToggleExpand = { viewModel.onAction(TasksViewModel.Action.ToggleExpand(task.id)) },
                         onDelete = { taskToDelete = task },
                         onAddSub = {
@@ -435,6 +449,7 @@ fun TaskRow(
     isExpanded: Boolean,
     progress: Pair<Int, Int>?,
     onToggle: () -> Unit,
+    showUndoSnackbar: ((undo: () -> Unit) -> Unit)? = null,
     onToggleExpand: () -> Unit,
     onDelete: () -> Unit,
     onAddSub: () -> Unit,
@@ -452,8 +467,11 @@ fun TaskRow(
             .padding(start = (depth * 24).dp)
             .graphicsLayer { scaleX = scale; scaleY = scale }
             .clickable {
-                if (!task.isDone) soundPlayer.play()
-                onToggle()
+                if (!task.isDone) {
+                    soundPlayer.play()
+                    onToggle()
+                    showUndoSnackbar?.invoke { onToggle() }
+                }
             },
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = if (task.isDone) 0.5f else 0.3f),
@@ -464,8 +482,11 @@ fun TaskRow(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Checkbox(checked = task.isDone, onCheckedChange = {
-                if (!task.isDone) soundPlayer.play()
-                onToggle()
+                if (!task.isDone) {
+                    soundPlayer.play()
+                    onToggle()
+                    showUndoSnackbar?.invoke { onToggle() }
+                }
             })
             if (hasChildren) {
                 TextButton(onClick = onToggleExpand, modifier = Modifier.padding(0.dp)) {

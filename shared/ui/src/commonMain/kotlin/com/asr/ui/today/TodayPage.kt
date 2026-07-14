@@ -20,17 +20,24 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import com.asr.core.interfaces.SoundPlayer
+import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import com.asr.core.task.Task
 import com.asr.ui.app.EmptyState
@@ -44,6 +51,8 @@ import org.jetbrains.compose.resources.vectorResource
 fun TodayPage(viewModel: TodayViewModel) {
     val state by viewModel.state.collectAsState()
     val soundPlayer = koinInject<SoundPlayer>()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
 
     if (state.isLoading) {
         Column(modifier = Modifier.fillMaxSize().padding(48.dp)) {
@@ -52,7 +61,8 @@ fun TodayPage(viewModel: TodayViewModel) {
         return
     }
 
-    LazyColumn(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+    Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) { padding ->
+    LazyColumn(modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp)) {
         item {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                 IconButton(onClick = { viewModel.onAction(TodayViewModel.Action.ToggleFilterSheet) }) {
@@ -82,8 +92,14 @@ fun TodayPage(viewModel: TodayViewModel) {
                         .padding(vertical = 4.dp)
                         .graphicsLayer { scaleX = scale; scaleY = scale }
                         .clickable {
-                            if (!task.isDone) soundPlayer.play()
-                            viewModel.onAction(TodayViewModel.Action.ToggleTask(task.id))
+                            if (!task.isDone) {
+                                soundPlayer.play()
+                                viewModel.onAction(TodayViewModel.Action.ToggleTask(task.id))
+                                scope.launch {
+                                    if (snackbarHostState.showSnackbar("Completed", "Undo") == SnackbarResult.ActionPerformed)
+                                        viewModel.onAction(TodayViewModel.Action.ToggleTask(task.id))
+                                }
+                            }
                         },
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(
@@ -98,8 +114,14 @@ fun TodayPage(viewModel: TodayViewModel) {
                         Checkbox(
                             checked = task.isDone,
                             onCheckedChange = {
-                                if (!task.isDone) soundPlayer.play()
-                                viewModel.onAction(TodayViewModel.Action.ToggleTask(task.id))
+                                if (!task.isDone) {
+                                    soundPlayer.play()
+                                    viewModel.onAction(TodayViewModel.Action.ToggleTask(task.id))
+                                    scope.launch {
+                                        if (snackbarHostState.showSnackbar("Completed", "Undo") == SnackbarResult.ActionPerformed)
+                                            viewModel.onAction(TodayViewModel.Action.ToggleTask(task.id))
+                                    }
+                                }
                             },
                         )
                         Text(
@@ -125,6 +147,12 @@ fun TodayPage(viewModel: TodayViewModel) {
                     habit = habit,
                     record = state.habitRecords[habit.id],
                     onSetState = { viewModel.onAction(TodayViewModel.Action.ToggleHabit(habit.id, it)) },
+                    showDoneSnackbar = { undo ->
+                        scope.launch {
+                            if (snackbarHostState.showSnackbar("Completed", "Undo") == SnackbarResult.ActionPerformed)
+                                undo()
+                        }
+                    },
                 )
             }
         }
@@ -137,6 +165,7 @@ fun TodayPage(viewModel: TodayViewModel) {
                 )
             }
         }
+    }
     }
 
     FilterBottomSheet(
