@@ -15,6 +15,8 @@ val appVersionCodeProvider = providers.exec {
 
 val generateAppVersion = tasks.register("generateAppVersion") {
     val outputDir = layout.buildDirectory.dir("generated/version/src/commonMain/kotlin/com/asr/core")
+    inputs.property("versionName", appVersionNameProvider)
+    inputs.property("versionCode", appVersionCodeProvider)
     outputs.dir(outputDir)
 
     doLast {
