@@ -74,6 +74,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.asr.core.interfaces.SoundPlayer
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -329,14 +330,16 @@ fun HabitsPage(viewModel: HabitsViewModel) {
                                             row.forEach { name ->
                                                 val m = monthNames.indexOf(name) + 1
                                                 val selected = activeYearlyMonth == m
-                                                Box(
-                                                    modifier = Modifier.weight(1f).aspectRatio(1f).padding(2.dp)
-                                                        .clip(CircleShape)
-                                                        .background(if (selected) MaterialTheme.colorScheme.primary else Color.Transparent)
-                                                        .clickable { activeYearlyMonth = m },
-                                                    contentAlignment = Alignment.Center,
-                                                ) {
-                                                    Text(name, color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface)
+                                                Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                                                    Box(
+                                                        modifier = Modifier.size(44.dp)
+                                                            .clip(CircleShape)
+                                                            .background(if (selected) MaterialTheme.colorScheme.primary else Color.Transparent)
+                                                            .clickable { activeYearlyMonth = m },
+                                                        contentAlignment = Alignment.Center,
+                                                    ) {
+                                                        Text(name, fontSize = 11.sp, color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface)
+                                                    }
                                                 }
                                             }
                                         }
