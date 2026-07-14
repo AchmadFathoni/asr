@@ -1,28 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-echo "==> Patching AAPT2 for NixOS..."
+# Fallback patching for CI / non-direnv use.
+# Dev shell handles this automatically via shellHook + gradlew function.
+NIX_LD="${NIX_LD:-"$(patchelf --print-interpreter "$(which bash)")"}"
+while IFS= read -r -d '' bin; do
+  patchelf --set-interpreter "$NIX_LD" "$bin" 2>/dev/null || true
+done < <(find "$PWD/.gradle-home/caches" "$PWD/.android-sdk/build-tools" -name aapt2 -type f -print0 2>/dev/null)
 
-DYNAMIC_LINKER=""
-if [ -n "${NIX_CC:-}" ]; then
-  DYNAMIC_LINKER="$(cat "$NIX_CC/nix-support/dynamic-linker")"
-else
-  DYNAMIC_LINKER="$(patchelf --print-interpreter "$(which bash)")"
-fi
-
-mkdir -p .gradle-home/caches
-
-find .gradle-home/caches -name aapt2 -type f 2>/dev/null | while read -r aapt2; do
-  patchelf --set-interpreter "$DYNAMIC_LINKER" \
-    "$aapt2" 2>/dev/null && echo "  patched: $aapt2" || true
-done
-
-for aapt2 in .android-sdk/build-tools/*/aapt2; do
-  [ -f "$aapt2" ] || continue
-  patchelf --set-interpreter "$DYNAMIC_LINKER" \
-    "$aapt2" 2>/dev/null && echo "  patched: $aapt2" || true
-done
-
-echo "==> Running Gradle..."
 cd "$(dirname "$0")/.."
 exec ./gradlew "$@"
