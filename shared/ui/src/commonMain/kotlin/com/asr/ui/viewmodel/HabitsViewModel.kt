@@ -3,6 +3,7 @@ package com.asr.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.asr.core.habit.Habit
+import com.asr.core.habit.HabitFrequency
 import com.asr.core.habit.HabitRecord
 import com.asr.core.habit.HabitRepo
 import com.asr.core.habit.HabitState
@@ -26,6 +27,8 @@ import kotlinx.datetime.LocalDate
 import org.koin.core.annotation.KoinViewModel
 import org.koin.core.annotation.Provided
 
+enum class HabitFilter { ALL, DUE, DONE }
+
 @KoinViewModel
 class HabitsViewModel(
     @Provided private val habitRepo: HabitRepo,
@@ -36,6 +39,7 @@ class HabitsViewModel(
 
     private val _selected = MutableStateFlow(SelectedHabit())
     private val _filter = MutableStateFlow(FilterState())
+    private val _habitFilter = MutableStateFlow(HabitFilter.DUE)
     private val _createdTagId = MutableStateFlow<Long?>(null)
     val createdTagId: StateFlow<Long?> = _createdTagId.asStateFlow()
 
@@ -44,13 +48,19 @@ class HabitsViewModel(
         habitRepo.getRecordsFlow(),
         habitRepo.getRecordsForDateFlow(today),
         tagRepo.getTagsFlow(),
-        combine(_filter, _selected, tagRepo.getHabitTagMappingsFlow()) { f, s, m -> FilterStateWithHistory(f, s, m) },
-    ) { habits, allRecords, records, tags, (filter, selected, tagMappings) ->
+        combine(_filter, _selected, _habitFilter, tagRepo.getHabitTagMappingsFlow()) { f, s, hf, m -> FilterStateWithHistory(f, s, hf, m) },
+    ) { habits, allRecords, records, tags, (filter, selected, habitFilter, tagMappings) ->
+        val base = when (habitFilter) {
+            HabitFilter.ALL -> habits
+            HabitFilter.DUE -> habits.filter { !it.isDoneInPeriod(today, allRecords) }
+            HabitFilter.DONE -> habits.filter { it.isDoneInPeriod(today, allRecords) }
+        }
         HabitsState(
-            habits = Filters.habits(habits, tagMappings, filter.searchQuery, filter.selectedTagIds, filter.filterDate),
+            habits = Filters.habits(base, tagMappings, filter.searchQuery, filter.selectedTagIds, filter.filterDate),
             allRecords = allRecords,
             todayRecords = records.associateBy { it.habitId },
             streaks = habits.associate { it.id to it.computeStreak(allRecords, today) },
+            habitFilter = habitFilter,
             tags = tags,
             filter = filter,
             selectedHabitId = selected.habitId,
@@ -81,6 +91,7 @@ class HabitsViewModel(
         data object ConsumeCreatedTag : Action
         data class SetFilterDate(val date: LocalDate?) : Action
         data object ToggleFilterSheet : Action
+        data class SetHabitFilter(val filter: HabitFilter) : Action
     }
 
     fun onAction(action: Action) {
@@ -144,6 +155,7 @@ class HabitsViewModel(
             is Action.ClearTagFilter -> _filter.value = _filter.value.copy(selectedTagIds = emptySet())
             is Action.SetFilterDate -> _filter.value = _filter.value.copy(filterDate = action.date)
             is Action.ToggleFilterSheet -> _filter.value = _filter.value.copy(showFilterSheet = !_filter.value.showFilterSheet)
+            is Action.SetHabitFilter -> _habitFilter.value = action.filter
             is Action.ReorderHabits -> viewModelScope.launch {
                 val habits = habitRepo.getHabitsFlow().first().associateBy { it.id }
                 action.habitIds.forEachIndexed { index, id ->
@@ -165,6 +177,7 @@ private data class SelectedHabit(
 private data class FilterStateWithHistory(
     val filter: FilterState,
     val selected: SelectedHabit,
+    val habitFilter: HabitFilter,
     val tagMappings: Map<Long, List<Long>>,
 )
 
@@ -175,8 +188,19 @@ data class HabitsState(
     val streaks: Map<Long, Int> = emptyMap(),
     val tags: List<Tag> = emptyList(),
     val filter: FilterState = FilterState(),
+    val habitFilter: HabitFilter = HabitFilter.DUE,
     val selectedHabitId: Long? = null,
     val selectedHabitHistory: List<HabitRecord> = emptyList(),
     val habitTagMappings: Map<Long, List<Long>> = emptyMap(),
     val isLoading: Boolean = true,
 )
+
+private fun Habit.isDoneInPeriod(today: LocalDate, allRecords: List<HabitRecord>): Boolean {
+    val periodStart: LocalDate = when (frequencyType) {
+        HabitFrequency.DAILY -> today
+        HabitFrequency.WEEKLY -> LocalDate.fromEpochDays(today.toEpochDays() - today.dayOfWeek.ordinal)
+        HabitFrequency.MONTHLY -> LocalDate(today.year, today.month, 1)
+        HabitFrequency.YEARLY -> LocalDate(today.year, 1, 1)
+    }
+    return allRecords.any { it.habitId == id && it.state == HabitState.DONE && it.date >= periodStart }
+}

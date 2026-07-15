@@ -88,6 +88,8 @@ import com.asr.ui.LIGHT_CHECK_COLORS
 import com.asr.ui.TAG_COLORS
 import com.asr.ui.app.EmptyState
 import com.asr.ui.app.FilterBottomSheet
+import com.asr.ui.app.StatusFilterChips
+import com.asr.ui.viewmodel.HabitFilter
 import com.asr.ui.viewmodel.HabitsViewModel
 import org.jetbrains.compose.resources.vectorResource
 
@@ -170,6 +172,13 @@ fun HabitsPage(viewModel: HabitsViewModel) {
                     Icon(imageVector = vectorResource(Res.drawable.add), contentDescription = "Add habit")
                 }
             }
+                Spacer(Modifier.height(8.dp))
+
+                StatusFilterChips(
+                    entries = HabitFilter.entries,
+                    selected = state.habitFilter,
+                    onSelect = { viewModel.onAction(HabitsViewModel.Action.SetHabitFilter(it)) },
+                )
                 Spacer(Modifier.height(8.dp))
 
                 val filteredHabits = state.habits

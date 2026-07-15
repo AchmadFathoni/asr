@@ -75,6 +75,7 @@ import com.asr.ui.TAG_COLORS
 import com.asr.ui.app.EmptyState
 import com.asr.ui.app.FilterBottomSheet
 import com.asr.ui.app.SparkleCheck
+import com.asr.ui.app.StatusFilterChips
 import com.asr.ui.viewmodel.TaskFilter
 import com.asr.ui.viewmodel.TasksViewModel
 import kotlinx.datetime.LocalDate
@@ -152,13 +153,11 @@ fun TasksPage(viewModel: TasksViewModel) {
                 }
             }
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                TaskFilter.entries.forEach { filter ->
-                    FilterChip(
-                        selected = state.filter == filter,
-                        onClick = { viewModel.onAction(TasksViewModel.Action.SetFilter(filter)) },
-                        label = { Text(filter.name.lowercase().replaceFirstChar { it.uppercase() }) },
-                    )
-                }
+                StatusFilterChips(
+                    entries = TaskFilter.entries,
+                    selected = state.filter,
+                    onSelect = { viewModel.onAction(TasksViewModel.Action.SetFilter(it)) },
+                )
                 if (state.filter == TaskFilter.DONE) {
                     TextButton(onClick = { viewModel.onAction(TasksViewModel.Action.DeleteDoneTasks) }) {
                         Text("Clear done", style = MaterialTheme.typography.bodySmall)
