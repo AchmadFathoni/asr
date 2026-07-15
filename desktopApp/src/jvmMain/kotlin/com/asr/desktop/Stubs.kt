@@ -144,7 +144,7 @@ class SettingsRepoStub : SettingsRepo {
     private var theme: ThemeOption = ThemeOption.SYSTEM
 
     override fun getTheme(): ThemeOption = theme
-    override fun setTheme(t: ThemeOption) { theme = t }
+    override fun setTheme(theme: ThemeOption) { this.theme = theme }
 }
 
 @Single(binds = [AlarmScheduler::class])
