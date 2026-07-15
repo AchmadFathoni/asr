@@ -41,17 +41,15 @@ gh release upload v<version> androidApp/build/outputs/apk/release/androidApp-rel
 Only upload **release** APK (`androidApp-release.apk`), never debug.
 
 ### Commands
-don't expect build success information when using -w
 | Command | Description |
 |---------|-------------|
-| `./gradlew assembleDebug -w` | Build debug APK (warn level, hides UP-TO-DATE) |
-| `./gradlew installDebug -w` | Build + install on connected Android device |
-| `./gradlew test -w` | Run unit tests |
-| `./gradlew assembleRelease -w` | Build release APK |
-| `./gradlew installRelease -w` | Build + sign + install release on connected device |
-| `./scripts/gradlew ... -w` | Script that auto-patches AAPT2 via nix-ld, available inside dev shell |
-| `nix run .#gradlew -- ... -w` | Run via FHS environment (no patching needed) |
-| `./gradlew assembleDebug -q` | Quiet mode (errors only) |
+| `./gradlew assembleDebug` | Build debug APK |
+| `./gradlew installDebug` | Build + install on connected Android device |
+| `./gradlew test` | Run unit tests |
+| `./gradlew assembleRelease` | Build release APK |
+| `./gradlew installRelease` | Build + sign + install release on connected device |
+| `./scripts/gradlew` | Script that auto-patches AAPT2 via nix-ld, available inside dev shell |
+| `nix run .#gradlew` | Run via FHS environment (no patching needed) |
 
 ### Design Decisions
 
