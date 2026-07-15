@@ -30,23 +30,9 @@ android {
         vectorDrawables { useSupportLibrary = true }
     }
 
-    val hasSigningEnv = System.getenv("ASR_STORE_PW") != null
-    if (hasSigningEnv) {
-        signingConfigs {
-            create("release") {
-                storeFile = file("release.keystore")
-                storePassword = System.getenv("ASR_STORE_PW")
-                keyAlias = System.getenv("ASR_KEY_ALIAS")
-                keyPassword = System.getenv("ASR_KEY_PW")
-            }
-        }
-    }
-
     buildTypes {
         release {
-            if (hasSigningEnv) {
-                signingConfig = signingConfigs.getByName("release")
-            }
+            signingConfig = signingConfigs.getByName("debug")
             resValue("string", "app_name", appName)
             isMinifyEnabled = true
             isShrinkResources = true
