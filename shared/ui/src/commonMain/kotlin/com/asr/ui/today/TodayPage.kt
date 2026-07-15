@@ -39,7 +39,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -52,7 +51,6 @@ import androidx.compose.ui.unit.dp
 import com.asr.core.interfaces.SoundPlayer
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import com.asr.core.task.Task
 import com.asr.core.tag.Tag
@@ -69,7 +67,6 @@ fun TodayPage(viewModel: TodayViewModel) {
     val state by viewModel.state.collectAsState()
     val soundPlayer = koinInject<SoundPlayer>()
     val snackbarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
 
     LaunchedEffect(state.pendingDeletedTasks) {
         val tasks = state.pendingDeletedTasks ?: return@LaunchedEffect
@@ -146,13 +143,9 @@ fun TodayPage(viewModel: TodayViewModel) {
                         .padding(vertical = 4.dp)
                         .graphicsLayer { scaleX = scale; scaleY = scale }
                         .clickable {
-                            if (!task.isDone && !isParent) {
+                            if (!isParent) {
                                 soundPlayer.play()
                                 viewModel.onAction(TodayViewModel.Action.ToggleTask(task.id))
-                                scope.launch {
-                                        if (snackbarHostState.showSnackbar("Completed", "Undo", duration = SnackbarDuration.Short) == SnackbarResult.ActionPerformed)
-                                                    viewModel.onAction(TodayViewModel.Action.ToggleTask(task.id))
-                                }
                             }
                         },
                     colors = CardDefaults.cardColors(
@@ -173,10 +166,6 @@ fun TodayPage(viewModel: TodayViewModel) {
                                 onToggle = {
                                     soundPlayer.play()
                                     viewModel.onAction(TodayViewModel.Action.ToggleTask(task.id))
-                                    scope.launch {
-                                        if (snackbarHostState.showSnackbar("Completed", "Undo", duration = SnackbarDuration.Short) == SnackbarResult.ActionPerformed)
-                                            viewModel.onAction(TodayViewModel.Action.ToggleTask(task.id))
-                                    }
                                 },
                             )
                         }
@@ -211,12 +200,6 @@ fun TodayPage(viewModel: TodayViewModel) {
                     habit = habit,
                     record = state.habitRecords[habit.id],
                     onSetState = { viewModel.onAction(TodayViewModel.Action.ToggleHabit(habit.id, it)) },
-                    showDoneSnackbar = { undo ->
-                        scope.launch {
-                                        if (snackbarHostState.showSnackbar("Completed", "Undo", duration = SnackbarDuration.Short) == SnackbarResult.ActionPerformed)
-                                                undo()
-                        }
-                    },
                     tags = state.tags.filter { state.habitTagMappings[habit.id]?.contains(it.id) == true },
                 )
             }

@@ -58,7 +58,7 @@ fun SparkleCheck(
                 shape = CircleShape,
             )
             .clickable(role = Role.Checkbox) {
-                if (!isDone && !animating) {
+                if (!animating) {
                     animating = true
                     scope.launch {
                         delay(250L)

@@ -34,10 +34,8 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.SnackbarDuration
-import androidx.compose.material3.SnackbarResult
+
+
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -60,7 +58,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.Alignment
@@ -76,7 +73,6 @@ import sh.calvin.reorderable.rememberReorderableLazyListState
 import androidx.compose.ui.unit.dp
 import com.asr.core.interfaces.SoundPlayer
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import kotlinx.datetime.LocalDate
 import asr.shared.ui.generated.resources.*
@@ -118,11 +114,7 @@ fun HabitsPage(viewModel: HabitsViewModel) {
     val dayNames = listOf("M", "T", "W", "T", "F", "S", "S")
     val monthNames = listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
 
-    val snackbarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
-
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
     ) { padding ->
         Column(modifier = Modifier.padding(padding).fillMaxSize().padding(16.dp)) {
@@ -212,12 +204,6 @@ fun HabitsPage(viewModel: HabitsViewModel) {
                                 record = record,
                                 onSetState = { s ->
                                     viewModel.onAction(HabitsViewModel.Action.SetRecordState(habit.id, s))
-                                },
-                                showDoneSnackbar = { undo ->
-                                    scope.launch {
-                                        if (snackbarHostState.showSnackbar("Completed", "Undo", duration = SnackbarDuration.Short) == SnackbarResult.ActionPerformed)
-                                            undo()
-                                    }
                                 },
                                 onViewHistory = { viewModel.onAction(HabitsViewModel.Action.ViewHabitHistory(habit.id)) },
                                 onEdit = {
@@ -595,7 +581,6 @@ fun HabitItem(
     habit: Habit,
     record: HabitRecord?,
     onSetState: (HabitState) -> Unit,
-    showDoneSnackbar: ((undo: () -> Unit) -> Unit)? = null,
     onViewHistory: (() -> Unit)? = null,
     onEdit: (() -> Unit)? = null,
     onDelete: (() -> Unit)? = null,
@@ -683,11 +668,8 @@ fun HabitItem(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 OutlinedButton(
                     onClick = {
-                        if (!isDone) {
-                            soundPlayer.play(1f + (streak.coerceAtMost(10) * 0.05f))
-                            onSetState(HabitState.DONE)
-                            showDoneSnackbar?.invoke { onSetState(HabitState.NOT_DONE) }
-                        }
+                        soundPlayer.play(1f + (streak.coerceAtMost(10) * 0.05f))
+                        onSetState(HabitState.DONE)
                     },
                     contentPadding = ButtonDefaults.TextButtonContentPadding,
                 ) {
