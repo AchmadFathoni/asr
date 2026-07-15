@@ -76,6 +76,7 @@ import com.asr.ui.app.EmptyState
 import com.asr.ui.app.FilterBottomSheet
 import com.asr.ui.app.SparkleCheck
 import com.asr.ui.app.StatusFilterChips
+import com.asr.ui.app.TopActionRow
 import com.asr.ui.viewmodel.TaskFilter
 import com.asr.ui.viewmodel.TasksViewModel
 import kotlinx.datetime.LocalDate
@@ -152,44 +153,33 @@ fun TasksPage(viewModel: TasksViewModel) {
                     }
                 }
             }
-            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                StatusFilterChips(
-                    entries = TaskFilter.entries,
-                    selected = state.filter,
-                    onSelect = { viewModel.onAction(TasksViewModel.Action.SetFilter(it)) },
-                )
-                if (state.filter == TaskFilter.DONE) {
-                    TextButton(onClick = { viewModel.onAction(TasksViewModel.Action.DeleteDoneTasks) }) {
-                        Text("Clear done", style = MaterialTheme.typography.bodySmall)
-                    }
-                }
-                Spacer(Modifier.weight(1f))
-                val filterActive = state.filterState.searchQuery.isNotBlank() || state.filterState.selectedTagIds.isNotEmpty() || state.filterState.filterDate != null
-                Box {
-                    IconButton(onClick = { viewModel.onAction(TasksViewModel.Action.ToggleFilterSheet) }) {
-                        Icon(imageVector = vectorResource(Res.drawable.filter), contentDescription = "Filter")
-                    }
-                    if (filterActive) Box(
-                        Modifier.align(Alignment.TopEnd)
-                            .padding(top = 6.dp, end = 6.dp)
-                            .size(8.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primary)
+            TopActionRow(
+                onToggleFilter = { viewModel.onAction(TasksViewModel.Action.ToggleFilterSheet) },
+                filterActive = state.filterState.searchQuery.isNotBlank() || state.filterState.selectedTagIds.isNotEmpty() || state.filterState.filterDate != null,
+                onAdd = {
+                    newTaskTitle = ""; newTaskDescription = ""; newTaskReminder = ""
+                    newDueDate = null; newTaskParentId = null
+                    selectedTagIds = emptySet(); newTagName = ""; newTagColor = null
+                    editingTask = null; showAddDialog = true
+                },
+                addContentDescription = "Add task",
+                isEmpty = isEmpty,
+                pulseScale = pulseScale,
+                filterChips = {
+                    StatusFilterChips(
+                        entries = TaskFilter.entries,
+                        selected = state.filter,
+                        onSelect = { viewModel.onAction(TasksViewModel.Action.SetFilter(it)) },
                     )
-                }
-                IconButton(
-                    onClick = {
-                        newTaskTitle = ""; newTaskDescription = ""; newTaskReminder = ""
-                        newDueDate = null; newTaskParentId = null
-                        selectedTagIds = emptySet(); newTagName = ""; newTagColor = null
-                        editingTask = null; showAddDialog = true
-                    },
-                    modifier = if (isEmpty) Modifier.graphicsLayer { scaleX = pulseScale; scaleY = pulseScale }
-                               else Modifier,
-                ) {
-                    Icon(imageVector = vectorResource(Res.drawable.add), contentDescription = "Add task")
-                }
-            }
+                },
+                centerActions = {
+                    if (state.filter == TaskFilter.DONE) {
+                        TextButton(onClick = { viewModel.onAction(TasksViewModel.Action.DeleteDoneTasks) }) {
+                            Text("Clear done", style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
+                },
+            )
             Spacer(Modifier.height(8.dp))
 
             LazyColumn(modifier = Modifier.weight(1f)) {

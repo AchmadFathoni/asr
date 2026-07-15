@@ -89,6 +89,7 @@ import com.asr.ui.TAG_COLORS
 import com.asr.ui.app.EmptyState
 import com.asr.ui.app.FilterBottomSheet
 import com.asr.ui.app.StatusFilterChips
+import com.asr.ui.app.TopActionRow
 import com.asr.ui.viewmodel.HabitFilter
 import com.asr.ui.viewmodel.HabitsViewModel
 import org.jetbrains.compose.resources.vectorResource
@@ -143,43 +144,29 @@ fun HabitsPage(viewModel: HabitsViewModel) {
                     }
                 }
             }
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                val filterActive = state.filter.searchQuery.isNotBlank() || state.filter.selectedTagIds.isNotEmpty() || state.filter.filterDate != null
-                Box {
-                    IconButton(onClick = { viewModel.onAction(HabitsViewModel.Action.ToggleFilterSheet) }) {
-                        Icon(imageVector = vectorResource(Res.drawable.filter), contentDescription = "Filter")
-                    }
-                    if (filterActive) Box(
-                        Modifier.align(Alignment.TopEnd)
-                            .padding(top = 6.dp, end = 6.dp)
-                            .size(8.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primary)
+            TopActionRow(
+                onToggleFilter = { viewModel.onAction(HabitsViewModel.Action.ToggleFilterSheet) },
+                filterActive = state.filter.searchQuery.isNotBlank() || state.filter.selectedTagIds.isNotEmpty() || state.filter.filterDate != null,
+                onAdd = {
+                    newHabitTitle = ""; newHabitDescription = ""; newHabitReminder = ""
+                    newFreq = HabitFrequency.DAILY
+                    newDaysOfWeek.clear(); newDaysOfMonth.clear(); selectedYearlyDates.clear(); activeYearlyMonth = 1
+                    selectedTagIds = emptySet(); newTagName = ""; newTagColor = null
+                    editingHabit = null
+                    showAddDialog = true
+                },
+                addContentDescription = "Add habit",
+                isEmpty = isEmpty,
+                pulseScale = pulseScale,
+                filterChips = {
+                    StatusFilterChips(
+                        entries = HabitFilter.entries,
+                        selected = state.habitFilter,
+                        onSelect = { viewModel.onAction(HabitsViewModel.Action.SetHabitFilter(it)) },
                     )
-                }
-                IconButton(
-                    onClick = {
-                        newHabitTitle = ""; newHabitDescription = ""; newHabitReminder = ""
-                        newFreq = HabitFrequency.DAILY
-                        newDaysOfWeek.clear(); newDaysOfMonth.clear(); selectedYearlyDates.clear(); activeYearlyMonth = 1
-                        selectedTagIds = emptySet(); newTagName = ""; newTagColor = null
-                        editingHabit = null
-                        showAddDialog = true
-                    },
-                    modifier = if (isEmpty) Modifier.graphicsLayer { scaleX = pulseScale; scaleY = pulseScale }
-                               else Modifier,
-                ) {
-                    Icon(imageVector = vectorResource(Res.drawable.add), contentDescription = "Add habit")
-                }
-            }
-                Spacer(Modifier.height(8.dp))
-
-                StatusFilterChips(
-                    entries = HabitFilter.entries,
-                    selected = state.habitFilter,
-                    onSelect = { viewModel.onAction(HabitsViewModel.Action.SetHabitFilter(it)) },
-                )
-                Spacer(Modifier.height(8.dp))
+                },
+            )
+            Spacer(Modifier.height(8.dp))
 
                 val filteredHabits = state.habits
 

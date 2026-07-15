@@ -35,6 +35,7 @@ UI ← StateFlow<State> ← ViewModel ← Repository (Flow) ← Room
 
 ### Release
 ```bash
+export GH_TOKEN=$(cat .secret)
 gh release create v<version> --title "v<version>" --notes "<notes>"
 gh release upload v<version> androidApp/build/outputs/apk/release/androidApp-release.apk
 ```
