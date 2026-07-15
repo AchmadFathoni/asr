@@ -144,7 +144,7 @@ fun TodayPage(viewModel: TodayViewModel) {
                         .graphicsLayer { scaleX = scale; scaleY = scale }
                         .clickable {
                             if (!isParent) {
-                                soundPlayer.play()
+                                if (!task.isDone) soundPlayer.play()
                                 viewModel.onAction(TodayViewModel.Action.ToggleTask(task.id))
                             }
                         },
@@ -164,7 +164,7 @@ fun TodayPage(viewModel: TodayViewModel) {
                             SparkleCheck(
                                 isDone = task.isDone,
                                 onToggle = {
-                                    soundPlayer.play()
+                                    if (!task.isDone) soundPlayer.play()
                                     viewModel.onAction(TodayViewModel.Action.ToggleTask(task.id))
                                 },
                             )

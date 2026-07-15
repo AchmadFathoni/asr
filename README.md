@@ -23,6 +23,7 @@ Architecture and patterns drawn from two excellent open-source projects:
 
 - **[Grit](https://github.com/shub39/grit)** by Shubham Gorai — KMP/Compose Multiplatform structure, UDF/MVI-lite architecture, Koin compiler plugin DI, Room database layout, custom vector drawables pattern
 - **[WHPH](https://github.com/anomalyco/whph)** — data model design (hierarchical tasks, recurring habits, junction-table tags), NixOS dev environment approach, export/import schema versioning
+- **Completion sound effect** — "Level Up" by [UNIVERSFIELD](https://pixabay.com/users/universfield-28281460/) from [Pixabay](https://pixabay.com/sound-effects/level-up-191997/)
 
 ## Quick Start (NixOS)
 

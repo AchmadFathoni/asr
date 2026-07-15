@@ -513,7 +513,7 @@ fun TaskRow(
             .graphicsLayer { scaleX = scale; scaleY = scale }
             .clickable {
                 if (!hasChildren) {
-                    soundPlayer.play()
+                    if (!task.isDone) soundPlayer.play()
                     onToggle()
                 }
             },
@@ -529,7 +529,7 @@ fun TaskRow(
                 Spacer(Modifier.width(30.dp))
             } else {
                 SparkleCheck(isDone = task.isDone, onToggle = {
-                    soundPlayer.play()
+                    if (!task.isDone) soundPlayer.play()
                     onToggle()
                 })
             }
