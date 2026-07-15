@@ -48,14 +48,18 @@ class TodayViewModel(
         val parentTaskIds = tasks.filter { it.parentId != null }.map { it.parentId!! }.toSet()
         val undoneTasks = tasks.filter { !it.isDone }
         val baseTasks = undoneTasks.filter { val due = it.dueDate; due == null || due <= today }
-        val baseHabits = habits.filter { it.shouldShowToday(today) }
+        val todayHabits = habits.filter { it.shouldShowToday(today) }
+        val baseHabits = todayHabits.filter { h ->
+            val rec = records.firstOrNull { it.habitId == h.id }
+            rec == null || rec.state == HabitState.NOT_DONE
+        }
 
         val todayTasks = tasks.filter { val due = it.dueDate; due == null || due <= today }
-        val hasItems = todayTasks.isNotEmpty() || baseHabits.isNotEmpty()
+        val hasItems = todayTasks.isNotEmpty() || todayHabits.isNotEmpty()
         val noFilter = filter.searchQuery.isBlank() && filter.selectedTagIds.isEmpty()
         val allDone = noFilter && hasItems &&
             todayTasks.all { it.isDone } &&
-            baseHabits.all { h -> records.firstOrNull { it.habitId == h.id }?.state == HabitState.DONE }
+            todayHabits.all { h -> records.firstOrNull { it.habitId == h.id }?.state == HabitState.DONE }
 
         TodayState(
             tasks = Filters.tasks(baseTasks, ttm, filter.searchQuery, filter.selectedTagIds, null),
