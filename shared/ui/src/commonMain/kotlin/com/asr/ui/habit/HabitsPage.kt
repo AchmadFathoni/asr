@@ -220,7 +220,7 @@ fun HabitsPage(viewModel: HabitsViewModel) {
                                     newDaysOfWeek.clear(); newDaysOfWeek.addAll(habit.daysOfWeek)
                                     newDaysOfMonth.clear(); newDaysOfMonth.addAll(habit.daysOfMonth)
                                     selectedYearlyDates.clear(); selectedYearlyDates.addAll(habit.yearlyDates); activeYearlyMonth = 1
-                                    selectedTagIds = emptySet(); newTagName = ""; newTagColor = null
+                                    selectedTagIds = (state.habitTagMappings[habit.id]?.toSet() ?: emptySet()).intersect(state.tags.map { it.id }.toSet()); newTagName = ""; newTagColor = null
                                     showAddDialog = true
                                 },
                                 streak = state.streaks[habit.id] ?: 0,

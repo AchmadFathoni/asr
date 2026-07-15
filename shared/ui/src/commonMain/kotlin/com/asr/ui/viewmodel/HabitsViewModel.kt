@@ -98,15 +98,15 @@ class HabitsViewModel(
         when (action) {
             is Action.UpsertHabit -> viewModelScope.launch {
                 val id = habitRepo.upsertHabit(action.habit)
-                if (action.tagIds.isNotEmpty()) {
-                    tagRepo.setTagsForHabit(id, action.tagIds)
-                }
-                alarmScheduler.schedule(action.habit.copy(id = id))
+                val effectiveId = if (id <= 0) action.habit.id else id
+                if (effectiveId <= 0) return@launch
+                tagRepo.setTagsForHabit(effectiveId, action.tagIds)
+                alarmScheduler.schedule(action.habit.copy(id = effectiveId))
             }
             is Action.DuplicateHabit -> viewModelScope.launch {
                 val original = habitRepo.getHabitById(action.habitId) ?: return@launch
                 val tagIds = tagRepo.getTagsForHabit(action.habitId)
-                val newId = habitRepo.upsertHabit(original.copy(id = 0))
+                val newId = habitRepo.upsertHabit(original.copy(id = 0, title = "${original.title} (Copy)"))
                 if (tagIds.isNotEmpty()) tagRepo.setTagsForHabit(newId, tagIds.map { it.id })
                 if (original.reminderTime != null) alarmScheduler.schedule(original.copy(id = newId))
             }

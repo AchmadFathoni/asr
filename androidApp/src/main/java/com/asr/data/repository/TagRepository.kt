@@ -1,5 +1,6 @@
 package com.asr.data.repository
 
+import android.util.Log
 import com.asr.core.tag.Tag
 import com.asr.core.tag.TagRepo
 import com.asr.data.database.HabitTagEntity
@@ -42,12 +43,19 @@ class TagRepository(private val tagDao: TagDao) : TagRepo {
 
     override suspend fun setTagsForTask(taskId: Long, tagIds: List<Long>) {
         tagDao.clearTaskTags(taskId)
-        tagIds.forEach { tagDao.addTaskTag(TaskTagEntity(taskId, it)) }
+        tagIds.forEach { tagId ->
+            runCatching { tagDao.addTaskTag(TaskTagEntity(taskId, tagId)) }
+                .onFailure { Log.w("TagRepository", "FK violation: tag $tagId not found") }
+        }
     }
 
     override suspend fun setTagsForHabit(habitId: Long, tagIds: List<Long>) {
+        val validIds = tagDao.getAllTags().map { it.id }.toSet()
         tagDao.clearHabitTags(habitId)
-        tagIds.forEach { tagDao.addHabitTag(HabitTagEntity(habitId, it)) }
+        tagIds.filter { it in validIds }.forEach { tagId ->
+            runCatching { tagDao.addHabitTag(HabitTagEntity(habitId, tagId)) }
+                .onFailure { Log.w("TagRepository", "FK violation: tag $tagId for habit $habitId") }
+        }
     }
 
     override suspend fun insertAll(tags: List<Tag>) {
