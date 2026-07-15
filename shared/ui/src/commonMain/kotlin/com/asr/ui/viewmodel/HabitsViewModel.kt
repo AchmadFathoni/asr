@@ -17,6 +17,7 @@ import com.asr.ui.app.Filters
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
@@ -35,6 +36,8 @@ class HabitsViewModel(
 
     private val _selected = MutableStateFlow(SelectedHabit())
     private val _filter = MutableStateFlow(FilterState())
+    private val _createdTagId = MutableStateFlow<Long?>(null)
+    val createdTagId: StateFlow<Long?> = _createdTagId.asStateFlow()
 
     private val _state: StateFlow<HabitsState> = combine(
         habitRepo.getHabitsFlow(),
@@ -74,6 +77,7 @@ class HabitsViewModel(
         data class SetSearchQuery(val query: String) : Action
         data class ToggleTag(val tagId: Long) : Action
         data object ClearTagFilter : Action
+        data object ConsumeCreatedTag : Action
         data class SetFilterDate(val date: LocalDate?) : Action
         data object ToggleFilterSheet : Action
     }
@@ -100,8 +104,12 @@ class HabitsViewModel(
                 habitRepo.upsertRecord(habitRecordWithNewState(existing, habit, today, action.state))
             }
             is Action.CreateTag -> viewModelScope.launch {
-                if (action.name.isNotBlank()) tagRepo.upsertTag(Tag(name = action.name, color = action.color))
+                if (action.name.isNotBlank()) {
+                    val id = tagRepo.upsertTag(Tag(name = action.name, color = action.color))
+                    _createdTagId.value = id
+                }
             }
+            is Action.ConsumeCreatedTag -> _createdTagId.value = null
             is Action.MoveHabit -> viewModelScope.launch {
                 val habits = _state.value.habits.sortedBy { it.order }
                 val idx = habits.indexOfFirst { it.id == action.habitId }

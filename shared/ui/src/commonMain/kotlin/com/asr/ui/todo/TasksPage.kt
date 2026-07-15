@@ -97,6 +97,14 @@ fun TasksPage(viewModel: TasksViewModel) {
     var newTagColor by remember { mutableStateOf<Long?>(null) }
     var editingTask by remember { mutableStateOf<Task?>(null) }
     var taskToDelete by remember { mutableStateOf<Task?>(null) }
+
+    val createdTagId by viewModel.createdTagId.collectAsState()
+    LaunchedEffect(createdTagId) {
+        createdTagId?.let { id ->
+            selectedTagIds = selectedTagIds + id
+            viewModel.onAction(TasksViewModel.Action.ConsumeCreatedTag)
+        }
+    }
     var showDatePicker by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
 

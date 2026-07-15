@@ -12,6 +12,7 @@ import com.asr.ui.app.Filters
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
@@ -30,6 +31,8 @@ class TasksViewModel(
     private val _expandedIds = MutableStateFlow<Set<Long>>(emptySet())
     private val _filter = MutableStateFlow(FilterState())
     private val _pendingDeleted = MutableStateFlow<List<Task>?>(null)
+    private val _createdTagId = MutableStateFlow<Long?>(null)
+    val createdTagId: StateFlow<Long?> = _createdTagId.asStateFlow()
 
     private val _state: StateFlow<TasksState> = combine(
         taskRepo.getTasksFlow(),
@@ -85,6 +88,7 @@ class TasksViewModel(
         data class SetSearchQuery(val query: String) : Action
         data class ToggleTag(val tagId: Long) : Action
         data object ClearTagFilter : Action
+        data object ConsumeCreatedTag : Action
         data class SetFilterDate(val date: LocalDate?) : Action
         data object ToggleFilterSheet : Action
     }
@@ -122,8 +126,12 @@ class TasksViewModel(
             }
             is Action.SetFilter -> _taskFilter.value = action.filter
             is Action.CreateTag -> viewModelScope.launch {
-                if (action.name.isNotBlank()) tagRepo.upsertTag(Tag(name = action.name, color = action.color))
+                if (action.name.isNotBlank()) {
+                    val id = tagRepo.upsertTag(Tag(name = action.name, color = action.color))
+                    _createdTagId.value = id
+                }
             }
+            is Action.ConsumeCreatedTag -> _createdTagId.value = null
             is Action.DeleteDoneTasks -> viewModelScope.launch {
                 val doneTasks = taskRepo.getDoneTasksFlow().first()
                 taskRepo.deleteDoneTasks()

@@ -111,6 +111,15 @@ fun HabitsPage(viewModel: HabitsViewModel) {
     var selectedTagIds by remember { mutableStateOf(setOf<Long>()) }
     var newTagName by remember { mutableStateOf("") }
     var newTagColor by remember { mutableStateOf<Long?>(null) }
+
+    val createdTagId by viewModel.createdTagId.collectAsState()
+    LaunchedEffect(createdTagId) {
+        createdTagId?.let { id ->
+            selectedTagIds = selectedTagIds + id
+            viewModel.onAction(HabitsViewModel.Action.ConsumeCreatedTag)
+        }
+    }
+
     val dayNames = listOf("M", "T", "W", "T", "F", "S", "S")
     val monthNames = listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
 
