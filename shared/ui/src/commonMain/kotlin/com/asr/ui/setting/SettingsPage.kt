@@ -3,7 +3,6 @@ package com.asr.ui.setting
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.text.ClickableText
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -39,9 +38,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.asr.core.backup.ExportState
@@ -286,12 +284,12 @@ fun SettingsPage(viewModel: SettingsViewModel) {
                 )
                 Spacer(Modifier.height(4.dp))
                 val uriHandler = LocalUriHandler.current
-                ClickableText(
-                    text = AnnotatedString("GitHub"),
-                    onClick = { uriHandler.openUri("https://github.com/anomalyco/asr") },
+                Text(
+                    text = "GitHub",
                     style = MaterialTheme.typography.bodySmall.copy(
                         color = MaterialTheme.colorScheme.primary,
                     ),
+                    modifier = Modifier.clickable { uriHandler.openUri("https://github.com/anomalyco/asr") },
                 )
             }
         }
