@@ -68,6 +68,7 @@ class HabitsViewModel(
 
     sealed interface Action {
         data class UpsertHabit(val habit: Habit, val tagIds: List<Long> = emptyList()) : Action
+        data class DuplicateHabit(val habitId: Long) : Action
         data class DeleteHabit(val habitId: Long) : Action
         data class SetRecordState(val habitId: Long, val state: HabitState) : Action
         data class ViewHabitHistory(val habitId: Long) : Action
@@ -90,6 +91,13 @@ class HabitsViewModel(
                     tagRepo.setTagsForHabit(id, action.tagIds)
                 }
                 alarmScheduler.schedule(action.habit.copy(id = id))
+            }
+            is Action.DuplicateHabit -> viewModelScope.launch {
+                val original = habitRepo.getHabitById(action.habitId) ?: return@launch
+                val tagIds = tagRepo.getTagsForHabit(action.habitId)
+                val newId = habitRepo.upsertHabit(original.copy(id = 0))
+                if (tagIds.isNotEmpty()) tagRepo.setTagsForHabit(newId, tagIds.map { it.id })
+                if (original.reminderTime != null) alarmScheduler.schedule(original.copy(id = newId))
             }
             is Action.DeleteHabit -> viewModelScope.launch {
                 val habit = habitRepo.getHabitById(action.habitId)

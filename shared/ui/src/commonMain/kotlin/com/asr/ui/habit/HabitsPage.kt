@@ -229,6 +229,7 @@ fun HabitsPage(viewModel: HabitsViewModel) {
                                 },
                                 streak = state.streaks[habit.id] ?: 0,
                             onDelete = { habitToDelete = habit },
+                            onDuplicate = { viewModel.onAction(HabitsViewModel.Action.DuplicateHabit(habit.id)) },
                             tags = state.tags.filter { state.habitTagMappings[habit.id]?.contains(it.id) == true },
                             showDragHandle = true,
                             dragHandleModifier = Modifier.draggableHandle(),
@@ -593,6 +594,7 @@ fun HabitItem(
     onViewHistory: (() -> Unit)? = null,
     onEdit: (() -> Unit)? = null,
     onDelete: (() -> Unit)? = null,
+    onDuplicate: (() -> Unit)? = null,
     streak: Int = 0,
     tags: List<Tag> = emptyList(),
     dragHandleModifier: Modifier = Modifier,
@@ -695,7 +697,7 @@ fun HabitItem(
                 if (!isSkipped) {
                     TextButton(onClick = { onSetState(HabitState.SKIPPED) }) { Text("Skip") }
                 }
-                if (onViewHistory != null || onEdit != null || onDelete != null) {
+                if (onViewHistory != null || onEdit != null || onDelete != null || onDuplicate != null) {
                     Box {
                         var expanded by remember { mutableStateOf(false) }
                         IconButton(onClick = { expanded = true }) {
@@ -707,6 +709,9 @@ fun HabitItem(
                             }
                             onEdit?.let {
                                 DropdownMenuItem(text = { Text("Edit") }, onClick = { expanded = false; it() })
+                            }
+                            onDuplicate?.let {
+                                DropdownMenuItem(text = { Text("Duplicate") }, onClick = { expanded = false; it() })
                             }
                             onDelete?.let {
                                 DropdownMenuItem(text = { Text("Delete") }, onClick = { expanded = false; it() })
