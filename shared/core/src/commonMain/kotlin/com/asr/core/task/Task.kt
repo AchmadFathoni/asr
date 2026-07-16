@@ -11,6 +11,6 @@ data class Task(
     val isDone: Boolean = false,
     val dueDate: LocalDate? = null,
     val parentId: Long? = null,
-    val order: Int = 0,
+    val isPinned: Boolean = false,
     val reminderTime: String? = null,
 )

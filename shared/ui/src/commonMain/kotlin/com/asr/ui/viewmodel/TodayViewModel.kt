@@ -9,6 +9,8 @@ import com.asr.core.habit.HabitState
 import com.asr.core.habit.habitRecordWithNewState
 import com.asr.core.habit.shouldShowToday
 import com.asr.core.now
+import com.asr.core.sortedByPinAndDate
+import com.asr.core.sortedByPinAndTime
 import com.asr.core.tag.Tag
 import com.asr.core.tag.TagRepo
 import com.asr.core.task.Task
@@ -62,8 +64,8 @@ class TodayViewModel(
             todayHabits.all { h -> records.firstOrNull { it.habitId == h.id }?.state == HabitState.DONE }
 
         TodayState(
-            tasks = Filters.tasks(baseTasks, ttm, filter.searchQuery, filter.selectedTagIds, null),
-            habits = Filters.habits(baseHabits, htm, filter.searchQuery, filter.selectedTagIds, null),
+            tasks = Filters.tasks(baseTasks.sortedByPinAndDate(), ttm, filter.searchQuery, filter.selectedTagIds, null),
+            habits = Filters.habits(baseHabits.sortedByPinAndTime(), htm, filter.searchQuery, filter.selectedTagIds, null),
             tags = tags,
             habitRecords = records.associateBy { it.habitId },
             filter = filter,
@@ -92,6 +94,8 @@ class TodayViewModel(
     sealed interface Action {
         data class ToggleTask(val taskId: Long) : Action
         data class ToggleHabit(val habitId: Long, val newState: HabitState) : Action
+        data class TogglePinTask(val taskId: Long) : Action
+        data class TogglePinHabit(val habitId: Long) : Action
         data object DeleteDoneTasks : Action
         data object UndoDeleteDoneTasks : Action
         data object DismissDeletedTasks : Action
@@ -117,6 +121,14 @@ class TodayViewModel(
                 val existing = habitRepo.getRecordForDate(action.habitId, today)
                 val habit = habitRepo.getHabitById(action.habitId) ?: return@launch
                 habitRepo.upsertRecord(habitRecordWithNewState(existing, habit, today, action.newState))
+            }
+            is Action.TogglePinTask -> viewModelScope.launch {
+                val task = taskRepo.getTaskById(action.taskId) ?: return@launch
+                taskRepo.upsertTask(task.copy(isPinned = !task.isPinned))
+            }
+            is Action.TogglePinHabit -> viewModelScope.launch {
+                val habit = habitRepo.getHabitById(action.habitId) ?: return@launch
+                habitRepo.upsertHabit(habit.copy(isPinned = !habit.isPinned))
             }
             is Action.DeleteDoneTasks -> viewModelScope.launch {
                 val doneTasks = taskRepo.getDoneTasksFlow().first()

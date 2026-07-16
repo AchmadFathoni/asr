@@ -71,14 +71,14 @@ class RestoreImpl(private val db: AppDatabase) : RestoreRepo {
 private fun com.asr.data.backup.TaskSchema.toEntity() =
     com.asr.data.database.TaskEntity(
         id = id, title = title, description = description, isDone = isDone,
-        parentId = parentId, order = order, reminderTime = reminderTime,
+        parentId = parentId, isPinned = isPinned, reminderTime = reminderTime,
     )
 
 private fun com.asr.data.backup.HabitSchema.toEntity() =
     com.asr.data.database.HabitEntity(
         id = id, title = title, description = description,
         frequencyType = frequencyType, frequencyCount = frequencyCount,
-        order = order, reminderTime = reminderTime,
+        isPinned = isPinned, reminderTime = reminderTime,
     )
 
 private fun com.asr.data.backup.HabitRecordSchema.toEntity() =

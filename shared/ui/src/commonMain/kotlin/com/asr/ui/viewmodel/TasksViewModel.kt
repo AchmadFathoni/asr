@@ -7,6 +7,7 @@ import com.asr.core.tag.TagRepo
 import com.asr.core.interfaces.AlarmScheduler
 import com.asr.core.task.Task
 import com.asr.core.task.TaskRepo
+import com.asr.core.sortedByPinAndDate
 import com.asr.ui.app.FilterState
 import com.asr.ui.app.Filters
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -51,7 +52,7 @@ class TasksViewModel(
         }
 
         TasksState(
-            tasks = Filters.tasks(base, tagMappings, filter.searchQuery, filter.selectedTagIds, filter.filterDate),
+            tasks = Filters.tasks(base.sortedByPinAndDate(), tagMappings, filter.searchQuery, filter.selectedTagIds, filter.filterDate),
             filter = taskFilter,
             tags = tags,
             expandedTaskIds = expandedIds,
@@ -82,6 +83,7 @@ class TasksViewModel(
         data class ToggleExpand(val taskId: Long) : Action
         data class SetFilter(val filter: TaskFilter) : Action
         data class CreateTag(val name: String, val color: Long? = null) : Action
+        data class TogglePinTask(val taskId: Long) : Action
         data object DeleteDoneTasks : Action
         data object UndoDeleteDoneTasks : Action
         data object DismissDeletedTasks : Action
@@ -125,6 +127,10 @@ class TasksViewModel(
                 else _expandedIds.value + id
             }
             is Action.SetFilter -> _taskFilter.value = action.filter
+            is Action.TogglePinTask -> viewModelScope.launch {
+                val task = taskRepo.getTaskById(action.taskId) ?: return@launch
+                taskRepo.upsertTask(task.copy(isPinned = !task.isPinned))
+            }
             is Action.CreateTag -> viewModelScope.launch {
                 if (action.name.isNotBlank()) {
                     val id = tagRepo.upsertTag(Tag(name = action.name, color = action.color))

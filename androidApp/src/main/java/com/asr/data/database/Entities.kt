@@ -12,7 +12,7 @@ data class TaskEntity(
     val isDone: Boolean = false,
     val dueDate: Long? = null,
     val parentId: Long? = null,
-    @ColumnInfo(name = "order_index") val order: Int = 0,
+    val isPinned: Boolean = false,
     val reminderTime: String? = null,
 )
 
@@ -27,7 +27,7 @@ data class HabitEntity(
     val daysOfWeek: String = "",
     val daysOfMonth: String = "",
     val yearlyDates: String = "",
-    @ColumnInfo(name = "order_index") val order: Int = 0,
+    val isPinned: Boolean = false,
     val reminderTime: String? = null,
 )
 

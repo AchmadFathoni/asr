@@ -21,7 +21,7 @@ class AppModule {
         context.applicationContext,
         AppDatabase::class.java,
         AppDatabase.DB_NAME,
-    ).fallbackToDestructiveMigration().build()
+    ).addMigrations(AppDatabase.MIGRATION_4_5).build()
 
     @Single
     fun provideTaskDao(db: AppDatabase): TaskDao = db.taskDao()

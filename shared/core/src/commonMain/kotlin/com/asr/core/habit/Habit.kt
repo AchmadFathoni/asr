@@ -13,7 +13,7 @@ data class Habit(
     val daysOfWeek: Set<Int> = emptySet(),
     val daysOfMonth: Set<Int> = emptySet(),
     val yearlyDates: Set<Int> = emptySet(),
-    val order: Int = 0,
+    val isPinned: Boolean = false,
     val reminderTime: String? = null,
 )
 

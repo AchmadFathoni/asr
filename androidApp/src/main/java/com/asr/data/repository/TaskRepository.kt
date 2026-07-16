@@ -99,7 +99,7 @@ class TaskRepository(private val taskDao: TaskDao) : TaskRepo {
         isDone = isDone,
         dueDate = dueDate?.let { Converters.dateFromTimestamp(it) },
         parentId = parentId,
-        order = order,
+        isPinned = isPinned,
         reminderTime = reminderTime,
     )
 
@@ -110,7 +110,7 @@ class TaskRepository(private val taskDao: TaskDao) : TaskRepo {
         isDone = isDone,
         dueDate = dueDate?.let { Converters.dateToTimestamp(it) },
         parentId = parentId,
-        order = order,
+        isPinned = isPinned,
         reminderTime = reminderTime,
     )
 }

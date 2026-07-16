@@ -75,7 +75,7 @@ class HabitRepository(private val habitDao: HabitDao) : HabitRepo {
         daysOfWeek = if (daysOfWeek.isNotBlank()) daysOfWeek.split(",").mapNotNull { it.toIntOrNull() }.toSet() else emptySet(),
         daysOfMonth = if (daysOfMonth.isNotBlank()) daysOfMonth.split(",").mapNotNull { it.toIntOrNull() }.toSet() else emptySet(),
         yearlyDates = if (yearlyDates.isNotBlank()) yearlyDates.split(",").mapNotNull { it.toIntOrNull() }.toSet() else emptySet(),
-        order = order,
+        isPinned = isPinned,
         reminderTime = reminderTime,
     )
 
@@ -89,7 +89,7 @@ class HabitRepository(private val habitDao: HabitDao) : HabitRepo {
         daysOfWeek = daysOfWeek.joinToString(","),
         daysOfMonth = daysOfMonth.joinToString(","),
         yearlyDates = yearlyDates.joinToString(","),
-        order = order,
+        isPinned = isPinned,
         reminderTime = reminderTime,
     )
 

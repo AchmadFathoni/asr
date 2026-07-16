@@ -11,6 +11,7 @@ import com.asr.core.habit.computeStreak
 import com.asr.core.habit.habitRecordWithNewState
 import com.asr.core.interfaces.AlarmScheduler
 import com.asr.core.now
+import com.asr.core.sortedByPinAndTime
 import com.asr.core.tag.Tag
 import com.asr.core.tag.TagRepo
 import com.asr.ui.app.FilterState
@@ -56,7 +57,7 @@ class HabitsViewModel(
             HabitFilter.DONE -> habits.filter { it.isDoneInPeriod(today, allRecords) }
         }
         HabitsState(
-            habits = Filters.habits(base, tagMappings, filter.searchQuery, filter.selectedTagIds, filter.filterDate),
+            habits = Filters.habits(base.sortedByPinAndTime(), tagMappings, filter.searchQuery, filter.selectedTagIds, filter.filterDate),
             allRecords = allRecords,
             todayRecords = records.associateBy { it.habitId },
             streaks = habits.associate { it.id to it.computeStreak(allRecords, today) },
@@ -83,8 +84,7 @@ class HabitsViewModel(
         data class SetRecordState(val habitId: Long, val state: HabitState) : Action
         data class ViewHabitHistory(val habitId: Long) : Action
         data class CreateTag(val name: String, val color: Long? = null) : Action
-        data class MoveHabit(val habitId: Long, val direction: Int) : Action
-        data class ReorderHabits(val habitIds: List<Long>) : Action
+        data class TogglePinHabit(val habitId: Long) : Action
         data class SetSearchQuery(val query: String) : Action
         data class ToggleTag(val tagId: Long) : Action
         data object ClearTagFilter : Action
@@ -129,13 +129,9 @@ class HabitsViewModel(
                 }
             }
             is Action.ConsumeCreatedTag -> _createdTagId.value = null
-            is Action.MoveHabit -> viewModelScope.launch {
-                val habits = _state.value.habits.sortedBy { it.order }
-                val idx = habits.indexOfFirst { it.id == action.habitId }
-                val target = idx + action.direction
-                if (idx < 0 || target < 0 || target >= habits.size) return@launch
-                habitRepo.upsertHabit(habits[idx].copy(order = habits[target].order))
-                habitRepo.upsertHabit(habits[target].copy(order = habits[idx].order))
+            is Action.TogglePinHabit -> viewModelScope.launch {
+                val habit = habitRepo.getHabitById(action.habitId) ?: return@launch
+                habitRepo.upsertHabit(habit.copy(isPinned = !habit.isPinned))
             }
             is Action.ViewHabitHistory -> viewModelScope.launch {
                 if (_selected.value.habitId == action.habitId) {
@@ -156,15 +152,6 @@ class HabitsViewModel(
             is Action.SetFilterDate -> _filter.value = _filter.value.copy(filterDate = action.date)
             is Action.ToggleFilterSheet -> _filter.value = _filter.value.copy(showFilterSheet = !_filter.value.showFilterSheet)
             is Action.SetHabitFilter -> _habitFilter.value = action.filter
-            is Action.ReorderHabits -> viewModelScope.launch {
-                val habits = habitRepo.getHabitsFlow().first().associateBy { it.id }
-                action.habitIds.forEachIndexed { index, id ->
-                    val habit = habits[id] ?: return@forEachIndexed
-                    if (habit.order != index) {
-                        habitRepo.upsertHabit(habit.copy(order = index))
-                    }
-                }
-            }
         }
     }
 }

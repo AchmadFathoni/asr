@@ -19,7 +19,7 @@ data class TaskSchema(
     val description: String = "",
     val isDone: Boolean = false,
     val parentId: Long? = null,
-    val order: Int = 0,
+    val isPinned: Boolean = false,
     val reminderTime: String? = null,
 )
 
@@ -30,7 +30,7 @@ data class HabitSchema(
     val description: String = "",
     val frequencyType: String = "DAILY",
     val frequencyCount: Int = 1,
-    val order: Int = 0,
+    val isPinned: Boolean = false,
     val reminderTime: String? = null,
 )
 

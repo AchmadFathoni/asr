@@ -26,6 +26,8 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
@@ -58,6 +60,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.size
@@ -183,6 +186,8 @@ fun TasksPage(viewModel: TasksViewModel) {
             Spacer(Modifier.height(8.dp))
 
             LazyColumn(modifier = Modifier.weight(1f)) {
+                val lastPinnedIdx = flatTasks.indexOfLast { (task, _) -> task.isPinned }
+                val hasUnpinnedAfter = lastPinnedIdx >= 0 && lastPinnedIdx < flatTasks.size - 1
                 items(flatTasks) { (task, depth) ->
                     val hasChildren = subTaskMap.containsKey(task.id)
                     val progress = if (hasChildren) countProgress(task.id, subTaskMap) else null
@@ -217,7 +222,11 @@ fun TasksPage(viewModel: TasksViewModel) {
                             showAddDialog = true
                         },
                         tags = state.tags.filter { state.taskTagMappings[task.id]?.contains(it.id) == true },
+                        onTogglePin = { viewModel.onAction(TasksViewModel.Action.TogglePinTask(task.id)) },
                     )
+                    if (lastPinnedIdx >= 0 && flatTasks.indexOf(task to depth) == lastPinnedIdx && hasUnpinnedAfter) {
+                        HorizontalDivider(thickness = 2.dp, color = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
+                    }
                 }
 
                 if (state.isLoading) {
@@ -487,6 +496,7 @@ fun TaskRow(
     onDelete: () -> Unit,
     onAddSub: () -> Unit,
     onEdit: () -> Unit,
+    onTogglePin: (() -> Unit)? = null,
     tags: List<Tag> = emptyList(),
 ) {
     val soundPlayer = koinInject<SoundPlayer>()
@@ -554,9 +564,32 @@ fun TaskRow(
                     Box(Modifier.size(8.dp).clip(CircleShape).background(Color(c)))
                 }
             }
-            TextButton(onClick = onAddSub) { Text("+") }
-            TextButton(onClick = onEdit) { Text("Edit") }
-            TextButton(onClick = onDelete) { Text("Del") }
+            Box {
+                var expanded by remember { mutableStateOf(false) }
+                IconButton(onClick = { expanded = true }) {
+                    Text("⋮", fontWeight = FontWeight.Bold)
+                }
+                DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                    onTogglePin?.let {
+                        DropdownMenuItem(
+                            text = { Text(if (task.isPinned) "Unpin" else "Pin") },
+                            onClick = { expanded = false; it() },
+                        )
+                    }
+                    DropdownMenuItem(
+                        text = { Text("Add sub-task") },
+                        onClick = { expanded = false; onAddSub() },
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Edit") },
+                        onClick = { expanded = false; onEdit() },
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Delete") },
+                        onClick = { expanded = false; onDelete() },
+                    )
+                }
+            }
         }
     }
 }

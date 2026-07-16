@@ -23,6 +23,9 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -46,6 +49,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import com.asr.core.interfaces.SoundPlayer
@@ -132,6 +136,8 @@ fun TodayPage(viewModel: TodayViewModel) {
                     }
                 }
             }
+            val lastTaskPinIdx = state.tasks.indexOfLast { it.isPinned }
+            val hasTaskUnpinnedAfter = lastTaskPinIdx >= 0 && lastTaskPinIdx < state.tasks.size - 1
             items(state.tasks) { task ->
                 val isParent = task.id in state.parentTaskIds
                 val scale by animateFloatAsState(
@@ -184,7 +190,22 @@ fun TodayPage(viewModel: TodayViewModel) {
                                 )
                             }
                         }
+                        Box {
+                            var expanded by remember { mutableStateOf(false) }
+                            IconButton(onClick = { expanded = true }) {
+                                Text("\u22EE", fontWeight = FontWeight.Bold)
+                            }
+                            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                                DropdownMenuItem(
+                                    text = { Text(if (task.isPinned) "Unpin" else "Pin") },
+                                    onClick = { expanded = false; viewModel.onAction(TodayViewModel.Action.TogglePinTask(task.id)) },
+                                )
+                            }
+                        }
                     }
+                }
+                if (lastTaskPinIdx >= 0 && state.tasks.indexOf(task) == lastTaskPinIdx && hasTaskUnpinnedAfter) {
+                    HorizontalDivider(thickness = 2.dp, color = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
                 }
             }
         }
@@ -195,13 +216,19 @@ fun TodayPage(viewModel: TodayViewModel) {
                 Spacer(Modifier.height(16.dp))
                 Text("Habits", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
             }
+            val lastHabitPinIdx = state.habits.indexOfLast { it.isPinned }
+            val hasHabitUnpinnedAfter = lastHabitPinIdx >= 0 && lastHabitPinIdx < state.habits.size - 1
             items(state.habits) { habit ->
                 HabitItem(
                     habit = habit,
                     record = state.habitRecords[habit.id],
                     onSetState = { viewModel.onAction(TodayViewModel.Action.ToggleHabit(habit.id, it)) },
+                    onTogglePin = { viewModel.onAction(TodayViewModel.Action.TogglePinHabit(habit.id)) },
                     tags = state.tags.filter { state.habitTagMappings[habit.id]?.contains(it.id) == true },
                 )
+                if (lastHabitPinIdx >= 0 && state.habits.indexOf(habit) == lastHabitPinIdx && hasHabitUnpinnedAfter) {
+                    HorizontalDivider(thickness = 2.dp, color = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
+                }
             }
         }
 

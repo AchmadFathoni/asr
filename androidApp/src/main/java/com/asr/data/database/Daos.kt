@@ -7,10 +7,10 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface TaskDao {
-    @Query("SELECT * FROM tasks ORDER BY order_index ASC")
+    @Query("SELECT * FROM tasks")
     fun getAllTasksFlow(): Flow<List<TaskEntity>>
 
-    @Query("SELECT * FROM tasks WHERE isDone = 0 ORDER BY order_index ASC")
+    @Query("SELECT * FROM tasks WHERE isDone = 0")
     fun getUndoneTasksFlow(): Flow<List<TaskEntity>>
 
     @Query("SELECT * FROM tasks WHERE isDone = 1 ORDER BY id DESC")
@@ -19,7 +19,7 @@ interface TaskDao {
     @Query("SELECT * FROM tasks WHERE id = :id")
     suspend fun getTaskById(id: Long): TaskEntity?
 
-    @Query("SELECT * FROM tasks WHERE parentId = :parentId ORDER BY order_index ASC")
+    @Query("SELECT * FROM tasks WHERE parentId = :parentId")
     suspend fun getSubTasks(parentId: Long): List<TaskEntity>
 
     @Query("SELECT * FROM tasks")
@@ -43,10 +43,10 @@ interface TaskDao {
 
 @Dao
 interface HabitDao {
-    @Query("SELECT * FROM habits ORDER BY order_index ASC")
+    @Query("SELECT * FROM habits")
     fun getAllHabitsFlow(): Flow<List<HabitEntity>>
 
-    @Query("SELECT * FROM habits ORDER BY order_index ASC")
+    @Query("SELECT * FROM habits")
     suspend fun getAllHabits(): List<HabitEntity>
 
     @Query("SELECT * FROM habits WHERE id = :id")

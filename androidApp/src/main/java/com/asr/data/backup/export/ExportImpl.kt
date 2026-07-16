@@ -70,13 +70,13 @@ class ExportImpl(private val db: AppDatabase) : ExportRepo {
 
 private fun com.asr.data.database.TaskEntity.toSchema() = TaskSchema(
     id = id, title = title, description = description, isDone = isDone,
-    parentId = parentId, order = order, reminderTime = reminderTime,
+    parentId = parentId, isPinned = isPinned, reminderTime = reminderTime,
 )
 
 private fun com.asr.data.database.HabitEntity.toSchema() = HabitSchema(
     id = id, title = title, description = description,
     frequencyType = frequencyType, frequencyCount = frequencyCount,
-    order = order, reminderTime = reminderTime,
+    isPinned = isPinned, reminderTime = reminderTime,
 )
 
 private fun com.asr.data.database.HabitRecordEntity.toSchema() = HabitRecordSchema(
