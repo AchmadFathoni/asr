@@ -1,20 +1,16 @@
-package com.asr.data.repository
+package com.asr.data.storage
 
-import android.util.Log
 import com.asr.core.tag.Tag
-import com.asr.core.tag.TagRepo
+import com.asr.core.tag.TagStorage
 import com.asr.data.database.HabitTagEntity
 import com.asr.data.database.TagDao
 import com.asr.data.database.TagEntity
 import com.asr.data.database.TaskTagEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import org.koin.core.annotation.Single
 
-@Single(binds = [TagRepo::class])
-class TagRepository(private val tagDao: TagDao) : TagRepo {
-
-    override fun getTagsFlow(): Flow<List<Tag>> =
+class RoomTagStorage(private val tagDao: TagDao) : TagStorage {
+    override fun observeTags(): Flow<List<Tag>> =
         tagDao.getAllTagsFlow().map { it.map { e -> e.toDomain() } }
 
     override suspend fun getTags(): List<Tag> =
@@ -35,32 +31,24 @@ class TagRepository(private val tagDao: TagDao) : TagRepo {
     override suspend fun getTagsForHabit(habitId: Long): List<Tag> =
         tagDao.getTagsForHabit(habitId).map { it.toDomain() }
 
-    override fun getTaskTagMappingsFlow(): Flow<Map<Long, List<Long>>> =
+    override fun observeTaskTagMappings(): Flow<Map<Long, List<Long>>> =
         tagDao.getAllTaskTagsFlow().map { list -> list.groupBy({ it.taskId }, { it.tagId }) }
 
-    override fun getHabitTagMappingsFlow(): Flow<Map<Long, List<Long>>> =
+    override fun observeHabitTagMappings(): Flow<Map<Long, List<Long>>> =
         tagDao.getAllHabitTagsFlow().map { list -> list.groupBy({ it.habitId }, { it.tagId }) }
 
     override suspend fun setTagsForTask(taskId: Long, tagIds: List<Long>) {
         tagDao.clearTaskTags(taskId)
-        tagIds.forEach { tagId ->
-            runCatching { tagDao.addTaskTag(TaskTagEntity(taskId, tagId)) }
-                .onFailure { Log.w("TagRepository", "FK violation: tag $tagId not found") }
-        }
+        tagIds.forEach { tagId -> tagDao.addTaskTag(TaskTagEntity(taskId, tagId)) }
     }
 
     override suspend fun setTagsForHabit(habitId: Long, tagIds: List<Long>) {
-        val validIds = tagDao.getAllTags().map { it.id }.toSet()
         tagDao.clearHabitTags(habitId)
-        tagIds.filter { it in validIds }.forEach { tagId ->
-            runCatching { tagDao.addHabitTag(HabitTagEntity(habitId, tagId)) }
-                .onFailure { Log.w("TagRepository", "FK violation: tag $tagId for habit $habitId") }
-        }
+        tagIds.forEach { tagId -> tagDao.addHabitTag(HabitTagEntity(habitId, tagId)) }
     }
 
-    override suspend fun insertAll(tags: List<Tag>) {
+    override suspend fun replaceAll(tags: List<Tag>) =
         tagDao.insertAllTags(tags.map { it.toEntity() })
-    }
 
     private fun TagEntity.toDomain() = Tag(id = id, name = name, color = color)
     private fun Tag.toEntity() = TagEntity(id = id, name = name, color = color)

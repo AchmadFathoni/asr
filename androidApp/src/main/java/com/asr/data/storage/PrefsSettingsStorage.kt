@@ -1,12 +1,10 @@
-package com.asr.data.repository
+package com.asr.data.storage
 
 import android.content.Context
-import com.asr.core.settings.SettingsRepo
+import com.asr.core.settings.SettingsStorage
 import com.asr.core.settings.ThemeOption
-import org.koin.core.annotation.Single
 
-@Single(binds = [SettingsRepo::class])
-class SettingsRepository(context: Context) : SettingsRepo {
+class PrefsSettingsStorage(context: Context) : SettingsStorage {
     private val prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
     override fun getTheme(): ThemeOption {

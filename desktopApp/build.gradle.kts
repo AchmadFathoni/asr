@@ -26,6 +26,7 @@ kotlin {
             implementation(libs.compose.components.resources)
             implementation(libs.compose.windowsizeclass)
             implementation(libs.kotlinx.datetime)
+            implementation(libs.kotlinx.serialization.json)
             implementation(libs.kotlinx.coroutines.swing)
 
             implementation(libs.koin.core)
