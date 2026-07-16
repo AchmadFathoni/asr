@@ -1,25 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-patch_aapt2() {
-  local interp="$1"
-  find "$PWD/.gradle-home/caches" "$PWD/.android-sdk/build-tools" \
-    -name aapt2 -type f -print0 2>/dev/null \
-    | while IFS= read -r -d '' bin; do
-        current="$(patchelf --print-interpreter "$bin" 2>/dev/null || true)"
-        if [ "$current" != "$interp" ]; then
-          patchelf --set-interpreter "$interp" "$bin" 2>/dev/null || true
-        fi
-      done
-}
-
-INTERP="$(command -v nix-ld || true)"
-INTERP="${INTERP:-${NIX_LD:-"$(patchelf --print-interpreter "$(which bash)")"}}"
-
 cd "$(dirname "$0")/.."
 
-patch_aapt2 "$INTERP"
-
+"$PWD/scripts/patch-aapt2.sh"
 "$PWD/gradlew" "$@"
-
-patch_aapt2 "$INTERP"
+"$PWD/scripts/patch-aapt2.sh"

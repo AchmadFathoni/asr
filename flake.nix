@@ -49,10 +49,7 @@
             export NIX_LD_LIBRARY_PATH="${pkgs.zlib}/lib:${pkgs.ncurses}/lib:${pkgs.gcc.cc.lib}/lib"
 
             # Patch any existing aapt2 binaries
-            find "$PWD/.gradle-home/caches" "$PWD/.android-sdk/build-tools" \
-              -name aapt2 -type f 2>/dev/null | while read -r bin; do
-              patchelf --set-interpreter "${nixld}/bin/nix-ld" "$bin" 2>/dev/null || true
-            done
+            "$PWD/scripts/patch-aapt2.sh"
 
             # Patch adb for NixOS compatibility
             if [ -f "$ANDROID_HOME/platform-tools/adb" ]; then
