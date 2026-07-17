@@ -42,7 +42,8 @@ UI ← StateFlow<State> ← ViewModel ← Repository (Flow) ← Room
 
 # 3. Create release + upload APK
 export GH_TOKEN=$(cat .secret)
-gh release create v<version> --title "v<version>" --notes "<notes>"
+gh release create v<version> --title "v<version>" \
+  --notes "$(git log --oneline "$(git describe --tags --abbrev=0 2>/dev/null || echo v0)..HEAD")"
 gh release upload v<version> androidApp/build/outputs/apk/release/androidApp-release.apk
 ```
 Only upload **release** APK (`androidApp-release.apk`), never debug. Version code is auto-derived from `git rev-list --count HEAD`.

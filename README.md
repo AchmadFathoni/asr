@@ -65,7 +65,8 @@ desktopApp    — JSON-file storage stubs, DI, desktop entry point (Main.kt)
 
 # 3. Create release + upload APK
 export GH_TOKEN=$(cat .secret)
-gh release create v<version> --title "v<version>" --notes "<notes>"
+gh release create v<version> --title "v<version>" \
+  --notes "$(git log --oneline "$(git describe --tags --abbrev=0 2>/dev/null || echo v0)..HEAD")"
 gh release upload v<version> androidApp/build/outputs/apk/release/androidApp-release.apk
 ```
 
