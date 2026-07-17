@@ -50,6 +50,8 @@ gh release upload v<version> androidApp/build/outputs/apk/release/androidApp-rel
 ```
 Only upload **release** APK (`androidApp-release.apk`), never debug. Version code is auto-derived from `git rev-list --count HEAD`.
 
+Release notes should be short user-facing highlights. Let AI generate them from commits since last tag if desired.
+
 ### Commands
 | Command | Description |
 |---------|-------------|
