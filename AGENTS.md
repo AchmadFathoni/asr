@@ -45,11 +45,7 @@ export GH_TOKEN=$(cat .secret)
 gh release create v<version> --title "v<version>" \
   --notes "## Highlights
 
-- Feature summary here
-
-## Commits
-
-$(git log --oneline "$(git describe --tags --abbrev=0)..HEAD")"
+- Feature summary here"
 gh release upload v<version> androidApp/build/outputs/apk/release/androidApp-release.apk
 ```
 Only upload **release** APK (`androidApp-release.apk`), never debug. Version code is auto-derived from `git rev-list --count HEAD`.
