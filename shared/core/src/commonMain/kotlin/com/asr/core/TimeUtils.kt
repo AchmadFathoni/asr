@@ -1,6 +1,9 @@
 package com.asr.core
 
 import kotlin.time.Clock
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.LocalTime
@@ -16,3 +19,10 @@ fun LocalDate.Companion.now(): LocalDate =
 
 fun LocalTime.Companion.now(): LocalTime =
     LocalDateTime.now().time
+
+fun currentDateFlow(): Flow<LocalDate> = flow {
+    while (true) {
+        emit(LocalDate.now())
+        delay(60_000)
+    }
+}

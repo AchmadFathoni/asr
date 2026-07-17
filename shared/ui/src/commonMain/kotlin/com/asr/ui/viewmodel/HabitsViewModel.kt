@@ -10,6 +10,7 @@ import com.asr.core.habit.HabitState
 import com.asr.core.habit.computeStreak
 import com.asr.core.habit.habitRecordWithNewState
 import com.asr.core.interfaces.AlarmScheduler
+import com.asr.core.currentDateFlow
 import com.asr.core.now
 import com.asr.core.sortedByPinAndTime
 import com.asr.core.tag.Tag
@@ -22,6 +23,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
@@ -30,13 +34,14 @@ import org.koin.core.annotation.Provided
 
 enum class HabitFilter { ALL, DUE, DONE }
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @KoinViewModel
 class HabitsViewModel(
     @Provided private val habitRepo: HabitRepo,
     @Provided private val tagRepo: TagRepo,
     @Provided private val alarmScheduler: AlarmScheduler,
 ) : ViewModel() {
-    private val today = LocalDate.now()
+    private val todayFlow = currentDateFlow()
 
     private val _selected = MutableStateFlow(SelectedHabit())
     private val _filter = MutableStateFlow(FilterState())
@@ -44,13 +49,17 @@ class HabitsViewModel(
     private val _createdTagId = MutableStateFlow<Long?>(null)
     val createdTagId: StateFlow<Long?> = _createdTagId.asStateFlow()
 
+    private val recordsForDate = todayFlow.flatMapLatest { today ->
+        habitRepo.getRecordsForDateFlow(today).map { records -> today to records }
+    }
+
     private val _state: StateFlow<HabitsState> = combine(
         habitRepo.getHabitsFlow(),
         habitRepo.getRecordsFlow(),
-        habitRepo.getRecordsForDateFlow(today),
+        recordsForDate,
         tagRepo.getTagsFlow(),
         combine(_filter, _selected, _habitFilter, tagRepo.getHabitTagMappingsFlow()) { f, s, hf, m -> FilterStateWithHistory(f, s, hf, m) },
-    ) { habits, allRecords, records, tags, (filter, selected, habitFilter, tagMappings) ->
+    ) { habits, allRecords, (today, records), tags, (filter, selected, habitFilter, tagMappings) ->
         val base = when (habitFilter) {
             HabitFilter.ALL -> habits
             HabitFilter.DUE -> habits.filter { !it.isDoneInPeriod(today, allRecords) }
@@ -118,9 +127,10 @@ class HabitsViewModel(
                 }
             }
             is Action.SetRecordState -> viewModelScope.launch {
-                val existing = habitRepo.getRecordForDate(action.habitId, today)
+                val d = LocalDate.now()
+                val existing = habitRepo.getRecordForDate(action.habitId, d)
                 val habit = habitRepo.getHabitById(action.habitId) ?: return@launch
-                habitRepo.upsertRecord(habitRecordWithNewState(existing, habit, today, action.state))
+                habitRepo.upsertRecord(habitRecordWithNewState(existing, habit, d, action.state))
             }
             is Action.CreateTag -> viewModelScope.launch {
                 if (action.name.isNotBlank()) {

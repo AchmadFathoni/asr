@@ -8,6 +8,7 @@ import com.asr.core.habit.HabitRepo
 import com.asr.core.habit.HabitState
 import com.asr.core.habit.habitRecordWithNewState
 import com.asr.core.habit.shouldShowToday
+import com.asr.core.currentDateFlow
 import com.asr.core.now
 import com.asr.core.sortedByPinAndDate
 import com.asr.core.sortedByPinAndTime
@@ -22,31 +23,39 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
 import org.koin.core.annotation.KoinViewModel
 import org.koin.core.annotation.Provided
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @KoinViewModel
 class TodayViewModel(
     @Provided private val taskRepo: TaskRepo,
     @Provided private val habitRepo: HabitRepo,
     @Provided private val tagRepo: TagRepo,
 ) : ViewModel() {
-    private val today = LocalDate.now()
+    private val todayFlow = currentDateFlow()
     private val _filter = MutableStateFlow(FilterState())
     private val _pendingDeleted = MutableStateFlow<List<Task>?>(null)
+
+    private val recordsWithDate = todayFlow.flatMapLatest { today ->
+        habitRepo.getRecordsForDateFlow(today).map { records -> today to records }
+    }
 
     private val _state: StateFlow<TodayState> = combine(
         taskRepo.getTasksFlow(),
         habitRepo.getHabitsFlow(),
-        habitRepo.getRecordsForDateFlow(today),
+        recordsWithDate,
         tagRepo.getTagsFlow(),
         combine(_filter, tagRepo.getTaskTagMappingsFlow(), tagRepo.getHabitTagMappingsFlow(), _pendingDeleted) { f, ttm, htm, p ->
             FilterWithMappings(f, ttm, htm, p)
         },
-    ) { tasks, habits, records, tags, (filter, ttm, htm, pendingDeleted) ->
+    ) { tasks, habits, (today, records), tags, (filter, ttm, htm, pendingDeleted) ->
         val parentTaskIds = tasks.filter { it.parentId != null }.map { it.parentId!! }.toSet()
         val undoneTasks = tasks.filter { !it.isDone }
         val baseTasks = undoneTasks.filter { val due = it.dueDate; due == null || due <= today }
@@ -118,9 +127,10 @@ class TodayViewModel(
                 }
             }
             is Action.ToggleHabit -> viewModelScope.launch {
-                val existing = habitRepo.getRecordForDate(action.habitId, today)
+                val d = LocalDate.now()
+                val existing = habitRepo.getRecordForDate(action.habitId, d)
                 val habit = habitRepo.getHabitById(action.habitId) ?: return@launch
-                habitRepo.upsertRecord(habitRecordWithNewState(existing, habit, today, action.newState))
+                habitRepo.upsertRecord(habitRecordWithNewState(existing, habit, d, action.newState))
             }
             is Action.TogglePinTask -> viewModelScope.launch {
                 val task = taskRepo.getTaskById(action.taskId) ?: return@launch

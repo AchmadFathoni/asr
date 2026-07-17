@@ -70,7 +70,9 @@ Release notes should be short user-facing highlights. Let AI generate them from 
 Following Grit's pattern: `startKoin<AppModule>` (reified generic) with `@Module @ComponentScan` annotations. ViewModels auto-discovered via `@KoinViewModel` in `shared:ui` and collected by `UIModules` module. Repository implementations use `@Single(binds = [Interface::class])`. No manual `module { single { ... } }` DSL needed.
 
 #### 2. kotlin.time.Clock.System for current date/time
-Uses `kotlin.time.Clock.System` (Kotlin stdlib, available in KMP common) — not `kotlinx.datetime.Clock.System` (which doesn't exist). A single `TimeUtils.kt` in `shared:core` defines `LocalDate.now()`, `LocalDateTime.now()`, `LocalTime.now()` extension functions. All callers import `com.asr.core.now` and call `.now()` directly. No java.time needed in shared code.
+Uses `kotlin.time.Clock.System` (Kotlin stdlib, available in KMP common) — not `kotlinx.datetime.Clock.System` (which doesn't exist). A single `TimeUtils.kt` in `shared:core` defines `LocalDate.now()`, `LocalDateTime.now()`, `LocalTime.now()` extension functions and `currentDateFlow()` (polls every 60s). All callers import `com.asr.core.now` and call `.now()` directly. No java.time needed in shared code.
+
+**Quirk:** Never cache `today` as a frozen `val` in ViewModels — if the process survives overnight, the stale date causes daily habits to appear checked instead of reset. Use `currentDateFlow()` and `flatMapLatest` to keep both `today` and `recordsForDate(today)` reactive (see `TodayViewModel.kt:40`, `HabitsViewModel.kt:42`).
 
 Caveat: `androidApp` `AlarmSchedulerImpl.kt` uses `java.time.LocalTime` for alarm time arithmetic — a platform-constrained exception.
 
