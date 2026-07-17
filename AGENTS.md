@@ -6,6 +6,7 @@
 ```bash
 direnv allow                 # Enter Nix dev shell (first time: downloads Android SDK ~1GB)
 ./scripts/gradlew assembleDebug  # Build APK (auto-patches AAPT2 via nix-ld)
+./scripts/gradlew :desktopApp:run  # Run desktop app for development
 ```
 
 ### Technology Stack
@@ -35,11 +36,16 @@ UI ← StateFlow<State> ← ViewModel ← Repository (Flow) ← Room
 
 ### Release
 ```bash
+# 1. Bump version in gradle.properties (app.versionName)
+# 2. Build release APK
+./scripts/gradlew assembleRelease
+
+# 3. Create release + upload APK
 export GH_TOKEN=$(cat .secret)
 gh release create v<version> --title "v<version>" --notes "<notes>"
 gh release upload v<version> androidApp/build/outputs/apk/release/androidApp-release.apk
 ```
-Only upload **release** APK (`androidApp-release.apk`), never debug.
+Only upload **release** APK (`androidApp-release.apk`), never debug. Version code is auto-derived from `git rev-list --count HEAD`.
 
 ### Commands
 | Command | Description |

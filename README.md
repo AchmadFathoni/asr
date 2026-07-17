@@ -5,7 +5,7 @@
 > *"By the time, indeed mankind is in loss, except for those who believe and do righteous deeds and advise each other to truth and advise each other to patience."*
 > — Surah Al-Asr (103)
 
-Simple, intuitive task and habit tracker for Android.
+Simple, intuitive task and habit tracker for Android (with desktop JVM target for development).
 
 - **Tasks** — one-time todos with due dates, hierarchical subtasks, completion tracking
 - **Habits** — recurring (daily/weekly/monthly) with frequency counts, streaks, monthly calendar history
@@ -40,10 +40,10 @@ direnv allow                         # Enter Nix dev shell
 ## Architecture
 
 ```
-shared/core   — Domain models, repository interfaces
-shared/ui     — ViewModels, Compose UI (4 tabs)
-androidApp    — Room DB, DI, Glance widget, export/import
-desktopApp    — JVM desktop entry for development
+shared/core   — Domain models, repository interfaces, common interfaces
+shared/ui     — ViewModels, Compose UI, navigation
+androidApp    — Room DB, platform implementations, DI, notifications, FileKit file pickers
+desktopApp    — JSON-file storage stubs, DI, desktop entry point (Main.kt)
 ```
 
 | Layer | Technology |
@@ -53,9 +53,23 @@ desktopApp    — JVM desktop entry for development
 | DI | Koin 4.2.2 (compiler plugin) |
 | Database | Room 3 |
 | Date/Time | kotlinx-datetime + kotlin.time.Clock.System |
-| File I/O | FileKit |
-| Widgets | Glance |
+| File I/O | FileKit (Android) / java.io.File (desktop) |
 | Tests | kotlin.test (commonTest + jvmTest) |
+
+## Release
+
+```bash
+# 1. Bump version in gradle.properties (app.versionName)
+# 2. Build release APK
+./scripts/gradlew assembleRelease
+
+# 3. Create release + upload APK
+export GH_TOKEN=$(cat .secret)
+gh release create v<version> --title "v<version>" --notes "<notes>"
+gh release upload v<version> androidApp/build/outputs/apk/release/androidApp-release.apk
+```
+
+Only upload **release** APK (`androidApp-release.apk`), never debug. Version code is auto-derived from `git rev-list --count HEAD`.
 
 ## License
 
