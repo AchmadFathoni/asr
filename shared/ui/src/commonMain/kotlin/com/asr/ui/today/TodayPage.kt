@@ -212,9 +212,11 @@ fun TodayPage(viewModel: TodayViewModel) {
 
             // Habits section
             if (state.habits.isNotEmpty()) {
-                item {
-                    Spacer(Modifier.height(16.dp))
-                    Text("Habits", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+                if (state.tasks.isNotEmpty()) {
+                    item {
+                        Spacer(Modifier.height(16.dp))
+                        Text("Habits", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+                    }
                 }
                 val lastHabitPinIdx = state.habits.indexOfLast { it.isPinned }
                 val hasHabitUnpinnedAfter = lastHabitPinIdx >= 0 && lastHabitPinIdx < state.habits.size - 1
@@ -228,6 +230,8 @@ fun TodayPage(viewModel: TodayViewModel) {
                     )
                     if (lastHabitPinIdx >= 0 && state.habits.indexOf(habit) == lastHabitPinIdx && hasHabitUnpinnedAfter) {
                         HorizontalDivider(thickness = 2.dp, color = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
+                    } else {
+                        HorizontalDivider()
                     }
                 }
             }
