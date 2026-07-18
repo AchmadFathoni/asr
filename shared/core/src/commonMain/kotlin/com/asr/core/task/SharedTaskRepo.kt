@@ -1,6 +1,7 @@
 package com.asr.core.task
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 class SharedTaskRepo(private val storage: TaskStorage) : TaskRepo {
@@ -16,7 +17,13 @@ class SharedTaskRepo(private val storage: TaskStorage) : TaskRepo {
 
     override suspend fun getSubTasks(parentId: Long): List<Task> = storage.getByParent(parentId)
 
-    override suspend fun upsertTask(task: Task): Long = storage.upsert(task)
+    override suspend fun upsertTask(task: Task): Long {
+        val updated = if (task.parentId != null) {
+            val parent = storage.getById(task.parentId)
+            if (parent?.isDone == true) task.copy(isDone = true) else task
+        } else task
+        return storage.upsert(updated)
+    }
 
     override suspend fun toggleTask(id: Long) {
         val current = storage.getById(id) ?: return
@@ -65,7 +72,9 @@ class SharedTaskRepo(private val storage: TaskStorage) : TaskRepo {
         storage.delete(id)
     }
 
-    override suspend fun deleteDoneTasks() = storage.deleteDone()
+    override suspend fun deleteDoneTasks() {
+        storage.observeAll().first().filter { it.isDone }.map { it.id }.toSet().forEach { deleteRecursive(it) }
+    }
 
     override suspend fun insertAll(tasks: List<Task>) = storage.replaceAll(tasks)
 }
