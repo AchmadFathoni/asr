@@ -65,6 +65,39 @@ class SubTaskTest {
         assertTrue(repo.getTaskById(4) != null)
     }
 
+    // ── deleteDoneTasks cascade ──
+
+    @Test
+    fun deleteDoneTasksCascadesToUndoneChildren() = runBlocking {
+        val repo = repoWith(
+            Task(id = 1, title = "P", isDone = true),
+            Task(id = 2, title = "C", parentId = 1),
+        )
+        repo.deleteDoneTasks()
+        assertTrue(repo.getTaskById(1) == null)
+        assertTrue(repo.getTaskById(2) == null)
+    }
+
+    @Test
+    fun deleteDoneTasksSkipsUndoneRoots() = runBlocking {
+        val repo = repoWith(
+            Task(id = 1, title = "U"),
+            Task(id = 2, title = "P", isDone = true),
+        )
+        repo.deleteDoneTasks()
+        assertTrue(repo.getTaskById(1) != null)
+        assertTrue(repo.getTaskById(2) == null)
+    }
+
+    @Test
+    fun upsertUnderDoneParentForcesChildDone() = runBlocking {
+        val repo = repoWith(Task(id = 1, title = "P", isDone = true))
+        val childId = repo.upsertTask(Task(title = "C", parentId = 1))
+        val child = repo.getTaskById(childId)
+        assertTrue(child != null)
+        assertTrue(child!!.isDone)
+    }
+
     // ── buildFlatList (UI-level, kept as-is) ──
 
     private fun buildFlatList(
