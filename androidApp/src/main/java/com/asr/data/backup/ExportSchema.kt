@@ -4,13 +4,17 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class ExportSchema(
-    val schemaVersion: Int = 1,
+    val schemaVersion: Int = CURRENT_VERSION,
     val exportedAt: String,
     val tasks: List<TaskSchema>,
     val habits: List<HabitSchema>,
     val habitRecords: List<HabitRecordSchema>,
     val tags: List<TagSchema>,
-)
+) {
+    companion object {
+        const val CURRENT_VERSION = 1
+    }
+}
 
 @Serializable
 data class TaskSchema(
