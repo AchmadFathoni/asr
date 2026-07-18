@@ -212,9 +212,10 @@ fun HabitsPage(viewModel: HabitsViewModel) {
                             tags = state.tags.filter { state.habitTagMappings[habit.id]?.contains(it.id) == true },
                             onTogglePin = { viewModel.onAction(HabitsViewModel.Action.TogglePinHabit(habit.id)) },
                         )
-                        if (lastPinnedIdx >= 0 && filteredHabits.indexOf(habit) == lastPinnedIdx && hasUnpinnedAfter) {
+                        val hIdx = filteredHabits.indexOf(habit)
+                        if (lastPinnedIdx >= 0 && hIdx == lastPinnedIdx && hasUnpinnedAfter) {
                             HorizontalDivider(thickness = 2.dp, color = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
-                        } else {
+                        } else if (hIdx < filteredHabits.size - 1) {
                             HorizontalDivider()
                         }
                     }

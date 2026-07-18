@@ -212,11 +212,9 @@ fun TodayPage(viewModel: TodayViewModel) {
 
             // Habits section
             if (state.habits.isNotEmpty()) {
-                if (state.tasks.isNotEmpty()) {
-                    item {
-                        Spacer(Modifier.height(16.dp))
-                        Text("Habits", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
-                    }
+                item {
+                    Spacer(Modifier.height(16.dp))
+                    Text("Habits", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
                 }
                 val lastHabitPinIdx = state.habits.indexOfLast { it.isPinned }
                 val hasHabitUnpinnedAfter = lastHabitPinIdx >= 0 && lastHabitPinIdx < state.habits.size - 1
@@ -228,9 +226,10 @@ fun TodayPage(viewModel: TodayViewModel) {
                         onTogglePin = { viewModel.onAction(TodayViewModel.Action.TogglePinHabit(habit.id)) },
                         tags = state.tags.filter { state.habitTagMappings[habit.id]?.contains(it.id) == true },
                     )
-                    if (lastHabitPinIdx >= 0 && state.habits.indexOf(habit) == lastHabitPinIdx && hasHabitUnpinnedAfter) {
+                    val idx = state.habits.indexOf(habit)
+                    if (lastHabitPinIdx >= 0 && idx == lastHabitPinIdx && hasHabitUnpinnedAfter) {
                         HorizontalDivider(thickness = 2.dp, color = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
-                    } else {
+                    } else if (idx < state.habits.size - 1) {
                         HorizontalDivider()
                     }
                 }
