@@ -40,6 +40,10 @@ class TodayViewModel(
     @Provided private val tagRepo: TagRepo,
 ) : ViewModel() {
     private val todayFlow = currentDateFlow()
+    private var currentToday: LocalDate = LocalDate.now()
+
+    init { viewModelScope.launch { todayFlow.collect { currentToday = it } } }
+
     private val _filter = MutableStateFlow(FilterState())
     private val _pendingDeleted = MutableStateFlow<List<Task>?>(null)
 
@@ -56,7 +60,7 @@ class TodayViewModel(
             FilterWithMappings(f, ttm, htm, p)
         },
     ) { tasks, habits, (today, records), tags, (filter, ttm, htm, pendingDeleted) ->
-        val parentTaskIds = tasks.filter { it.parentId != null }.map { it.parentId!! }.toSet()
+        val parentTaskIds = tasks.mapNotNull { it.parentId }.toSet()
         val undoneTasks = tasks.filter { !it.isDone }
         val baseTasks = undoneTasks.filter { val due = it.dueDate; due == null || due <= today }
         val todayHabits = habits.filter { it.shouldShowToday(today) }
@@ -70,7 +74,7 @@ class TodayViewModel(
         val noFilter = filter.searchQuery.isBlank() && filter.selectedTagIds.isEmpty()
         val allDone = noFilter && hasItems &&
             todayTasks.all { it.isDone } &&
-            todayHabits.all { h -> records.firstOrNull { it.habitId == h.id }?.state == HabitState.DONE }
+            todayHabits.all { h -> records.firstOrNull { it.habitId == h.id }?.state != HabitState.NOT_DONE }
 
         TodayState(
             tasks = Filters.tasks(baseTasks.sortedByPinAndDate(), ttm, filter.searchQuery, filter.selectedTagIds, null),
@@ -120,7 +124,7 @@ class TodayViewModel(
                 taskRepo.toggleTask(action.taskId)
             }
             is Action.ToggleHabit -> viewModelScope.launch {
-                val d = LocalDate.now()
+                val d = currentToday
                 val existing = habitRepo.getRecordForDate(action.habitId, d)
                 val habit = habitRepo.getHabitById(action.habitId) ?: return@launch
                 habitRepo.upsertRecord(habitRecordWithNewState(existing, habit, d, action.newState))

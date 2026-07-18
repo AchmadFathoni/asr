@@ -42,6 +42,9 @@ class HabitsViewModel(
     @Provided private val alarmScheduler: AlarmScheduler,
 ) : ViewModel() {
     private val todayFlow = currentDateFlow()
+    private var currentToday: LocalDate = LocalDate.now()
+
+    init { viewModelScope.launch { todayFlow.collect { currentToday = it } } }
 
     private val _selected = MutableStateFlow(SelectedHabit())
     private val _filter = MutableStateFlow(FilterState())
@@ -127,7 +130,7 @@ class HabitsViewModel(
                 }
             }
             is Action.SetRecordState -> viewModelScope.launch {
-                val d = LocalDate.now()
+                val d = currentToday
                 val existing = habitRepo.getRecordForDate(action.habitId, d)
                 val habit = habitRepo.getHabitById(action.habitId) ?: return@launch
                 habitRepo.upsertRecord(habitRecordWithNewState(existing, habit, d, action.state))

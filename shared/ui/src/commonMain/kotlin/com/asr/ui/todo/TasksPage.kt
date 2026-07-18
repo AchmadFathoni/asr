@@ -114,7 +114,8 @@ fun TasksPage(viewModel: TasksViewModel) {
     var showTimePicker by remember { mutableStateOf(false) }
 
     val subTaskMap = remember(state.tasks) {
-        state.tasks.filter { it.parentId != null }.groupBy { it.parentId!! }
+        state.tasks.mapNotNull { t -> t.parentId?.let { pid -> pid to t } }
+            .groupBy({ it.first }, { it.second })
     }
 
     val flatTasks = remember(state.tasks, state.expandedTaskIds) {
@@ -598,7 +599,8 @@ private fun buildFlatList(
     tasks: List<Task>,
     expandedIds: Set<Long>,
 ): List<Pair<Task, Int>> {
-    val subTaskMap = tasks.filter { it.parentId != null }.groupBy { it.parentId!! }
+    val subTaskMap = tasks.mapNotNull { t -> t.parentId?.let { pid -> pid to t } }
+        .groupBy({ it.first }, { it.second })
     fun recurse(items: List<Task>, depth: Int): List<Pair<Task, Int>> {
         val result = mutableListOf<Pair<Task, Int>>()
         for (task in items) {

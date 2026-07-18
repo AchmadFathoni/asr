@@ -35,14 +35,14 @@ class JsonTaskStorage : TaskStorage {
 
     override suspend fun replaceAll(tasks: List<Task>) { _tasks.value = tasks; save() }
 
-    private fun save() { DataStore.data = DataStore.data.copy(tasks = _tasks.value); DataStore.save() }
+    private fun save() = DataStore.update { it.copy(tasks = _tasks.value) }
 }
 
 class JsonHabitStorage : HabitStorage {
     private val _habits = MutableStateFlow(DataStore.data.habits)
     private val _records = MutableStateFlow(DataStore.data.records)
 
-    private fun save() { DataStore.data = DataStore.data.copy(habits = _habits.value, records = _records.value); DataStore.save() }
+    private fun save() = DataStore.update { it.copy(habits = _habits.value, records = _records.value) }
 
     override fun observeHabits(): Flow<List<Habit>> = _habits
     override fun observeRecords(): Flow<List<HabitRecord>> = _records
@@ -89,7 +89,7 @@ class JsonTagStorage : TagStorage {
     private val _taskTags = MutableStateFlow(DataStore.data.taskTags)
     private val _habitTags = MutableStateFlow(DataStore.data.habitTags)
 
-    private fun save() { DataStore.data = DataStore.data.copy(tags = _tags.value, taskTags = _taskTags.value, habitTags = _habitTags.value); DataStore.save() }
+    private fun save() = DataStore.update { it.copy(tags = _tags.value, taskTags = _taskTags.value, habitTags = _habitTags.value) }
 
     override fun observeTags(): Flow<List<Tag>> = _tags
     override suspend fun getTags(): List<Tag> = _tags.value
@@ -101,7 +101,12 @@ class JsonTagStorage : TagStorage {
         save(); return id
     }
 
-    override suspend fun deleteTag(tagId: Long) { _tags.value = _tags.value.filter { it.id != tagId }; save() }
+    override suspend fun deleteTag(tagId: Long) {
+        _tags.value = _tags.value.filter { it.id != tagId }
+        _taskTags.value = _taskTags.value.mapValues { (_, v) -> v.filter { it != tagId } }
+        _habitTags.value = _habitTags.value.mapValues { (_, v) -> v.filter { it != tagId } }
+        save()
+    }
 
     override suspend fun getTagsForTask(taskId: Long): List<Tag> =
         _taskTags.value[taskId].orEmpty().mapNotNull { id -> _tags.value.find { it.id == id } }
@@ -131,7 +136,6 @@ class JsonSettingsStorage : SettingsStorage {
     override fun getTheme(): ThemeOption = theme
     override fun setTheme(theme: ThemeOption) {
         this.theme = theme
-        DataStore.data = DataStore.data.copy(theme = theme.name)
-        DataStore.save()
+        DataStore.update { it.copy(theme = theme.name) }
     }
 }

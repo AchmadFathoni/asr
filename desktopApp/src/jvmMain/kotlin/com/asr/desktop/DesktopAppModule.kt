@@ -46,6 +46,6 @@ class DesktopAppModule {
     @Single(binds = [SettingsRepo::class])
     fun provideSettingsRepo(storage: SettingsStorage): SettingsRepo = SharedSettingsRepo(storage)
 
-    @Single
+    @Single(binds = [SoundPlayer::class])
     fun provideSoundPlayer(): SoundPlayer = DefaultSoundPlayer()
 }

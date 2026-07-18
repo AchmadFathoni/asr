@@ -29,11 +29,13 @@ data class PersistedData(
 )
 
 object DataStore {
+    private val lock = Any()
     val json = Json { prettyPrint = true; ignoreUnknownKeys = true }
     private val dir: File by lazy { File(System.getProperty("user.home"), ".asr").also { it.mkdirs() } }
     private val file: File by lazy { File(dir, "data.json") }
 
     var data: PersistedData = PersistedData()
+        private set
 
     init {
         try {
@@ -42,21 +44,24 @@ object DataStore {
         } catch (_: Exception) { /* use defaults */ }
     }
 
-    fun save() {
-        dir.mkdirs()
-        file.writeText(json.encodeToString(data))
+    fun update(block: (PersistedData) -> PersistedData) {
+        synchronized(lock) {
+            data = block(data)
+            dir.mkdirs()
+            file.writeText(json.encodeToString(data))
+        }
     }
 
-    fun restore(schema: PersistedData) { data = schema; save() }
+    fun restore(schema: PersistedData) { update { schema } }
 }
 
 @Single(binds = [ExportRepo::class])
 class ExportRepoStub : ExportRepo {
     override suspend fun exportToJson() {
-        val data = DataStore.data
         val exportDir = File(System.getProperty("user.home"), ".asr/exports")
         exportDir.mkdirs()
-        File(exportDir, "ASR-Export-${System.currentTimeMillis()}.json").writeText(DataStore.json.encodeToString(data))
+        val snapshot = DataStore.data
+        File(exportDir, "ASR-Export-${System.currentTimeMillis()}.json").writeText(DataStore.json.encodeToString(snapshot))
     }
 }
 

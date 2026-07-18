@@ -14,7 +14,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -25,8 +24,6 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import asr.shared.ui.generated.resources.Res
 import asr.shared.ui.generated.resources.sparkle
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.vectorResource
 
 @Composable
@@ -36,7 +33,6 @@ fun SparkleCheck(
     modifier: Modifier = Modifier,
 ) {
     var animating by remember { mutableStateOf(false) }
-    val scope = rememberCoroutineScope()
 
     val scale by animateFloatAsState(
         targetValue = if (isDone || animating) 1.0f else 0.75f,
@@ -60,11 +56,7 @@ fun SparkleCheck(
             .clickable(role = Role.Checkbox) {
                 if (!animating) {
                     animating = true
-                    scope.launch {
-                        delay(250L)
-                        onToggle()
-                        animating = false
-                    }
+                    onToggle()
                 }
             },
         contentAlignment = Alignment.Center,

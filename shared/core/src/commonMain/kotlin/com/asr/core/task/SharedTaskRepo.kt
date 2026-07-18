@@ -42,7 +42,8 @@ class SharedTaskRepo(private val storage: TaskStorage) : TaskRepo {
             uncompleteDescendants(id)
             current.parentId?.let { parentId ->
                 val parent = storage.getById(parentId) ?: return@let
-                if (parent.isDone) {
+                val siblings = storage.getByParent(parentId)
+                if (parent.isDone && siblings.none { it.isDone }) {
                     storage.upsert(parent.copy(isDone = false))
                 }
             }

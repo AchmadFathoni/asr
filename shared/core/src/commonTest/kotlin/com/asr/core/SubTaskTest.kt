@@ -95,7 +95,7 @@ class SubTaskTest {
         val childId = repo.upsertTask(Task(title = "C", parentId = 1))
         val child = repo.getTaskById(childId)
         assertTrue(child != null)
-        assertTrue(child!!.isDone)
+        assertTrue(child.isDone)
     }
 
     // ── buildFlatList (UI-level, kept as-is) ──
@@ -104,7 +104,8 @@ class SubTaskTest {
         tasks: List<Task>,
         expandedIds: Set<Long>,
     ): List<Task> {
-        val subTaskMap = tasks.filter { it.parentId != null }.groupBy { it.parentId!! }
+        val subTaskMap = tasks.mapNotNull { t -> t.parentId?.let { pid -> pid to t } }
+            .groupBy({ it.first }, { it.second })
         fun recurse(items: List<Task>): List<Task> {
             val result = mutableListOf<Task>()
             for (task in items) {

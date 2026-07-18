@@ -39,7 +39,7 @@ class RestoreImpl(private val db: AppDatabase) : RestoreRepo {
                 return RestoreResult.Failure(RestoreFailedException.InvalidFile)
             }
 
-            if (schema.schemaVersion != ExportSchema.CURRENT_VERSION) {
+            if (schema.schemaVersion < ExportSchema.CURRENT_VERSION) {
                 return RestoreResult.Failure(RestoreFailedException.OldSchema)
             }
 

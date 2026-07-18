@@ -19,6 +19,7 @@ class AlarmSchedulerImpl(private val context: Context) : AlarmScheduler {
     companion object {
         const val CHANNEL_ID = "asr_reminders"
         const val CHANNEL_NAME = "Task & Habit Reminders"
+        private val scheduledIds = mutableSetOf<Int>()
     }
 
     init {
@@ -33,8 +34,10 @@ class AlarmSchedulerImpl(private val context: Context) : AlarmScheduler {
 
     override fun schedule(habit: Habit) {
         habit.reminderTime?.let { timeStr ->
+            val id = habit.id.toInt() + 10000
+            scheduledIds.add(id)
             scheduleAlarm(
-                id = habit.id.toInt() + 10000,
+                id = id,
                 title = habit.title,
                 body = "Time to do: ${habit.title}",
                 timeStr = timeStr,
@@ -45,8 +48,10 @@ class AlarmSchedulerImpl(private val context: Context) : AlarmScheduler {
 
     override fun schedule(task: Task) {
         task.reminderTime?.let { timeStr ->
+            val id = task.id.toInt()
+            scheduledIds.add(id)
             scheduleAlarm(
-                id = task.id.toInt(),
+                id = id,
                 title = task.title,
                 body = task.description.ifBlank { "Reminder: ${task.title}" },
                 timeStr = timeStr,
@@ -56,20 +61,21 @@ class AlarmSchedulerImpl(private val context: Context) : AlarmScheduler {
     }
 
     override fun cancel(habit: Habit) {
-        cancelAlarm(habit.id.toInt() + 10000)
+        val id = habit.id.toInt() + 10000
+        scheduledIds.remove(id)
+        cancelAlarm(id)
     }
 
     override fun cancel(task: Task) {
-        cancelAlarm(task.id.toInt())
+        val id = task.id.toInt()
+        scheduledIds.remove(id)
+        cancelAlarm(id)
     }
 
     override fun cancelAll() {
-        val manager = context.getSystemService(AlarmManager::class.java)
-        val intent = Intent(context, BootReceiver::class.java)
-        val pending = PendingIntent.getBroadcast(
-            context, 0, intent, PendingIntent.FLAG_IMMUTABLE
-        )
-        manager.cancel(pending)
+        val ids = scheduledIds.toSet()
+        ids.forEach { cancelAlarm(it) }
+        scheduledIds.clear()
     }
 
     private fun scheduleAlarm(id: Int, title: String, body: String, timeStr: String, repeating: Boolean) {
@@ -81,7 +87,9 @@ class AlarmSchedulerImpl(private val context: Context) : AlarmScheduler {
         }
         val pending = PendingIntent.getBroadcast(
             context, id, intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            else PendingIntent.FLAG_UPDATE_CURRENT,
         )
 
         val triggerTime = java.util.Calendar.getInstance().apply {
@@ -110,7 +118,9 @@ class AlarmSchedulerImpl(private val context: Context) : AlarmScheduler {
         val intent = Intent(context, BootReceiver::class.java)
         val pending = PendingIntent.getBroadcast(
             context, id, intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            else PendingIntent.FLAG_UPDATE_CURRENT,
         )
         alarmManager.cancel(pending)
     }

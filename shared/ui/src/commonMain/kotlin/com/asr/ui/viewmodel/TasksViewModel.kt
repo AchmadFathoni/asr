@@ -44,7 +44,7 @@ class TasksViewModel(
             FilterWithMappings(f, m, p)
         },
     ) { all, tags, taskFilter, expandedIds, (filter, tagMappings, pendingDeleted) ->
-        val parentTaskIds = all.filter { it.parentId != null }.map { it.parentId!! }.toSet()
+        val parentTaskIds = all.mapNotNull { it.parentId }.toSet()
         val base = when (taskFilter) {
             TaskFilter.ALL -> all
             TaskFilter.ACTIVE -> all.filter { !it.isDone }
