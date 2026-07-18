@@ -78,6 +78,9 @@ private fun com.asr.data.backup.HabitSchema.toEntity() =
     com.asr.data.database.HabitEntity(
         id = id, title = title, description = description,
         frequencyType = frequencyType, frequencyCount = frequencyCount,
+        daysOfWeek = daysOfWeek.joinToString(","),
+        daysOfMonth = daysOfMonth.joinToString(","),
+        yearlyDates = yearlyDates.joinToString(","),
         isPinned = isPinned, reminderTime = reminderTime,
     )
 

@@ -76,6 +76,9 @@ private fun com.asr.data.database.TaskEntity.toSchema() = TaskSchema(
 private fun com.asr.data.database.HabitEntity.toSchema() = HabitSchema(
     id = id, title = title, description = description,
     frequencyType = frequencyType, frequencyCount = frequencyCount,
+    daysOfWeek = if (daysOfWeek.isNotBlank()) daysOfWeek.split(",").mapNotNull { it.toIntOrNull() }.toSet() else emptySet(),
+    daysOfMonth = if (daysOfMonth.isNotBlank()) daysOfMonth.split(",").mapNotNull { it.toIntOrNull() }.toSet() else emptySet(),
+    yearlyDates = if (yearlyDates.isNotBlank()) yearlyDates.split(",").mapNotNull { it.toIntOrNull() }.toSet() else emptySet(),
     isPinned = isPinned, reminderTime = reminderTime,
 )
 

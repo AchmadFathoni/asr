@@ -30,6 +30,9 @@ data class HabitSchema(
     val description: String = "",
     val frequencyType: String = "DAILY",
     val frequencyCount: Int = 1,
+    val daysOfWeek: Set<Int> = emptySet(),
+    val daysOfMonth: Set<Int> = emptySet(),
+    val yearlyDates: Set<Int> = emptySet(),
     val isPinned: Boolean = false,
     val reminderTime: String? = null,
 )
