@@ -170,7 +170,7 @@ fun SettingsPage(viewModel: SettingsViewModel) {
                                         Text(
                                             "✓",
                                             style = MaterialTheme.typography.bodySmall,
-                                            color = if (color == 0xFFFFFAC8L || color == 0xFFF0E442L || color == 0xFFBFEF45L || color == 0xFF98FB98L || color == 0xFFDCBEFFL) Color.Black else Color.White,
+                                            color = if (color in LIGHT_CHECK_COLORS) Color.Black else Color.White,
                                         )
                                     }
                                 }

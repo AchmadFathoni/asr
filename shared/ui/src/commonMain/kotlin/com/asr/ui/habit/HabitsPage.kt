@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -47,7 +48,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TimePicker
+import androidx.compose.material3.TimeInput
 import androidx.compose.material3.TimePickerDialog
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
@@ -62,6 +63,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
@@ -135,7 +139,7 @@ fun HabitsPage(viewModel: HabitsViewModel) {
                 animationSpec = tween(700, easing = FastOutSlowInEasing),
             )
             if (isEmpty) {
-                LaunchedEffect(Unit) {
+                LaunchedEffect(isEmpty) {
                     while (true) {
                         pulseUp = !pulseUp
                         delay(700)
@@ -174,8 +178,10 @@ fun HabitsPage(viewModel: HabitsViewModel) {
                     )
                 }
 
+                val listState = rememberLazyListState()
                 LazyColumn(
                     modifier = Modifier.weight(1f),
+                    state = listState,
                 ) {
                     val lastPinnedIdx = filteredHabits.indexOfLast { it.isPinned }
                     val hasUnpinnedAfter = lastPinnedIdx >= 0 && lastPinnedIdx < filteredHabits.size - 1
@@ -272,7 +278,8 @@ fun HabitsPage(viewModel: HabitsViewModel) {
                                             modifier = Modifier.weight(1f).aspectRatio(1f).padding(2.dp)
                                                 .clip(CircleShape)
                                                 .background(if (selected) MaterialTheme.colorScheme.primary else Color.Transparent)
-                                                .clickable { if (selected) newDaysOfWeek.remove(dayNum) else newDaysOfWeek.add(dayNum) },
+                                                .clickable { if (selected) newDaysOfWeek.remove(dayNum) else newDaysOfWeek.add(dayNum) }
+                                                .semantics { contentDescription = "${name} ${if (selected) "selected" else "unselected"}" },
                                             contentAlignment = Alignment.Center,
                                         ) {
                                             Text(name, color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface)
@@ -305,7 +312,8 @@ fun HabitsPage(viewModel: HabitsViewModel) {
                                                         modifier = Modifier.size(44.dp)
                                                             .clip(CircleShape)
                                                             .background(if (selected) MaterialTheme.colorScheme.primary else Color.Transparent)
-                                                            .clickable { activeYearlyMonth = m },
+                                                            .clickable { activeYearlyMonth = m }
+                                                            .semantics { contentDescription = "${name} ${if (selected) "selected" else "unselected"}" },
                                                         contentAlignment = Alignment.Center,
                                                     ) {
                                                         Text(name, style = MaterialTheme.typography.bodyMedium, color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface)
@@ -465,48 +473,66 @@ fun HabitsPage(viewModel: HabitsViewModel) {
             },
             title = { Text("Set reminder time") },
         ) {
-            TimePicker(state = timePickerState)
+            TimeInput(state = timePickerState)
         }
     }
 
     state.selectedHabitId?.let { habitId ->
         val habit = state.habits.find { it.id == habitId }
         val dismissHistory = { viewModel.onAction(HabitsViewModel.Action.ViewHabitHistory(habitId)) }
+        var historyMonth by remember(habitId) { mutableStateOf(LocalDate.now().month) }
+        var historyYear by remember(habitId) { mutableStateOf(LocalDate.now().year) }
         AlertDialog(
             onDismissRequest = dismissHistory,
             title = { Text("History") },
             text = {
-                Column {
+                Column(Modifier.verticalScroll(rememberScrollState())) {
                     if (habit != null) {
-                        val today = LocalDate.now()
-                        val monthStart = LocalDate(today.year, today.month, 1)
-                        val monthLen = daysInMonth(today.year, today.month.ordinal + 1)
+                        val monthLen = daysInMonth(historyYear, historyMonth.ordinal + 1)
+                        val monthStart = LocalDate(historyYear, historyMonth, 1)
                         val startOffset = monthStart.dayOfWeek.ordinal
-                        val recordsByDate = state.selectedHabitHistory.filter { it.date.year == today.year && it.date.month == today.month }.associateBy { it.date }
-                        Column {
-                            Row {
-                                listOf("M","T","W","T","F","S","S").forEach { Text(it, modifier = Modifier.weight(1f).padding(2.dp)) }
-                            }
-                            var day = 1
-                            while (day <= monthLen) {
-            FlowRow {
-                                    for (col in 0..6) {
-                                        if ((day == 1 && col < startOffset) || day > monthLen) {
-                                            Box(modifier = Modifier.weight(1f).padding(2.dp))
-                                        } else {
-                                            val date = LocalDate(today.year, today.month, day)
-                                            val record = recordsByDate[date]
-                                val bg = when (record?.state) {
-                                    HabitState.DONE -> MaterialTheme.colorScheme.primary
-                                    HabitState.SKIPPED -> MaterialTheme.colorScheme.tertiary
-                                    else -> MaterialTheme.colorScheme.surfaceVariant
+                        val recordsByDate = state.selectedHabitHistory.filter { it.date.year == historyYear && it.date.month == historyMonth }.associateBy { it.date }
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                            TextButton(onClick = {
+                                if (historyMonth.ordinal == 0) {
+                                    historyMonth = kotlinx.datetime.Month.DECEMBER
+                                    historyYear--
+                                } else {
+                                    historyMonth = kotlinx.datetime.Month.entries[historyMonth.ordinal - 1]
                                 }
-                                val fc = if (habit.shouldShowToday(date)) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
-                                            Box(modifier = Modifier.weight(1f).padding(1.dp).background(bg, CircleShape).padding(4.dp), contentAlignment = Alignment.Center) {
-                                                Text("$day", color = fc)
-                                            }
-                                            day++
+                            }) { Text("<") }
+                            Text("${historyMonth.name.lowercase().replaceFirstChar { it.uppercase() }} $historyYear", modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleSmall)
+                            TextButton(onClick = {
+                                if (historyMonth.ordinal == 11) {
+                                    historyMonth = kotlinx.datetime.Month.JANUARY
+                                    historyYear++
+                                } else {
+                                    historyMonth = kotlinx.datetime.Month.entries[historyMonth.ordinal + 1]
+                                }
+                            }) { Text(">") }
+                        }
+                        Row {
+                            listOf("M","T","W","T","F","S","S").forEach { Text(it, modifier = Modifier.weight(1f).padding(2.dp)) }
+                        }
+                        var day = 1
+                        while (day <= monthLen) {
+                            FlowRow {
+                                for (col in 0..6) {
+                                    if ((day == 1 && col < startOffset) || day > monthLen) {
+                                        Box(modifier = Modifier.weight(1f).padding(2.dp))
+                                    } else {
+                                        val date = LocalDate(historyYear, historyMonth, day)
+                                        val record = recordsByDate[date]
+                                        val bg = when (record?.state) {
+                                            HabitState.DONE -> MaterialTheme.colorScheme.primary
+                                            HabitState.SKIPPED -> MaterialTheme.colorScheme.tertiary
+                                            else -> MaterialTheme.colorScheme.surfaceVariant
                                         }
+                                        val fc = if (habit.shouldShowToday(date)) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
+                                        Box(modifier = Modifier.weight(1f).padding(1.dp).background(bg, CircleShape).padding(4.dp), contentAlignment = Alignment.Center) {
+                                            Text("$day", color = fc)
+                                        }
+                                        day++
                                     }
                                 }
                             }
@@ -588,14 +614,11 @@ fun HabitItem(
         targetValue = if (isDone) 1.0f else 0.8f,
         animationSpec = spring(dampingRatio = 0.6f, stiffness = 600f),
     )
-    val sparkleRotation by animateFloatAsState(
-        targetValue = if (isDone) 360f else 0f,
-        animationSpec = spring(dampingRatio = 0.6f, stiffness = 600f),
-    )
 
     Card(
         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
-            .graphicsLayer { scaleX = scale; scaleY = scale },
+            .graphicsLayer { scaleX = scale; scaleY = scale }
+            .clipToBounds(),
         colors = CardDefaults.cardColors(
             containerColor = when (isDone || isSkipped) {
                 isSkipped -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f)
@@ -654,7 +677,7 @@ fun HabitItem(
                         imageVector = vectorResource(Res.drawable.sparkle),
                         contentDescription = if (isDone) "Done" else "Mark done",
                         modifier = Modifier.size(20.dp).graphicsLayer {
-                            scaleX = sparkleScale; scaleY = sparkleScale; rotationZ = sparkleRotation
+                            scaleX = sparkleScale; scaleY = sparkleScale
                         },
                         tint = if (isDone) MaterialTheme.colorScheme.primary
                                else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
@@ -666,7 +689,7 @@ fun HabitItem(
                 if (onTogglePin != null || onViewHistory != null || onEdit != null || onDelete != null || onDuplicate != null) {
                     Box {
                         var expanded by remember { mutableStateOf(false) }
-                        IconButton(onClick = { expanded = true }) {
+                        IconButton(onClick = { expanded = true }, modifier = Modifier.semantics { contentDescription = "More options" }) {
                             Text("⋮", fontWeight = FontWeight.Bold)
                         }
                         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
@@ -714,7 +737,8 @@ private fun DayGrid(
                         .padding(2.dp)
                         .clip(CircleShape)
                         .background(if (selected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent)
-                        .clickable { onToggleDay(day) },
+                        .clickable { onToggleDay(day) }
+                        .semantics { contentDescription = "Day ${day} ${if (selected) "selected" else "unselected"}" },
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(day.toString(), style = MaterialTheme.typography.bodyMedium)

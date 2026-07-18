@@ -72,7 +72,7 @@ fun TopActionRow(
             }
             if (filterActive) Box(
                 Modifier.align(Alignment.TopEnd)
-                    .padding(top = 6.dp, end = 6.dp)
+                    .padding(top = 1.dp, end = 1.dp)
                     .size(8.dp)
                     .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.primary)
@@ -99,13 +99,13 @@ fun EmptyState(icon: DrawableResource, text: String) {
             imageVector = vectorResource(icon),
             contentDescription = null,
             modifier = Modifier.size(48.dp),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(Modifier.height(16.dp))
         Text(
             text,
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }

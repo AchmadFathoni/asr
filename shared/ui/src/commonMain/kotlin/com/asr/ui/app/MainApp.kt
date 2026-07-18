@@ -1,5 +1,9 @@
 package com.asr.ui.app
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
@@ -99,11 +103,13 @@ fun MainApp() {
         },
     ) { padding ->
         Surface(modifier = Modifier.padding(padding).fillMaxSize()) {
-            when (selectedTab) {
-                AppRoute.Today -> TodayPage(todayVM)
-                AppRoute.Todo -> TasksPage(tasksVM)
-                AppRoute.Habit -> HabitsPage(habitsVM)
-                AppRoute.Settings -> SettingsPage(settingsVM)
+            AnimatedContent(targetState = selectedTab, transitionSpec = { fadeIn() togetherWith fadeOut() }) { tab ->
+                when (tab) {
+                    AppRoute.Today -> TodayPage(todayVM)
+                    AppRoute.Todo -> TasksPage(tasksVM)
+                    AppRoute.Habit -> HabitsPage(habitsVM)
+                    AppRoute.Settings -> SettingsPage(settingsVM)
+                }
             }
         }
     }

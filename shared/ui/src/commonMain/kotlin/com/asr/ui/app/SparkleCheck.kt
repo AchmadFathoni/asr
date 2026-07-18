@@ -21,6 +21,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import asr.shared.ui.generated.resources.Res
 import asr.shared.ui.generated.resources.sparkle
@@ -40,7 +42,7 @@ fun SparkleCheck(
     )
     Box(
         modifier = modifier
-            .size(30.dp)
+            .size(48.dp)
             .graphicsLayer { scaleX = scale; scaleY = scale }
             .clip(CircleShape)
             .background(
@@ -50,9 +52,10 @@ fun SparkleCheck(
             .border(
                 width = 2.dp,
                 color = if (isDone || animating) MaterialTheme.colorScheme.primary
-                        else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f),
+                        else MaterialTheme.colorScheme.onSurfaceVariant,
                 shape = CircleShape,
             )
+            .semantics { contentDescription = if (isDone) "Done" else "Mark done" }
             .clickable(role = Role.Checkbox) {
                 if (!animating) {
                     animating = true
@@ -64,9 +67,9 @@ fun SparkleCheck(
         Icon(
             imageVector = vectorResource(Res.drawable.sparkle),
             contentDescription = if (isDone) "Done" else "Mark done",
-            modifier = Modifier.size(16.dp),
+            modifier = Modifier.size(24.dp),
             tint = if (isDone || animating) MaterialTheme.colorScheme.onPrimary
-                   else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f),
+                   else MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }

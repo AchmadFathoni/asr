@@ -114,7 +114,7 @@ fun FilterBottomSheet(
                 Text("Date", style = MaterialTheme.typography.titleSmall)
                 Spacer(Modifier.height(8.dp))
                 TextButton(onClick = { showDatePicker = true }) {
-                    Text(filterDate?.let { "${it.month}/${it.day}/${it.year}" } ?: "Select date")
+                    Text(filterDate?.let { "${it.year}-${(it.month.ordinal + 1).toString().padStart(2, '0')}-${it.day.toString().padStart(2, '0')}" } ?: "Select date")
                 }
                 if (filterDate != null) {
                     TextButton(onClick = { onDateChange(null); showDatePicker = false }) {
@@ -138,7 +138,7 @@ fun FilterBottomSheet(
     if (showDatePicker) {
         val datePickerState = rememberDatePickerState(
             initialSelectedDateMillis = filterDate?.let { d ->
-                d.atStartOfDayIn(TimeZone.UTC).toEpochMilliseconds()
+                d.atStartOfDayIn(TimeZone.currentSystemDefault()).toEpochMilliseconds()
             }
         )
         DatePickerDialog(
@@ -147,7 +147,7 @@ fun FilterBottomSheet(
                 TextButton(onClick = {
                     datePickerState.selectedDateMillis?.let { millis ->
                         onDateChange(Instant.fromEpochMilliseconds(millis)
-                            .toLocalDateTime(TimeZone.UTC).date)
+                            .toLocalDateTime(TimeZone.currentSystemDefault()).date)
                     }
                     showDatePicker = false
                 }) { Text("OK") }

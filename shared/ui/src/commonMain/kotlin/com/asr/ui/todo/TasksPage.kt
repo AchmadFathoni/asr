@@ -20,6 +20,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -44,7 +47,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TimePicker
+import androidx.compose.material3.TimeInput
 import androidx.compose.material3.TimePickerDialog
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
@@ -58,6 +61,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
@@ -186,7 +192,8 @@ fun TasksPage(viewModel: TasksViewModel) {
             )
             Spacer(Modifier.height(8.dp))
 
-            LazyColumn(modifier = Modifier.weight(1f)) {
+            val listState = rememberLazyListState()
+            LazyColumn(modifier = Modifier.weight(1f), state = listState) {
                 val lastPinnedIdx = flatTasks.indexOfLast { (task, _) -> task.isPinned }
                 val hasUnpinnedAfter = lastPinnedIdx >= 0 && lastPinnedIdx < flatTasks.size - 1
                 items(flatTasks) { (task, depth) ->
@@ -261,7 +268,7 @@ fun TasksPage(viewModel: TasksViewModel) {
                 )
             },
             text = {
-                Column {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                     OutlinedTextField(
                         value = newTaskTitle,
                         onValueChange = { newTaskTitle = it },
@@ -279,7 +286,7 @@ fun TasksPage(viewModel: TasksViewModel) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         TextButton(onClick = { showDatePicker = true }) {
                             Text(newDueDate?.let {
-                                "${it.month}/${it.day}/${it.year}"
+                                "${it.year}-${(it.month.ordinal + 1).toString().padStart(2, '0')}-${it.day.toString().padStart(2, '0')}"
                             } ?: "Set date")
                         }
                         if (newDueDate != null) {
@@ -407,7 +414,7 @@ fun TasksPage(viewModel: TasksViewModel) {
                 TextButton(onClick = {
                     datePickerState.selectedDateMillis?.let { millis ->
                         newDueDate = Instant.fromEpochMilliseconds(millis)
-                            .toLocalDateTime(TimeZone.UTC).date
+                            .toLocalDateTime(TimeZone.currentSystemDefault()).date
                     }
                     showDatePicker = false
                 }) { Text("OK") }
@@ -439,7 +446,7 @@ fun TasksPage(viewModel: TasksViewModel) {
             },
             title = { Text("Set reminder time") },
         ) {
-            TimePicker(state = timePickerState)
+            TimeInput(state = timePickerState)
         }
     }
 
@@ -511,6 +518,7 @@ fun TaskRow(
             .padding(vertical = 4.dp)
             .padding(start = (depth * 24).dp)
             .graphicsLayer { scaleX = scale; scaleY = scale }
+            .clipToBounds()
             .clickable {
                 if (!hasChildren) {
                     if (!task.isDone) soundPlayer.play()
@@ -567,7 +575,7 @@ fun TaskRow(
             }
             Box {
                 var expanded by remember { mutableStateOf(false) }
-                IconButton(onClick = { expanded = true }) {
+                IconButton(onClick = { expanded = true }, modifier = Modifier.semantics { contentDescription = "More options" }) {
                     Text("⋮", fontWeight = FontWeight.Bold)
                 }
                 DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {

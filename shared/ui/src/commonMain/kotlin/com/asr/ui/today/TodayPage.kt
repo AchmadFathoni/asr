@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -47,7 +48,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
@@ -95,18 +99,17 @@ fun TodayPage(viewModel: TodayViewModel) {
         previousAllDone = state.allDone
     }
 
-    if (state.isLoading) {
-        Column(modifier = Modifier.fillMaxSize().padding(48.dp)) {
-            CircularProgressIndicator()
-        }
-        return
-    }
-
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
     ) { padding ->
-    LazyColumn(modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp)) {
+    if (state.isLoading) {
+        Column(modifier = Modifier.fillMaxSize().padding(padding).padding(48.dp)) {
+            CircularProgressIndicator()
+        }
+    } else {
+    val listState = rememberLazyListState()
+    LazyColumn(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp), state = listState) {
         item {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                 val filterActive = state.filter.searchQuery.isNotBlank() || state.filter.selectedTagIds.isNotEmpty()
@@ -148,6 +151,7 @@ fun TodayPage(viewModel: TodayViewModel) {
                     modifier = Modifier.fillMaxWidth()
                         .padding(vertical = 4.dp)
                         .graphicsLayer { scaleX = scale; scaleY = scale }
+                        .clipToBounds()
                         .clickable {
                             if (!isParent) {
                                 if (!task.isDone) soundPlayer.play()
@@ -192,7 +196,7 @@ fun TodayPage(viewModel: TodayViewModel) {
                         }
                         Box {
                             var expanded by remember { mutableStateOf(false) }
-                            IconButton(onClick = { expanded = true }) {
+                            IconButton(onClick = { expanded = true }, modifier = Modifier.semantics { contentDescription = "More options" }) {
                                 Text("\u22EE", fontWeight = FontWeight.Bold)
                             }
                             DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
@@ -240,6 +244,7 @@ fun TodayPage(viewModel: TodayViewModel) {
                 )
             }
         }
+    }
     }
     }
 
