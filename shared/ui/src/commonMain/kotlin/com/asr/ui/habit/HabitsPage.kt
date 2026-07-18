@@ -131,7 +131,7 @@ fun HabitsPage(viewModel: HabitsViewModel) {
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
     ) { padding ->
-        Column(modifier = Modifier.padding(padding).fillMaxSize().padding(16.dp)) {
+        Column(modifier = Modifier.padding(padding).fillMaxSize().padding(horizontal = 16.dp)) {
             val isEmpty = state.habits.isEmpty() && !state.isLoading
             var pulseUp by remember { mutableStateOf(false) }
             val pulseScale by animateFloatAsState(
