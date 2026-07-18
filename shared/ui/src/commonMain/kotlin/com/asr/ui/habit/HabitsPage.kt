@@ -86,8 +86,8 @@ import com.asr.core.habit.daysInMonth
 import com.asr.core.habit.shouldShowToday
 import com.asr.core.now
 import com.asr.core.tag.Tag
-import com.asr.ui.LIGHT_CHECK_COLORS
-import com.asr.ui.TAG_COLORS
+import com.asr.ui.TagColorPicker
+import com.asr.ui.tagColorForValue
 import com.asr.ui.app.EmptyState
 import com.asr.ui.app.FilterBottomSheet
 import com.asr.ui.app.StatusFilterChips
@@ -363,33 +363,10 @@ fun HabitsPage(viewModel: HabitsViewModel) {
                         }
                         if (newTagName.isNotBlank()) {
                             Spacer(Modifier.height(4.dp))
-                            Column {
-                                TAG_COLORS.chunked(8).forEach { row ->
-                                    Row(Modifier.fillMaxWidth()) {
-                                        row.forEach { (c, _) ->
-                                            val selected = newTagColor == c
-                                            Box(
-                                                modifier = Modifier
-                                                    .weight(1f)
-                                                    .aspectRatio(1f)
-                                                    .padding(2.dp)
-                                                    .clip(CircleShape)
-                                                    .background(Color(c))
-                                                    .clickable { newTagColor = if (selected) null else c },
-                                                contentAlignment = Alignment.Center,
-                                            ) {
-                                                if (selected) {
-                                                    Text(
-                                                        "✓",
-                                                        style = MaterialTheme.typography.bodySmall,
-                                                        color = if (c in LIGHT_CHECK_COLORS) Color.Black else Color.White,
-                                                    )
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
+                            TagColorPicker(
+                                selectedColor = newTagColor,
+                                onColorSelected = { newTagColor = it },
+                            )
                         }
                     }
                     if (state.tags.isNotEmpty()) {
@@ -405,9 +382,8 @@ fun HabitsPage(viewModel: HabitsViewModel) {
                                     },
                                     label = {
                                         Row(verticalAlignment = Alignment.CenterVertically) {
-                                            val color = tag.color
-                                            if (color != null) {
-                                                Box(Modifier.size(8.dp).clip(CircleShape).background(Color(color)))
+                                            tag.color?.let {
+                                                Box(Modifier.size(8.dp).clip(CircleShape).background(tagColorForValue(it)))
                                                 Spacer(Modifier.width(4.dp))
                                             }
                                             Text(tag.name)
@@ -637,9 +613,9 @@ fun HabitItem(
                 if (tags.isNotEmpty()) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         tags.forEach { tag ->
-                            tag.color?.let { c ->
+                            tag.color?.let {
                                 Spacer(Modifier.width(3.dp))
-                                Box(Modifier.size(8.dp).clip(CircleShape).background(Color(c)))
+                                Box(Modifier.size(8.dp).clip(CircleShape).background(tagColorForValue(it)))
                             }
                         }
                     }
@@ -658,7 +634,7 @@ fun HabitItem(
                         imageVector = vectorResource(Res.drawable.fire),
                         contentDescription = "Streak",
                         modifier = Modifier.size(16.dp),
-                        tint = MaterialTheme.colorScheme.primary,
+                        tint = Color.Unspecified,
                     )
                     Text(" $streak",
                         style = MaterialTheme.typography.bodySmall,

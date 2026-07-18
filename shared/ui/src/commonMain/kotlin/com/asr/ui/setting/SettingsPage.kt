@@ -3,7 +3,6 @@ package com.asr.ui.setting
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -38,15 +37,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.asr.core.backup.ExportState
 import com.asr.core.backup.RestoreState
 import com.asr.core.tag.Tag
-import com.asr.ui.LIGHT_CHECK_COLORS
-import com.asr.ui.TAG_COLORS
+import com.asr.ui.TagColorPicker
+import com.asr.ui.tagColorForValue
+import com.asr.ui.tagColorLabel
 import com.asr.core.AppVersion
 import com.asr.core.settings.ThemeOption
 import com.asr.ui.viewmodel.SettingsViewModel
@@ -148,36 +147,10 @@ fun SettingsPage(viewModel: SettingsViewModel) {
                         enabled = state.newTagName.isNotBlank(),
                     ) { Text("Create") }
                 }
-                Spacer(Modifier.height(4.dp))
-                Column {
-                    TAG_COLORS.chunked(8).forEach { row ->
-                        Row(Modifier.fillMaxWidth()) {
-                            row.forEach { (color, _) ->
-                                val selected = state.newTagColor == color
-                                Box(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .aspectRatio(1f)
-                                        .padding(2.dp)
-                                        .clip(CircleShape)
-                                        .background(Color(color))
-                                        .clickable {
-                                            viewModel.onAction(SettingsViewModel.Action.SetNewTagColor(if (selected) null else color))
-                                        },
-                                    contentAlignment = Alignment.Center,
-                                ) {
-                                    if (selected) {
-                                        Text(
-                                            "✓",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = if (color in LIGHT_CHECK_COLORS) Color.Black else Color.White,
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+                TagColorPicker(
+                    selectedColor = state.newTagColor,
+                    onColorSelected = { viewModel.onAction(SettingsViewModel.Action.SetNewTagColor(it)) },
+                )
                 if (state.tags.isNotEmpty()) {
                     Spacer(Modifier.height(8.dp))
                     state.tags.forEach { tag ->
@@ -186,15 +159,20 @@ fun SettingsPage(viewModel: SettingsViewModel) {
                                 modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                val color = tag.color
                                 Box(
                                     modifier = Modifier
-                                        .padding(end = 8.dp)
+                                        .padding(end = 4.dp)
                                         .size(12.dp)
                                         .clip(CircleShape)
-                                        .background(if (color != null) Color(color) else MaterialTheme.colorScheme.surfaceVariant)
+                                        .background(tagColorForValue(tag.color))
                                         .clickable { editingColorTagId.value = if (editingColorTagId.value == tag.id) null else tag.id },
                                 )
+                                tag.color?.let { c ->
+                                    tagColorLabel(c)?.let { label ->
+                                        Text(label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        Spacer(Modifier.width(4.dp))
+                                    }
+                                }
                                 Text(
                                     text = tag.name,
                                     modifier = Modifier.weight(1f),
@@ -206,36 +184,13 @@ fun SettingsPage(viewModel: SettingsViewModel) {
                             }
                             if (editingColorTagId.value == tag.id) {
                                 Spacer(Modifier.height(4.dp))
-                                Column(modifier = Modifier.fillMaxWidth().padding(start = 20.dp)) {
-                                    TAG_COLORS.chunked(8).forEach { row ->
-                                        Row(Modifier.fillMaxWidth()) {
-                                            row.forEach { (c, _) ->
-                                                val selected = tag.color == c
-                                                Box(
-                                                    modifier = Modifier
-                                                        .weight(1f)
-                                                        .aspectRatio(1f)
-                                                        .padding(2.dp)
-                                                        .clip(CircleShape)
-                                                        .background(Color(c))
-                                                        .clickable {
-                                                            viewModel.onAction(SettingsViewModel.Action.SetTagColor(tag.id, if (selected) null else c))
-                                                            editingColorTagId.value = null
-                                                        },
-                                                    contentAlignment = Alignment.Center,
-                                                ) {
-                                                    if (selected) {
-                                                        Text(
-                                                            "✓",
-                                                            style = MaterialTheme.typography.bodySmall,
-                                                            color = if (c in LIGHT_CHECK_COLORS) Color.Black else Color.White,
-                                                        )
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
+                                TagColorPicker(
+                                    selectedColor = tag.color,
+                                    onColorSelected = {
+                                        viewModel.onAction(SettingsViewModel.Action.SetTagColor(tag.id, it))
+                                        editingColorTagId.value = null
+                                    },
+                                )
                             }
                         }
                     }

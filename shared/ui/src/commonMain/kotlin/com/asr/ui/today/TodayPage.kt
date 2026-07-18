@@ -66,6 +66,7 @@ import com.asr.ui.app.EmptyState
 import com.asr.ui.app.FilterBottomSheet
 import com.asr.ui.app.SparkleCheck
 import com.asr.ui.habit.HabitItem
+import com.asr.ui.tagColorForValue
 import com.asr.ui.viewmodel.TodayViewModel
 import asr.shared.ui.generated.resources.*
 import org.jetbrains.compose.resources.vectorResource
@@ -187,10 +188,10 @@ fun TodayPage(viewModel: TodayViewModel) {
                             ),
                         )
                         state.taskTagMappings[task.id]?.forEach { tagId ->
-                            state.tags.find { it.id == tagId }?.color?.let { c ->
+                            state.tags.find { it.id == tagId }?.color?.let {
                                 Spacer(Modifier.width(2.dp))
                                 Box(
-                                    Modifier.size(8.dp).clip(CircleShape).background(Color(c))
+                                    Modifier.size(8.dp).clip(CircleShape).background(tagColorForValue(it))
                                 )
                             }
                         }

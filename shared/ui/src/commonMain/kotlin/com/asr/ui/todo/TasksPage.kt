@@ -7,7 +7,6 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -64,7 +63,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
@@ -79,8 +77,8 @@ import asr.shared.ui.generated.resources.*
 import com.asr.core.now
 import com.asr.core.tag.Tag
 import com.asr.core.task.Task
-import com.asr.ui.LIGHT_CHECK_COLORS
-import com.asr.ui.TAG_COLORS
+import com.asr.ui.TagColorPicker
+import com.asr.ui.tagColorForValue
 import com.asr.ui.app.EmptyState
 import com.asr.ui.app.FilterBottomSheet
 import com.asr.ui.app.SparkleCheck
@@ -321,33 +319,10 @@ fun TasksPage(viewModel: TasksViewModel) {
                             }
                             if (newTagName.isNotBlank()) {
                                 Spacer(Modifier.height(4.dp))
-                                Column {
-                                    TAG_COLORS.chunked(8).forEach { row ->
-                                        Row(Modifier.fillMaxWidth()) {
-                                            row.forEach { (c, _) ->
-                                                val selected = newTagColor == c
-                                                Box(
-                                                    modifier = Modifier
-                                                        .weight(1f)
-                                                        .aspectRatio(1f)
-                                                        .padding(2.dp)
-                                                        .clip(CircleShape)
-                                                        .background(Color(c))
-                                                        .clickable { newTagColor = if (selected) null else c },
-                                                    contentAlignment = Alignment.Center,
-                                                ) {
-                                                    if (selected) {
-                                                        Text(
-                                                            "✓",
-                                                            style = MaterialTheme.typography.bodySmall,
-                                                            color = if (c in LIGHT_CHECK_COLORS) Color.Black else Color.White,
-                                                        )
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
+                                TagColorPicker(
+                                    selectedColor = newTagColor,
+                                    onColorSelected = { newTagColor = it },
+                                )
                             }
                         }
 
@@ -364,12 +339,11 @@ fun TasksPage(viewModel: TasksViewModel) {
                                     },
                                     label = {
                                         Row(verticalAlignment = Alignment.CenterVertically) {
-                                            val color = tag.color
-                                            if (color != null) {
-                                                Box(Modifier.size(8.dp).clip(CircleShape).background(Color(color)))
-                                                Spacer(Modifier.width(4.dp))
-                                            }
-                                            Text(tag.name)
+                                                    tag.color?.let {
+                                                        Box(Modifier.size(8.dp).clip(CircleShape).background(tagColorForValue(it)))
+                                                        Spacer(Modifier.width(4.dp))
+                                                    }
+                                                    Text(tag.name)
                                         }
                                     },
                                 )
@@ -568,9 +542,9 @@ fun TaskRow(
                 }
             }
             tags.forEach { tag ->
-                tag.color?.let { c ->
+                tag.color?.let {
                     Spacer(Modifier.width(2.dp))
-                    Box(Modifier.size(8.dp).clip(CircleShape).background(Color(c)))
+                    Box(Modifier.size(8.dp).clip(CircleShape).background(tagColorForValue(it)))
                 }
             }
             Box {

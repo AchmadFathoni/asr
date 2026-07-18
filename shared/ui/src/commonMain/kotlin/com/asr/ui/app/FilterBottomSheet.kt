@@ -35,9 +35,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.asr.core.tag.Tag
+import com.asr.ui.tagColorForValue
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atStartOfDayIn
@@ -96,9 +96,8 @@ fun FilterBottomSheet(
                             onClick = { onTagToggle(tag.id) },
                             label = {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    val color = tag.color
-                                    if (color != null) {
-                                        Box(Modifier.size(8.dp).clip(CircleShape).background(Color(color)))
+                                    tag.color?.let {
+                                        Box(Modifier.size(8.dp).clip(CircleShape).background(tagColorForValue(it)))
                                         Spacer(Modifier.width(4.dp))
                                     }
                                     Text(tag.name)
