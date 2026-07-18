@@ -3,6 +3,14 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
+# Point AGP at the SDK's aapt2 (already patched by dev shell via nix-ld)
+# instead of the Maven-downloaded one, which is a dynamically-linked ELF
+# that cannot run on NixOS without manual patching.
+AAPT2_PATH=$(find "$PWD/.android-sdk/build-tools" -name aapt2 -type f 2>/dev/null | head -1)
+if [ -n "$AAPT2_PATH" ]; then
+  GRADLE_OPTS="${GRADLE_OPTS:-} -Dandroid.aapt2FromMavenOverride=$AAPT2_PATH"
+fi
+
 "$PWD/scripts/patch-aapt2.sh"
 "$PWD/gradlew" "$@"
 "$PWD/scripts/patch-aapt2.sh"
