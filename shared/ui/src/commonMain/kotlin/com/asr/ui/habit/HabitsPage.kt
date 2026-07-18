@@ -6,7 +6,6 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,7 +20,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -33,9 +31,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FloatingActionButton
-
-
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -71,7 +66,6 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
-
 import androidx.compose.ui.unit.dp
 import com.asr.core.interfaces.SoundPlayer
 import kotlinx.coroutines.delay
@@ -86,12 +80,14 @@ import com.asr.core.habit.daysInMonth
 import com.asr.core.habit.shouldShowToday
 import com.asr.core.now
 import com.asr.core.tag.Tag
-import com.asr.ui.TagColorPicker
-import com.asr.ui.tagColorForValue
+import com.asr.ui.app.CreateTagRow
 import com.asr.ui.app.EmptyState
 import com.asr.ui.app.FilterBottomSheet
+import com.asr.ui.app.PinnedItemDivider
 import com.asr.ui.app.StatusFilterChips
+import com.asr.ui.app.TagFilterRow
 import com.asr.ui.app.TopActionRow
+import com.asr.ui.tagColorForValue
 import com.asr.ui.viewmodel.HabitFilter
 import com.asr.ui.viewmodel.HabitsViewModel
 import org.jetbrains.compose.resources.vectorResource
@@ -212,12 +208,7 @@ fun HabitsPage(viewModel: HabitsViewModel) {
                             tags = state.tags.filter { state.habitTagMappings[habit.id]?.contains(it.id) == true },
                             onTogglePin = { viewModel.onAction(HabitsViewModel.Action.TogglePinHabit(habit.id)) },
                         )
-                        val hIdx = filteredHabits.indexOf(habit)
-                        if (lastPinnedIdx >= 0 && hIdx == lastPinnedIdx && hasUnpinnedAfter) {
-                            HorizontalDivider(thickness = 2.dp, color = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
-                        } else if (hIdx < filteredHabits.size - 1) {
-                            HorizontalDivider()
-                        }
+                        PinnedItemDivider(filteredHabits, habit, lastPinnedIdx, hasUnpinnedAfter)
                     }
                     if (filteredHabits.isEmpty() && !state.isLoading) {
                         item {
@@ -343,57 +334,26 @@ fun HabitsPage(viewModel: HabitsViewModel) {
                     Spacer(Modifier.height(12.dp))
                     Text("Tags", style = MaterialTheme.typography.labelMedium)
                     Spacer(Modifier.height(4.dp))
-                    Column {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            OutlinedTextField(
-                                value = newTagName,
-                                onValueChange = { newTagName = it },
-                                label = { Text("New tag name") },
-                                singleLine = true,
-                                modifier = Modifier.weight(1f),
-                            )
-                            TextButton(
-                                onClick = {
-                                    if (newTagName.isNotBlank()) {
-                                        viewModel.onAction(HabitsViewModel.Action.CreateTag(newTagName.trim(), newTagColor))
-                                        newTagName = ""; newTagColor = null
-                                    }
-                                },
-                                enabled = newTagName.isNotBlank(),
-                            ) { Text("Add") }
-                        }
-                        if (newTagName.isNotBlank()) {
-                            Spacer(Modifier.height(4.dp))
-                            TagColorPicker(
-                                selectedColor = newTagColor,
-                                onColorSelected = { newTagColor = it },
-                            )
-                        }
-                    }
-                    if (state.tags.isNotEmpty()) {
-                        Spacer(Modifier.height(4.dp))
-                        FlowRow {
-                            state.tags.forEach { tag ->
-                                FilterChip(
-                                    selected = tag.id in selectedTagIds,
-                                    onClick = {
-                                        selectedTagIds = if (tag.id in selectedTagIds)
-                                            selectedTagIds - tag.id
-                                        else selectedTagIds + tag.id
-                                    },
-                                    label = {
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                            tag.color?.let {
-                                                Box(Modifier.size(8.dp).clip(CircleShape).background(tagColorForValue(it)))
-                                                Spacer(Modifier.width(4.dp))
-                                            }
-                                            Text(tag.name)
-                                        }
-                                    },
-                                )
+                    CreateTagRow(
+                        tagName = newTagName,
+                        onTagNameChange = { newTagName = it },
+                        tagColor = newTagColor,
+                        onTagColorChange = { newTagColor = it },
+                        onCreate = {
+                            if (newTagName.isNotBlank()) {
+                                viewModel.onAction(HabitsViewModel.Action.CreateTag(newTagName.trim(), newTagColor))
+                                newTagName = ""; newTagColor = null
                             }
-                        }
-                    }
+                        },
+                    )
+                    TagFilterRow(
+                        tags = state.tags,
+                        selectedTagIds = selectedTagIds,
+                        onTagToggle = { id ->
+                            selectedTagIds = if (id in selectedTagIds) selectedTagIds - id else selectedTagIds + id
+                        },
+                        useFlowRow = true,
+                    )
 
                 }
             },

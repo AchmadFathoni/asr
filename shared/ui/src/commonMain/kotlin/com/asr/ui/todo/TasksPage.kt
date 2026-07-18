@@ -12,38 +12,34 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.SnackbarDuration
-import androidx.compose.material3.SnackbarResult
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimeInput
@@ -61,15 +57,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import com.asr.core.interfaces.SoundPlayer
 import kotlinx.coroutines.delay
 import org.koin.compose.koinInject
@@ -77,13 +70,16 @@ import asr.shared.ui.generated.resources.*
 import com.asr.core.now
 import com.asr.core.tag.Tag
 import com.asr.core.task.Task
-import com.asr.ui.TagColorPicker
-import com.asr.ui.tagColorForValue
+import com.asr.ui.app.CreateTagRow
 import com.asr.ui.app.EmptyState
 import com.asr.ui.app.FilterBottomSheet
+import com.asr.ui.app.PinnedItemDivider
 import com.asr.ui.app.SparkleCheck
 import com.asr.ui.app.StatusFilterChips
+import com.asr.ui.app.TagFilterRow
 import com.asr.ui.app.TopActionRow
+import com.asr.ui.app.UndoDeleteSnackbarEffect
+import com.asr.ui.tagColorForValue
 import com.asr.ui.viewmodel.TaskFilter
 import com.asr.ui.viewmodel.TasksViewModel
 import kotlinx.datetime.LocalDate
@@ -129,18 +125,12 @@ fun TasksPage(viewModel: TasksViewModel) {
     val taskToDeleteHasChildren = taskToDelete?.let { subTaskMap.containsKey(it.id) } ?: false
     val snackbarHostState = remember { SnackbarHostState() }
 
-    LaunchedEffect(state.pendingDeletedTasks) {
-        val tasks = state.pendingDeletedTasks ?: return@LaunchedEffect
-        val result = snackbarHostState.showSnackbar(
-            message = "${tasks.size} tasks cleared",
-            actionLabel = "Undo",
-            duration = SnackbarDuration.Short,
-        )
-        if (result == SnackbarResult.ActionPerformed)
-            viewModel.onAction(TasksViewModel.Action.UndoDeleteDoneTasks)
-        else
-            viewModel.onAction(TasksViewModel.Action.DismissDeletedTasks)
-    }
+    UndoDeleteSnackbarEffect(
+        pendingDeletedTasks = state.pendingDeletedTasks,
+        snackbarHostState = snackbarHostState,
+        onUndo = { viewModel.onAction(TasksViewModel.Action.UndoDeleteDoneTasks) },
+        onDismiss = { viewModel.onAction(TasksViewModel.Action.DismissDeletedTasks) },
+    )
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -230,9 +220,7 @@ fun TasksPage(viewModel: TasksViewModel) {
                         tags = state.tags.filter { state.taskTagMappings[task.id]?.contains(it.id) == true },
                         onTogglePin = { viewModel.onAction(TasksViewModel.Action.TogglePinTask(task.id)) },
                     )
-                    if (lastPinnedIdx >= 0 && flatTasks.indexOf(task to depth) == lastPinnedIdx && hasUnpinnedAfter) {
-                        HorizontalDivider(thickness = 2.dp, color = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
-                    }
+                    PinnedItemDivider(flatTasks, task to depth, lastPinnedIdx, hasUnpinnedAfter, showThinDividers = false)
                 }
 
                 if (state.isLoading) {
@@ -298,58 +286,26 @@ fun TasksPage(viewModel: TasksViewModel) {
                     Text("Tags", style = MaterialTheme.typography.labelMedium)
                     Spacer(Modifier.height(4.dp))
 
-                        Column {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                OutlinedTextField(
-                                    value = newTagName,
-                                    onValueChange = { newTagName = it },
-                                    label = { Text("New tag name") },
-                                    singleLine = true,
-                                    modifier = Modifier.weight(1f),
-                                )
-                                TextButton(
-                                    onClick = {
-                                        if (newTagName.isNotBlank()) {
-                                            viewModel.onAction(TasksViewModel.Action.CreateTag(newTagName.trim(), newTagColor))
-                                            newTagName = ""; newTagColor = null
-                                        }
-                                    },
-                                    enabled = newTagName.isNotBlank(),
-                                ) { Text("Add") }
-                            }
-                            if (newTagName.isNotBlank()) {
-                                Spacer(Modifier.height(4.dp))
-                                TagColorPicker(
-                                    selectedColor = newTagColor,
-                                    onColorSelected = { newTagColor = it },
-                                )
-                            }
-                        }
+                        CreateTagRow(
+                            tagName = newTagName,
+                            onTagNameChange = { newTagName = it },
+                            tagColor = newTagColor,
+                            onTagColorChange = { newTagColor = it },
+                            onCreate = {
+                                if (newTagName.isNotBlank()) {
+                                    viewModel.onAction(TasksViewModel.Action.CreateTag(newTagName.trim(), newTagColor))
+                                    newTagName = ""; newTagColor = null
+                                }
+                            },
+                        )
 
-                    if (state.tags.isNotEmpty()) {
-                        Spacer(Modifier.height(4.dp))
-                        Row {
-                            state.tags.forEach { tag ->
-                                FilterChip(
-                                    selected = tag.id in selectedTagIds,
-                                    onClick = {
-                                        selectedTagIds = if (tag.id in selectedTagIds)
-                                            selectedTagIds - tag.id
-                                        else selectedTagIds + tag.id
-                                    },
-                                    label = {
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                                    tag.color?.let {
-                                                        Box(Modifier.size(8.dp).clip(CircleShape).background(tagColorForValue(it)))
-                                                        Spacer(Modifier.width(4.dp))
-                                                    }
-                                                    Text(tag.name)
-                                        }
-                                    },
-                                )
-                            }
-                        }
-                    }
+                    TagFilterRow(
+                        tags = state.tags,
+                        selectedTagIds = selectedTagIds,
+                        onTagToggle = { id ->
+                            selectedTagIds = if (id in selectedTagIds) selectedTagIds - id else selectedTagIds + id
+                        },
+                    )
                 }
             },
             confirmButton = {

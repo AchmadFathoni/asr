@@ -2,6 +2,8 @@ package com.asr.ui.today
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -22,19 +24,16 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -48,10 +47,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
@@ -59,11 +57,11 @@ import com.asr.core.interfaces.SoundPlayer
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import org.koin.compose.koinInject
-import com.asr.core.task.Task
-import com.asr.core.tag.Tag
 import com.asr.ui.app.EmptyState
 import com.asr.ui.app.FilterBottomSheet
+import com.asr.ui.app.PinnedItemDivider
 import com.asr.ui.app.SparkleCheck
+import com.asr.ui.app.UndoDeleteSnackbarEffect
 import com.asr.ui.habit.HabitItem
 import com.asr.ui.tagColorForValue
 import com.asr.ui.viewmodel.TodayViewModel
@@ -76,18 +74,12 @@ fun TodayPage(viewModel: TodayViewModel) {
     val soundPlayer = koinInject<SoundPlayer>()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    LaunchedEffect(state.pendingDeletedTasks) {
-        val tasks = state.pendingDeletedTasks ?: return@LaunchedEffect
-        val result = snackbarHostState.showSnackbar(
-            message = "${tasks.size} tasks cleared",
-            actionLabel = "Undo",
-            duration = SnackbarDuration.Short,
-        )
-        if (result == SnackbarResult.ActionPerformed)
-            viewModel.onAction(TodayViewModel.Action.UndoDeleteDoneTasks)
-        else
-            viewModel.onAction(TodayViewModel.Action.DismissDeletedTasks)
-    }
+    UndoDeleteSnackbarEffect(
+        pendingDeletedTasks = state.pendingDeletedTasks,
+        snackbarHostState = snackbarHostState,
+        onUndo = { viewModel.onAction(TodayViewModel.Action.UndoDeleteDoneTasks) },
+        onDismiss = { viewModel.onAction(TodayViewModel.Action.DismissDeletedTasks) },
+    )
 
     var previousAllDone by remember { mutableStateOf(false) }
     LaunchedEffect(state.allDone) {
@@ -204,9 +196,7 @@ fun TodayPage(viewModel: TodayViewModel) {
                             }
                         }
                     }
-                    if (lastTaskPinIdx >= 0 && state.tasks.indexOf(task) == lastTaskPinIdx && hasTaskUnpinnedAfter) {
-                        HorizontalDivider(thickness = 2.dp, color = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
-                    }
+                    PinnedItemDivider(state.tasks, task, lastTaskPinIdx, hasTaskUnpinnedAfter, showThinDividers = false)
                 }
             }
 
@@ -226,12 +216,7 @@ fun TodayPage(viewModel: TodayViewModel) {
                         onTogglePin = { viewModel.onAction(TodayViewModel.Action.TogglePinHabit(habit.id)) },
                         tags = state.tags.filter { state.habitTagMappings[habit.id]?.contains(it.id) == true },
                     )
-                    val idx = state.habits.indexOf(habit)
-                    if (lastHabitPinIdx >= 0 && idx == lastHabitPinIdx && hasHabitUnpinnedAfter) {
-                        HorizontalDivider(thickness = 2.dp, color = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
-                    } else if (idx < state.habits.size - 1) {
-                        HorizontalDivider()
-                    }
+                    PinnedItemDivider(state.habits, habit, lastHabitPinIdx, hasHabitUnpinnedAfter)
                 }
             }
 
