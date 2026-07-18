@@ -66,20 +66,6 @@ fun tagColorLabel(value: Long?): String? {
     return null
 }
 
-@Composable
-@Composable
-fun TagColorBadge(
-    value: Long?,
-    modifier: Modifier = Modifier,
-) {
-    Box(
-        modifier = modifier
-            .size(8.dp)
-            .clip(CircleShape)
-            .background(tagColorForValue(value))
-    )
-}
-
 private fun checkmarkColor(bg: Color): Color {
     val l = 0.299f * bg.red + 0.587f * bg.green + 0.114f * bg.blue
     return if (l > 0.5f) Color.Black else Color.White
@@ -99,36 +85,24 @@ fun TagColorPicker(
                 row.forEach { role ->
                     val ordinal = role.ordinal.toLong()
                     val selected = selectedColor == ordinal
-                    Column(
-                        modifier = Modifier.weight(1f),
-                        horizontalAlignment = Alignment.CenterHorizontally,
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .aspectRatio(1f)
+                            .clip(CircleShape)
+                            .background(resolveTagColor(role))
+                            .clickable {
+                                onColorSelected(if (selected) null else ordinal)
+                            },
+                        contentAlignment = Alignment.Center,
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .aspectRatio(1f)
-                                .fillMaxWidth()
-                                .clip(CircleShape)
-                                .background(resolveTagColor(role))
-                                .clickable {
-                                    onColorSelected(if (selected) null else ordinal)
-                                },
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            if (selected) {
-                                Text(
-                                    "✓",
-                                    color = checkmarkColor(resolveTagColor(role)),
-                                    style = MaterialTheme.typography.bodySmall,
-                                )
-                            }
+                        if (selected) {
+                            Text(
+                                "✓",
+                                color = checkmarkColor(resolveTagColor(role)),
+                                style = MaterialTheme.typography.bodySmall,
+                            )
                         }
-                        Text(
-                            role.label,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 2,
-                            modifier = Modifier.padding(top = 2.dp),
-                        )
                     }
                 }
             }

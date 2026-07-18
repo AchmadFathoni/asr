@@ -45,7 +45,6 @@ import com.asr.core.backup.RestoreState
 import com.asr.core.tag.Tag
 import com.asr.ui.TagColorPicker
 import com.asr.ui.tagColorForValue
-import com.asr.ui.tagColorLabel
 import com.asr.core.AppVersion
 import com.asr.core.settings.ThemeOption
 import com.asr.ui.viewmodel.SettingsViewModel
@@ -161,18 +160,12 @@ fun SettingsPage(viewModel: SettingsViewModel) {
                             ) {
                                 Box(
                                     modifier = Modifier
-                                        .padding(end = 4.dp)
+                                        .padding(end = 8.dp)
                                         .size(12.dp)
                                         .clip(CircleShape)
                                         .background(tagColorForValue(tag.color))
                                         .clickable { editingColorTagId.value = if (editingColorTagId.value == tag.id) null else tag.id },
                                 )
-                                tag.color?.let { c ->
-                                    tagColorLabel(c)?.let { label ->
-                                        Text(label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                        Spacer(Modifier.width(4.dp))
-                                    }
-                                }
                                 Text(
                                     text = tag.name,
                                     modifier = Modifier.weight(1f),
