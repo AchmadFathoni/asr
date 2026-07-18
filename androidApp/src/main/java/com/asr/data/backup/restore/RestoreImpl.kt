@@ -58,7 +58,21 @@ class RestoreImpl(private val db: AppDatabase) : RestoreRepo {
                     db.tagDao().deleteAllTags()
                     db.tagDao().insertAllTags(schema.tags.map { it.toEntity() })
                 }
-                awaitAll(deleteAndInsertTasks, deleteAndInsertHabits, deleteAndInsertTags)
+                val deleteAndInsertJunctions = async {
+                    db.tagDao().deleteAllTaskTags()
+                    db.tagDao().deleteAllHabitTags()
+                    for ((taskId, tagIds) in schema.taskTags) {
+                        for (tagId in tagIds) {
+                            db.tagDao().addTaskTag(com.asr.data.database.TaskTagEntity(taskId, tagId))
+                        }
+                    }
+                    for ((habitId, tagIds) in schema.habitTags) {
+                        for (tagId in tagIds) {
+                            db.tagDao().addHabitTag(com.asr.data.database.HabitTagEntity(habitId, tagId))
+                        }
+                    }
+                }
+                awaitAll(deleteAndInsertTasks, deleteAndInsertHabits, deleteAndInsertTags, deleteAndInsertJunctions)
             }
 
             RestoreResult.Success

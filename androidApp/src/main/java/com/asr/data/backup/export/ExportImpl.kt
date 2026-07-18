@@ -34,11 +34,15 @@ class ExportImpl(private val db: AppDatabase) : ExportRepo {
             val habitsDeferred = async { db.habitDao().getAllHabits() }
             val recordsDeferred = async { db.habitDao().getAllRecords() }
             val tagsDeferred = async { db.tagDao().getAllTags() }
+            val taskTagsDeferred = async { db.tagDao().getAllTaskTags() }
+            val habitTagsDeferred = async { db.tagDao().getAllHabitTags() }
 
             val tasks = tasksDeferred.await()
             val habits = habitsDeferred.await()
             val records = recordsDeferred.await()
             val tags = tagsDeferred.await()
+            val taskTags = taskTagsDeferred.await()
+            val habitTags = habitTagsDeferred.await()
 
             val now = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
 
@@ -48,6 +52,8 @@ class ExportImpl(private val db: AppDatabase) : ExportRepo {
                 habits = habits.map { it.toSchema() },
                 habitRecords = records.map { it.toSchema() },
                 tags = tags.map { it.toSchema() },
+                taskTags = taskTags.groupBy({ it.taskId }, { it.tagId }),
+                habitTags = habitTags.groupBy({ it.habitId }, { it.tagId }),
             )
 
             val jsonString = json.encodeToString(ExportSchema.serializer(), schema)

@@ -10,6 +10,8 @@ data class ExportSchema(
     val habits: List<HabitSchema>,
     val habitRecords: List<HabitRecordSchema>,
     val tags: List<TagSchema>,
+    val taskTags: Map<Long, List<Long>> = emptyMap(),
+    val habitTags: Map<Long, List<Long>> = emptyMap(),
 ) {
     companion object {
         const val CURRENT_VERSION = 1
