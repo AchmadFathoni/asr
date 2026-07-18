@@ -113,12 +113,6 @@ class TasksViewModel(
             }
             is Action.ToggleTask -> viewModelScope.launch {
                 taskRepo.toggleTask(action.taskId)
-                val task = taskRepo.getTaskById(action.taskId)
-                val parentId = task?.parentId ?: return@launch
-                val siblings = taskRepo.getSubTasks(parentId)
-                if (siblings.isNotEmpty() && siblings.all { it.isDone }) {
-                    taskRepo.toggleTask(parentId)
-                }
             }
             is Action.ToggleExpand -> {
                 val id = action.taskId

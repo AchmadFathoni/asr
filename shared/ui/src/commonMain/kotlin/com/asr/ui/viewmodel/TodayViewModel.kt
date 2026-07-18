@@ -118,13 +118,6 @@ class TodayViewModel(
         when (action) {
             is Action.ToggleTask -> viewModelScope.launch {
                 taskRepo.toggleTask(action.taskId)
-                val task = taskRepo.getTaskById(action.taskId)
-                task?.parentId?.let { parentId ->
-                    val siblings = taskRepo.getSubTasks(parentId)
-                    if (siblings.isNotEmpty() && siblings.all { it.isDone }) {
-                        taskRepo.toggleTask(parentId)
-                    }
-                }
             }
             is Action.ToggleHabit -> viewModelScope.launch {
                 val d = LocalDate.now()
