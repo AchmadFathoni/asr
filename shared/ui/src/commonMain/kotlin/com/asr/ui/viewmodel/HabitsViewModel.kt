@@ -69,7 +69,7 @@ class HabitsViewModel(
             habits = Filters.habits(base.sortedByPinAndTime(), tagMappings, filter.searchQuery, filter.selectedTagIds, filter.filterDate),
             allRecords = allRecords,
             todayRecords = records.associateBy { it.habitId },
-            streaks = habits.associate { it.id to it.computeStreak(allRecords, today) },
+            streaks = habits.associate { it.id to it.computeStreak(allRecords, today, requireToday = false) },
             habitFilter = habitFilter,
             tags = tags,
             filter = filter,

@@ -578,4 +578,201 @@ class BusinessLogicTest {
         )
         assertEquals(1, h.computeStreak(records, today))
     }
+
+    @Test fun monthlyStreakCrossingMonthBoundaries() {
+        val today = LocalDate(2026, 3, 31)
+        val h = Habit(title = "M", frequencyType = HabitFrequency.MONTHLY)
+        val records = listOf(
+            HabitRecord(habitId = 0, date = today, state = HabitState.DONE),
+            HabitRecord(habitId = 0, date = LocalDate(2026, 2, 28), state = HabitState.DONE),
+            HabitRecord(habitId = 0, date = LocalDate(2026, 1, 31), state = HabitState.DONE),
+        )
+        assertEquals(3, h.computeStreak(records, today))
+    }
+
+    @Test fun monthlyStreakBrokenByMissingMonth() {
+        val today = LocalDate(2026, 3, 15)
+        val h = Habit(title = "M", frequencyType = HabitFrequency.MONTHLY)
+        val records = listOf(
+            HabitRecord(habitId = 0, date = today, state = HabitState.DONE),
+            HabitRecord(habitId = 0, date = LocalDate(2026, 2, 15), state = HabitState.DONE),
+        )
+        assertEquals(2, h.computeStreak(records, today))
+    }
+
+    @Test fun yearlyStreakAcrossLeapYear() {
+        val today = LocalDate(2024, 3, 1)
+        val h = Habit(title = "Y", frequencyType = HabitFrequency.YEARLY)
+        val records = listOf(
+            HabitRecord(habitId = 0, date = today, state = HabitState.DONE),
+            HabitRecord(habitId = 0, date = LocalDate(2023, 3, 1), state = HabitState.DONE),
+            HabitRecord(habitId = 0, date = LocalDate(2022, 3, 1), state = HabitState.DONE),
+        )
+        assertEquals(3, h.computeStreak(records, today))
+    }
+
+    @Test fun yearlyStreakFeb29MapsToFeb28() {
+        val today = LocalDate(2024, 2, 29)
+        val h = Habit(title = "Y", frequencyType = HabitFrequency.YEARLY)
+        val records = listOf(
+            HabitRecord(habitId = 0, date = today, state = HabitState.DONE),
+            HabitRecord(habitId = 0, date = LocalDate(2023, 2, 28), state = HabitState.DONE),
+        )
+        assertEquals(2, h.computeStreak(records, today))
+    }
+
+    @Test fun monthlyStreakHandlesFeb29Mapping() {
+        val today = LocalDate(2024, 3, 31)
+        val h = Habit(title = "M", frequencyType = HabitFrequency.MONTHLY)
+        val records = listOf(
+            HabitRecord(habitId = 0, date = today, state = HabitState.DONE),
+            HabitRecord(habitId = 0, date = LocalDate(2024, 2, 29), state = HabitState.DONE),
+            HabitRecord(habitId = 0, date = LocalDate(2024, 1, 31), state = HabitState.DONE),
+        )
+        assertEquals(3, h.computeStreak(records, today))
+    }
+
+    @Test fun dailyStreakShowsPreviousWhenTodayMissing() {
+        val today = LocalDate(2026, 7, 13)
+        val h = Habit(title = "S")
+        val records = listOf(
+            HabitRecord(habitId = 0, date = LocalDate(2026, 7, 12), state = HabitState.DONE),
+        )
+        assertEquals(1, h.computeStreak(records, today, requireToday = false))
+    }
+
+    @Test fun dailyStreakZeroWhenTodayAndYesterdayMissing() {
+        val today = LocalDate(2026, 7, 13)
+        val h = Habit(title = "S")
+        val records = listOf(
+            HabitRecord(habitId = 0, date = LocalDate(2026, 7, 11), state = HabitState.DONE),
+        )
+        assertEquals(0, h.computeStreak(records, today, requireToday = false))
+    }
+
+    @Test fun dailyStreakRequireTodayDefaultsToTrue() {
+        val today = LocalDate(2026, 7, 13)
+        val h = Habit(title = "S")
+        val records = listOf(
+            HabitRecord(habitId = 0, date = LocalDate(2026, 7, 12), state = HabitState.DONE),
+        )
+        assertEquals(0, h.computeStreak(records, today))
+    }
+
+    @Test fun dailyStreakFullStreakWithTodayDone() {
+        val today = LocalDate(2026, 7, 13)
+        val h = Habit(title = "S")
+        val records = listOf(
+            HabitRecord(habitId = 0, date = today, state = HabitState.DONE),
+            HabitRecord(habitId = 0, date = LocalDate(2026, 7, 12), state = HabitState.DONE),
+            HabitRecord(habitId = 0, date = LocalDate(2026, 7, 11), state = HabitState.DONE),
+        )
+        assertEquals(3, h.computeStreak(records, today, requireToday = false))
+    }
+
+    @Test fun monthlyStreakByPeriod() {
+        val today = LocalDate(2026, 3, 1)
+        val h = Habit(title = "M", frequencyType = HabitFrequency.MONTHLY)
+        val records = listOf(
+            HabitRecord(habitId = 0, date = LocalDate(2026, 3, 15), state = HabitState.DONE),
+            HabitRecord(habitId = 0, date = LocalDate(2026, 2, 10), state = HabitState.DONE),
+            HabitRecord(habitId = 0, date = LocalDate(2026, 1, 5), state = HabitState.DONE),
+        )
+        assertEquals(3, h.computeStreak(records, today))
+    }
+
+    @Test fun yearlyStreakByPeriod() {
+        val today = LocalDate(2026, 6, 1)
+        val h = Habit(title = "Y", frequencyType = HabitFrequency.YEARLY)
+        val records = listOf(
+            HabitRecord(habitId = 0, date = LocalDate(2026, 3, 10), state = HabitState.DONE),
+            HabitRecord(habitId = 0, date = LocalDate(2025, 7, 20), state = HabitState.DONE),
+        )
+        assertEquals(2, h.computeStreak(records, today))
+    }
+
+    @Test fun weeklyStreakShowsPreviousWhenTodayMissing() {
+        val today = LocalDate(2026, 7, 13) // Monday
+        val h = Habit(title = "W", frequencyType = HabitFrequency.WEEKLY)
+        val records = listOf(
+            HabitRecord(habitId = 0, date = LocalDate(2026, 7, 6), state = HabitState.DONE), // prev Monday
+        )
+        assertEquals(1, h.computeStreak(records, today, requireToday = false))
+    }
+
+    @Test fun monthlyStreakShowsPreviousWhenTodayMissing() {
+        val today = LocalDate(2026, 3, 15)
+        val h = Habit(title = "M", frequencyType = HabitFrequency.MONTHLY)
+        val records = listOf(
+            HabitRecord(habitId = 0, date = LocalDate(2026, 2, 10), state = HabitState.DONE),
+        )
+        assertEquals(1, h.computeStreak(records, today, requireToday = false))
+    }
+
+    @Test fun yearlyStreakShowsPreviousWhenTodayMissing() {
+        val today = LocalDate(2026, 6, 1)
+        val h = Habit(title = "Y", frequencyType = HabitFrequency.YEARLY)
+        val records = listOf(
+            HabitRecord(habitId = 0, date = LocalDate(2025, 3, 10), state = HabitState.DONE),
+        )
+        assertEquals(1, h.computeStreak(records, today, requireToday = false))
+    }
+
+    @Test fun weeklyStreakWithFrequencyCount3() {
+        val today = LocalDate(2026, 7, 17) // Friday
+        val h = Habit(title = "W3", frequencyType = HabitFrequency.WEEKLY, frequencyCount = 3)
+        val records = listOf(
+            HabitRecord(habitId = 0, date = LocalDate(2026, 7, 13), state = HabitState.DONE, count = 1), // Mon
+            HabitRecord(habitId = 0, date = LocalDate(2026, 7, 15), state = HabitState.NOT_DONE, count = 1), // Wed
+            HabitRecord(habitId = 0, date = today, state = HabitState.NOT_DONE, count = 1), // Fri
+        )
+        assertEquals(1, h.computeStreak(records, today))
+    }
+
+    @Test fun weeklyStreakWithFrequencyCount3NotEnough() {
+        val today = LocalDate(2026, 7, 17) // Friday
+        val h = Habit(title = "W3", frequencyType = HabitFrequency.WEEKLY, frequencyCount = 3)
+        val records = listOf(
+            HabitRecord(habitId = 0, date = LocalDate(2026, 7, 13), state = HabitState.DONE, count = 1), // Mon
+            HabitRecord(habitId = 0, date = LocalDate(2026, 7, 15), state = HabitState.NOT_DONE, count = 1), // Wed
+        )
+        assertEquals(0, h.computeStreak(records, today))
+    }
+
+    @Test fun monthlyStreakWithFrequencyCount2() {
+        val today = LocalDate(2026, 3, 15)
+        val h = Habit(title = "M2", frequencyType = HabitFrequency.MONTHLY, frequencyCount = 2)
+        val records = listOf(
+            HabitRecord(habitId = 0, date = LocalDate(2026, 3, 5), state = HabitState.DONE, count = 1),
+            HabitRecord(habitId = 0, date = LocalDate(2026, 3, 20), state = HabitState.NOT_DONE, count = 1),
+            HabitRecord(habitId = 0, date = LocalDate(2026, 2, 10), state = HabitState.DONE, count = 1),
+            HabitRecord(habitId = 0, date = LocalDate(2026, 2, 25), state = HabitState.NOT_DONE, count = 1),
+        )
+        assertEquals(2, h.computeStreak(records, today))
+    }
+
+    @Test fun weeklyStreakWithFreqCount3AcrossWeeks() {
+        val today = LocalDate(2026, 7, 24) // next Friday
+        val h = Habit(title = "W3", frequencyType = HabitFrequency.WEEKLY, frequencyCount = 3)
+        val records = listOf(
+            HabitRecord(habitId = 0, date = LocalDate(2026, 7, 20), state = HabitState.DONE, count = 1), // Mon
+            HabitRecord(habitId = 0, date = LocalDate(2026, 7, 22), state = HabitState.NOT_DONE, count = 1), // Wed
+            HabitRecord(habitId = 0, date = LocalDate(2026, 7, 24), state = HabitState.NOT_DONE, count = 1), // Fri
+            HabitRecord(habitId = 0, date = LocalDate(2026, 7, 13), state = HabitState.DONE, count = 1), // prev Mon
+            HabitRecord(habitId = 0, date = LocalDate(2026, 7, 15), state = HabitState.NOT_DONE, count = 1), // prev Wed
+            HabitRecord(habitId = 0, date = LocalDate(2026, 7, 17), state = HabitState.NOT_DONE, count = 1), // prev Fri
+        )
+        assertEquals(2, h.computeStreak(records, today))
+    }
+
+    @Test fun habitIdFilteringExcludesOtherHabits() {
+        val today = LocalDate(2026, 7, 13)
+        val h = Habit(id = 42, title = "Mine")
+        val records = listOf(
+            HabitRecord(habitId = 42, date = today, state = HabitState.DONE),
+            HabitRecord(habitId = 99, date = today, state = HabitState.DONE),
+            HabitRecord(habitId = 99, date = LocalDate(2026, 7, 12), state = HabitState.DONE),
+        )
+        assertEquals(1, h.computeStreak(records, today))
+    }
 }

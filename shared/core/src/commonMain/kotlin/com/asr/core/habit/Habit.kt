@@ -39,21 +39,36 @@ fun Habit.shouldShowToday(today: LocalDate): Boolean = when (frequencyType) {
     }
 }
 
-fun Habit.computeStreak(records: List<HabitRecord>, today: LocalDate): Int {
-    val doneDates = records.filter { it.state == HabitState.DONE }.map { it.date }.toSet()
-    var streak = 0
-    var date = today
-    val step = when (frequencyType) {
-        HabitFrequency.DAILY -> 1
-        HabitFrequency.WEEKLY -> 7
-        HabitFrequency.MONTHLY -> 30
-        HabitFrequency.YEARLY -> 365
+fun Habit.computeStreak(records: List<HabitRecord>, today: LocalDate, requireToday: Boolean = true): Int {
+    fun periodKey(date: LocalDate): Long = when (frequencyType) {
+        HabitFrequency.DAILY -> date.toEpochDays()
+        HabitFrequency.WEEKLY -> (date.toEpochDays() - 4) / 7 // Monday-aligned
+        HabitFrequency.MONTHLY -> date.year.toLong() * 12 + date.month.ordinal
+        HabitFrequency.YEARLY -> date.year.toLong()
     }
-    while (date in doneDates) {
-        streak++
-        date = LocalDate.fromEpochDays(date.toEpochDays() - step)
+
+    val myRecords = records.filter { it.habitId == id }
+
+    val completePeriods = if (frequencyType == HabitFrequency.DAILY || frequencyCount == 1) {
+        myRecords.filter { it.state == HabitState.DONE }.map { periodKey(it.date) }.toSet()
+    } else {
+        myRecords.groupBy { periodKey(it.date) }
+            .filter { (_, recs) -> recs.sumOf { it.count } >= frequencyCount }
+            .keys
     }
-    return streak
+
+    fun countFrom(start: Long): Int {
+        var streak = 0
+        var key = start
+        while (key in completePeriods) { streak++; key-- }
+        return streak
+    }
+
+    val todayKey = periodKey(today)
+    if (todayKey in completePeriods) return countFrom(todayKey)
+    if (requireToday) return 0
+    val prevKey = todayKey - 1
+    return if (prevKey in completePeriods) countFrom(prevKey) else 0
 }
 
 fun daysInMonth(year: Int, month: Int): Int = when (month) {
