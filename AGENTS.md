@@ -147,5 +147,5 @@ Android widget uses raw `RemoteViewsService` + `ListView` + transparent trampoli
 - Focus areas: import/export validation, date edge cases, input validation
 
 ### Known Issues & TODOs
-- **CMP-10319**: TimePicker analog dial shows wrong selector color on desktop (Skia/OpenGL BlendMode bug). [Filed 2026-06-09](https://youtrack.jetbrains.com/issue/CMP-10319). Options to fix: `GraphicsApi.SOFTWARE_FAST` (try first), switch to `TimeInput`, upgrade CMP, or wait upstream.
+- **CMP-10319**: TimePicker analog dial shows wrong selector color on desktop (Skia/OpenGL BlendMode bug). [Filed 2026-06-09](https://youtrack.jetbrains.com/issue/CMP-10319). Using analog `TimePicker` anyway — spatial awareness of clock dial is preferred over number input. Bug is desktop-only visual (wrong selector color), no functional impact. If the bug becomes intolerable, revisit with `GraphicsApi.SOFTWARE_FAST` or `TimeInput`.
 - **Desktop parity gaps**: Desktop export/restore uses `~/.asr/exports/` directory with no file picker; alarms and sound are no-ops. These are acceptable for now (desktop is secondary), but new features should implement both platform bindings in the same PR — see Design Decision #6.

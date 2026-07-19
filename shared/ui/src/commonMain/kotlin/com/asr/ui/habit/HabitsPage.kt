@@ -43,7 +43,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TimeInput
+import androidx.compose.material3.TimePicker
 import androidx.compose.material3.TimePickerDialog
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
@@ -410,7 +410,7 @@ fun HabitsPage(viewModel: HabitsViewModel) {
             },
             title = { Text("Set reminder time") },
         ) {
-            TimeInput(state = timePickerState)
+            TimePicker(state = timePickerState)
         }
     }
 

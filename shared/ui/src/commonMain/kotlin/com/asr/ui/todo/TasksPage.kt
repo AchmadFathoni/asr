@@ -42,7 +42,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TimeInput
+import androidx.compose.material3.TimePicker
 import androidx.compose.material3.TimePickerDialog
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
@@ -376,7 +376,7 @@ fun TasksPage(viewModel: TasksViewModel) {
             },
             title = { Text("Set reminder time") },
         ) {
-            TimeInput(state = timePickerState)
+            TimePicker(state = timePickerState)
         }
     }
 
