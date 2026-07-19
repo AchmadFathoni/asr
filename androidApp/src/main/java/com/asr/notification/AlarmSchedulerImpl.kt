@@ -42,6 +42,8 @@ class AlarmSchedulerImpl(private val context: Context) : AlarmScheduler {
                 body = "Time to do: ${habit.title}",
                 timeStr = timeStr,
                 repeating = true,
+                type = "habit",
+                entityId = habit.id,
             )
         }
     }
@@ -78,12 +80,16 @@ class AlarmSchedulerImpl(private val context: Context) : AlarmScheduler {
         scheduledIds.clear()
     }
 
-    private fun scheduleAlarm(id: Int, title: String, body: String, timeStr: String, repeating: Boolean) {
+    private fun scheduleAlarm(id: Int, title: String, body: String, timeStr: String, repeating: Boolean, type: String? = null, entityId: Long = 0) {
         val time = try { LocalTime.parse(timeStr) } catch (_: Exception) { return }
         val alarmManager = context.getSystemService(AlarmManager::class.java)
         val intent = Intent(context, BootReceiver::class.java).apply {
             putExtra("title", title)
             putExtra("body", body)
+            if (type != null) {
+                putExtra("type", type)
+                putExtra("entityId", entityId)
+            }
         }
         val pending = PendingIntent.getBroadcast(
             context, id, intent,

@@ -7,11 +7,15 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import androidx.core.app.NotificationCompat
+import com.asr.core.habit.HabitRepo
+import com.asr.core.habit.shouldShowToday
 import com.asr.core.interfaces.AlarmScheduler
+import com.asr.core.now
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.datetime.LocalDate
 import org.koin.core.context.GlobalContext
 
 class BootReceiver : BroadcastReceiver() {
@@ -27,7 +31,40 @@ class BootReceiver : BroadcastReceiver() {
 
         val title = intent.getStringExtra("title") ?: return
         val body = intent.getStringExtra("body") ?: return
+        val type = intent.getStringExtra("type")
 
+        if (type == "habit") {
+            val entityId = intent.getLongExtra("entityId", 0L)
+            val pendingResult = goAsync()
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    val koin = GlobalContext.getOrNull() ?: return@launch
+                    val habitRepo = koin.get<HabitRepo>()
+                    val habit = habitRepo.getHabitById(entityId) ?: return@launch
+                    if (habit.shouldShowToday(LocalDate.now())) {
+                        showNotification(context, title, body)
+                    }
+                } finally {
+                    pendingResult.finish()
+                }
+            }
+            return
+        }
+
+        showNotification(context, title, body)
+    }
+
+    private suspend fun rescheduleAll(context: Context) {
+        val koin = GlobalContext.getOrNull() ?: return
+        val scheduler = koin.get<AlarmScheduler>()
+        val taskRepo = koin.get<com.asr.core.task.TaskRepo>()
+        val habitRepo = koin.get<HabitRepo>()
+
+        taskRepo.getTasksFlow().first().filter { it.reminderTime != null }.forEach { scheduler.schedule(it) }
+        habitRepo.getHabitsFlow().first().filter { it.reminderTime != null }.forEach { scheduler.schedule(it) }
+    }
+
+    private fun showNotification(context: Context, title: String, body: String) {
         val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
             PendingIntent.FLAG_IMMUTABLE else 0
         val notification = NotificationCompat.Builder(context, AlarmSchedulerImpl.CHANNEL_ID)
@@ -46,15 +83,5 @@ class BootReceiver : BroadcastReceiver() {
 
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         manager.notify(System.currentTimeMillis().toInt(), notification)
-    }
-
-    private suspend fun rescheduleAll(context: Context) {
-        val koin = GlobalContext.getOrNull() ?: return
-        val scheduler = koin.get<AlarmScheduler>()
-        val taskRepo = koin.get<com.asr.core.task.TaskRepo>()
-        val habitRepo = koin.get<com.asr.core.habit.HabitRepo>()
-
-        taskRepo.getTasksFlow().first().filter { it.reminderTime != null }.forEach { scheduler.schedule(it) }
-        habitRepo.getHabitsFlow().first().filter { it.reminderTime != null }.forEach { scheduler.schedule(it) }
     }
 }
