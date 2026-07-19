@@ -13,6 +13,7 @@ import com.asr.core.interfaces.AlarmScheduler
 import com.asr.core.currentDateFlow
 import com.asr.core.now
 import com.asr.core.sortedByPinAndTime
+import com.asr.core.StatusFilter
 import com.asr.core.tag.Tag
 import com.asr.core.tag.TagRepo
 import com.asr.ui.app.FilterState
@@ -32,7 +33,7 @@ import kotlinx.datetime.LocalDate
 import org.koin.core.annotation.KoinViewModel
 import org.koin.core.annotation.Provided
 
-enum class HabitFilter { ALL, DUE, DONE }
+
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @KoinViewModel
@@ -48,7 +49,7 @@ class HabitsViewModel(
 
     private val _selected = MutableStateFlow(SelectedHabit())
     private val _filter = MutableStateFlow(FilterState())
-    private val _habitFilter = MutableStateFlow(HabitFilter.DUE)
+    private val _habitFilter = MutableStateFlow(StatusFilter.DUE)
     private val _createdTagId = MutableStateFlow<Long?>(null)
     val createdTagId: StateFlow<Long?> = _createdTagId.asStateFlow()
 
@@ -64,9 +65,9 @@ class HabitsViewModel(
         combine(_filter, _selected, _habitFilter, tagRepo.getHabitTagMappingsFlow()) { f, s, hf, m -> FilterStateWithHistory(f, s, hf, m) },
     ) { habits, allRecords, (today, records), tags, (filter, selected, habitFilter, tagMappings) ->
         val base = when (habitFilter) {
-            HabitFilter.ALL -> habits
-            HabitFilter.DUE -> habits.filter { !it.isDoneInPeriod(today, allRecords) }
-            HabitFilter.DONE -> habits.filter { it.isDoneInPeriod(today, allRecords) }
+            StatusFilter.ALL -> habits
+            StatusFilter.DUE -> habits.filter { !it.isDoneInPeriod(today, allRecords) }
+            StatusFilter.DONE -> habits.filter { it.isDoneInPeriod(today, allRecords) }
         }
         HabitsState(
             habits = Filters.habits(base.sortedByPinAndTime(), tagMappings, filter.searchQuery, filter.selectedTagIds, filter.filterDate),
@@ -103,7 +104,7 @@ class HabitsViewModel(
         data object ConsumeCreatedTag : Action
         data class SetFilterDate(val date: LocalDate?) : Action
         data object ToggleFilterSheet : Action
-        data class SetHabitFilter(val filter: HabitFilter) : Action
+        data class SetHabitFilter(val filter: StatusFilter) : Action
     }
 
     fun onAction(action: Action) {
@@ -177,7 +178,7 @@ private data class SelectedHabit(
 private data class FilterStateWithHistory(
     val filter: FilterState,
     val selected: SelectedHabit,
-    val habitFilter: HabitFilter,
+    val habitFilter: StatusFilter,
     val tagMappings: Map<Long, List<Long>>,
 )
 
@@ -188,7 +189,7 @@ data class HabitsState(
     val streaks: Map<Long, Int> = emptyMap(),
     val tags: List<Tag> = emptyList(),
     val filter: FilterState = FilterState(),
-    val habitFilter: HabitFilter = HabitFilter.DUE,
+    val habitFilter: StatusFilter = StatusFilter.DUE,
     val selectedHabitId: Long? = null,
     val selectedHabitHistory: List<HabitRecord> = emptyList(),
     val habitTagMappings: Map<Long, List<Long>> = emptyMap(),

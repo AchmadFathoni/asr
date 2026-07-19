@@ -88,7 +88,7 @@ import com.asr.ui.app.StatusFilterChips
 import com.asr.ui.app.TagFilterRow
 import com.asr.ui.app.TopActionRow
 import com.asr.ui.tagColorForValue
-import com.asr.ui.viewmodel.HabitFilter
+import com.asr.core.StatusFilter
 import com.asr.ui.viewmodel.HabitsViewModel
 import org.jetbrains.compose.resources.vectorResource
 
@@ -158,7 +158,7 @@ fun HabitsPage(viewModel: HabitsViewModel) {
                 pulseScale = pulseScale,
                 filterChips = {
                     StatusFilterChips(
-                        entries = HabitFilter.entries,
+                        entries = StatusFilter.entries,
                         selected = state.habitFilter,
                         onSelect = { viewModel.onAction(HabitsViewModel.Action.SetHabitFilter(it)) },
                     )

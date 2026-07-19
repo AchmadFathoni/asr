@@ -80,7 +80,7 @@ import com.asr.ui.app.TagFilterRow
 import com.asr.ui.app.TopActionRow
 import com.asr.ui.app.UndoDeleteSnackbarEffect
 import com.asr.ui.tagColorForValue
-import com.asr.ui.viewmodel.TaskFilter
+import com.asr.core.StatusFilter
 import com.asr.ui.viewmodel.TasksViewModel
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
@@ -165,13 +165,13 @@ fun TasksPage(viewModel: TasksViewModel) {
                 pulseScale = pulseScale,
                 filterChips = {
                     StatusFilterChips(
-                        entries = TaskFilter.entries,
+                        entries = StatusFilter.entries,
                         selected = state.filter,
                         onSelect = { viewModel.onAction(TasksViewModel.Action.SetFilter(it)) },
                     )
                 },
                 centerActions = {
-                    if (state.filter == TaskFilter.DONE) {
+                    if (state.filter == StatusFilter.DONE) {
                         TextButton(onClick = { viewModel.onAction(TasksViewModel.Action.DeleteDoneTasks) }) {
                             Text("Clear done", style = MaterialTheme.typography.bodySmall)
                         }

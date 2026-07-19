@@ -19,8 +19,6 @@ import kotlin.test.assertNull
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-enum class TaskFilter { ALL, ACTIVE, DONE }
-
 class BusinessLogicTest {
 
     // Habit period counting algorithm extracted from TodayViewModel / HabitsViewModel
@@ -98,13 +96,13 @@ class BusinessLogicTest {
     private fun filterTasks(
         tasks: List<Task>,
         doneTasks: List<Task>,
-        filter: TaskFilter,
+        filter: StatusFilter,
         query: String,
     ): List<Task> {
         val filtered = when (filter) {
-            TaskFilter.ALL -> tasks
-            TaskFilter.ACTIVE -> tasks.filter { !it.isDone }
-            TaskFilter.DONE -> doneTasks
+            StatusFilter.ALL -> tasks
+            StatusFilter.DUE -> tasks.filter { !it.isDone }
+            StatusFilter.DONE -> doneTasks
         }
         return if (query.isBlank()) filtered
         else filtered.filter { it.title.contains(query, ignoreCase = true) }
@@ -116,7 +114,7 @@ class BusinessLogicTest {
             Task(id = 1, title = "Active", isDone = false),
             Task(id = 2, title = "Done", isDone = true),
         )
-        val result = filterTasks(tasks, tasks.filter { it.isDone }, TaskFilter.ACTIVE, "")
+        val result = filterTasks(tasks, tasks.filter { it.isDone }, StatusFilter.DUE, "")
         assertEquals(1, result.size)
         assertEquals("Active", result[0].title)
     }
@@ -127,7 +125,7 @@ class BusinessLogicTest {
             Task(id = 1, title = "Active", isDone = false),
             Task(id = 2, title = "Done", isDone = true),
         )
-        val result = filterTasks(tasks, tasks.filter { it.isDone }, TaskFilter.ALL, "")
+        val result = filterTasks(tasks, tasks.filter { it.isDone }, StatusFilter.ALL, "")
         assertEquals(2, result.size)
     }
 
@@ -137,7 +135,7 @@ class BusinessLogicTest {
             Task(id = 1, title = "Active", isDone = false),
             Task(id = 2, title = "Done", isDone = true),
         )
-        val result = filterTasks(tasks, tasks.filter { it.isDone }, TaskFilter.DONE, "")
+        val result = filterTasks(tasks, tasks.filter { it.isDone }, StatusFilter.DONE, "")
         assertEquals(1, result.size)
         assertEquals("Done", result[0].title)
     }
@@ -145,26 +143,26 @@ class BusinessLogicTest {
     @Test
     fun searchQueryCaseInsensitive() {
         val tasks = listOf(Task(id = 1, title = "Buy Milk"))
-        val result = filterTasks(tasks, emptyList(), TaskFilter.ALL, "MILK")
+        val result = filterTasks(tasks, emptyList(), StatusFilter.ALL, "MILK")
         assertEquals(1, result.size)
-        val noResult = filterTasks(tasks, emptyList(), TaskFilter.ALL, "eggs")
+        val noResult = filterTasks(tasks, emptyList(), StatusFilter.ALL, "eggs")
         assertEquals(0, noResult.size)
     }
 
     @Test
     fun searchQueryMatchesPartialTitle() {
         val tasks = listOf(Task(id = 1, title = "Buy Milk"))
-        val result = filterTasks(tasks, emptyList(), TaskFilter.ALL, "Buy")
+        val result = filterTasks(tasks, emptyList(), StatusFilter.ALL, "Buy")
         assertEquals(1, result.size)
-        val resultPartial = filterTasks(tasks, emptyList(), TaskFilter.ALL, "y M")
+        val resultPartial = filterTasks(tasks, emptyList(), StatusFilter.ALL, "y M")
         assertEquals(1, resultPartial.size)
     }
 
     @Test
     fun emptyTaskListIsHandled() {
-        val result = filterTasks(emptyList(), emptyList(), TaskFilter.ALL, "")
+        val result = filterTasks(emptyList(), emptyList(), StatusFilter.ALL, "")
         assertEquals(0, result.size)
-        val resultActive = filterTasks(emptyList(), emptyList(), TaskFilter.ACTIVE, "")
+        val resultActive = filterTasks(emptyList(), emptyList(), StatusFilter.DUE, "")
         assertEquals(0, resultActive.size)
     }
 

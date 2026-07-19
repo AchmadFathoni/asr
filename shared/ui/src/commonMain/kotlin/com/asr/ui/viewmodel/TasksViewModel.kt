@@ -8,6 +8,7 @@ import com.asr.core.interfaces.AlarmScheduler
 import com.asr.core.task.Task
 import com.asr.core.task.TaskRepo
 import com.asr.core.sortedByPinAndDate
+import com.asr.core.StatusFilter
 import com.asr.ui.app.FilterState
 import com.asr.ui.app.Filters
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,7 +29,7 @@ class TasksViewModel(
     @Provided private val tagRepo: TagRepo,
     @Provided private val alarmScheduler: AlarmScheduler,
 ) : ViewModel() {
-    private val _taskFilter = MutableStateFlow(TaskFilter.ACTIVE)
+    private val _taskFilter = MutableStateFlow(StatusFilter.DUE)
     private val _expandedIds = MutableStateFlow<Set<Long>>(emptySet())
     private val _filter = MutableStateFlow(FilterState())
     private val _pendingDeleted = MutableStateFlow<List<Task>?>(null)
@@ -46,9 +47,9 @@ class TasksViewModel(
     ) { all, tags, taskFilter, expandedIds, (filter, tagMappings, pendingDeleted) ->
         val parentTaskIds = all.mapNotNull { it.parentId }.toSet()
         val base = when (taskFilter) {
-            TaskFilter.ALL -> all
-            TaskFilter.ACTIVE -> all.filter { !it.isDone }
-            TaskFilter.DONE -> all.filter { it.isDone }
+            StatusFilter.ALL -> all
+            StatusFilter.DUE -> all.filter { !it.isDone }
+            StatusFilter.DONE -> all.filter { it.isDone }
         }
 
         TasksState(
@@ -81,7 +82,7 @@ class TasksViewModel(
         data class DeleteTask(val task: Task) : Action
         data class ToggleTask(val taskId: Long) : Action
         data class ToggleExpand(val taskId: Long) : Action
-        data class SetFilter(val filter: TaskFilter) : Action
+        data class SetFilter(val filter: StatusFilter) : Action
         data class CreateTag(val name: String, val color: Long? = null) : Action
         data class TogglePinTask(val taskId: Long) : Action
         data object DeleteDoneTasks : Action
@@ -159,11 +160,9 @@ class TasksViewModel(
     }
 }
 
-enum class TaskFilter { ALL, ACTIVE, DONE }
-
 data class TasksState(
     val tasks: List<Task> = emptyList(),
-    val filter: TaskFilter = TaskFilter.ACTIVE,
+    val filter: StatusFilter = StatusFilter.DUE,
     val tags: List<Tag> = emptyList(),
     val expandedTaskIds: Set<Long> = emptySet(),
     val filterState: FilterState = FilterState(),
