@@ -80,7 +80,6 @@ class TodayViewsFactory(
             LabelStyle.SECTION_TASKS -> 0xFF4CAF50.toInt()
             LabelStyle.SECTION_HABITS -> 0xFF2196F3.toInt()
             LabelStyle.MESSAGE -> textDim()
-            else -> textPrimary()
         })
         views.setFloat(R.id.label_text, "setTextSize", when (item.style) {
             LabelStyle.HEADER -> 16f

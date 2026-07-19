@@ -24,14 +24,21 @@ class TodayWidgetProvider : AppWidgetProvider() {
         fun updateWidget(context: Context, appWidgetId: Int) {
             val views = buildRemoteViews(context, appWidgetId)
             AppWidgetManager.getInstance(context).updateAppWidget(appWidgetId, views)
+            // notifyAppWidgetViewDataChanged(int[], int) is deprecated but its
+            // replacement (int[], RemoteViews) requires building a RemoteViews
+            // just to extract the view ID — no functional difference.
+            @Suppress("DEPRECATION")
             AppWidgetManager.getInstance(context).notifyAppWidgetViewDataChanged(
-                appWidgetId, R.id.widget_list
+                intArrayOf(appWidgetId), R.id.widget_list
             )
         }
 
         fun refreshWidget(context: Context, appWidgetId: Int) {
+            // Same deprecation situation as updateWidget — replacement
+            // requires building RemoteViews just for the view ID lookup.
+            @Suppress("DEPRECATION")
             AppWidgetManager.getInstance(context).notifyAppWidgetViewDataChanged(
-                appWidgetId, R.id.widget_list
+                intArrayOf(appWidgetId), R.id.widget_list
             )
         }
     }
@@ -48,6 +55,10 @@ private fun buildRemoteViews(context: Context, appWidgetId: Int): RemoteViews {
         putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
         data = Uri.parse(this.toUri(Intent.URI_INTENT_SCHEME))
     }
+    // setRemoteAdapter(int, Intent) is deprecated but has no replacement for
+    // RemoteViewsService-backed dynamic collections — static RemoteCollectionItems
+    // can't respond to notifyAppWidgetViewDataChanged().
+    @Suppress("DEPRECATION")
     views.setRemoteAdapter(R.id.widget_list, adapterIntent)
 
     val templateIntent = Intent(context, WidgetActionActivity::class.java)
