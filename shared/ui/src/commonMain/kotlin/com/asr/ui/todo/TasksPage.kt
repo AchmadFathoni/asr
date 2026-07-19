@@ -305,6 +305,7 @@ fun TasksPage(viewModel: TasksViewModel) {
                         onTagToggle = { id ->
                             selectedTagIds = if (id in selectedTagIds) selectedTagIds - id else selectedTagIds + id
                         },
+                        useFlowRow = true,
                     )
                 }
             },
