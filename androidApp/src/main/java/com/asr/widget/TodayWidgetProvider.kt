@@ -55,9 +55,11 @@ private fun buildRemoteViews(context: Context, appWidgetId: Int): RemoteViews {
         putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
         data = Uri.parse(this.toUri(Intent.URI_INTENT_SCHEME))
     }
-    // setRemoteAdapter(int, Intent) is deprecated but has no replacement for
-    // RemoteViewsService-backed dynamic collections — static RemoteCollectionItems
-    // can't respond to notifyAppWidgetViewDataChanged().
+    // Android 15 deprecates setRemoteAdapter(Intent) in favor of
+    // RemoteCollectionItems, which only supports static snapshots.
+    // This widget requires a dynamic Room-backed collection that
+    // refreshes via notifyAppWidgetViewDataChanged() — no
+    // feature-equivalent replacement exists yet.
     @Suppress("DEPRECATION")
     views.setRemoteAdapter(R.id.widget_list, adapterIntent)
 
