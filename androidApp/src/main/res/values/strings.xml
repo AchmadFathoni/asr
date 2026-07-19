@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">ASR</string>
     <string name="widget_description">Today\'s tasks and habits at a glance</string>
+    <string name="today_widget_description">Your tasks and habits for today</string>
 </resources>

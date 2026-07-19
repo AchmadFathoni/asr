@@ -1,12 +1,12 @@
 package com.asr.di
 
 import android.content.Context
-import androidx.room3.Room
 import com.asr.app.util.AndroidSoundPlayer
 import com.asr.core.habit.HabitRepo
 import com.asr.core.habit.HabitStorage
 import com.asr.core.habit.SharedHabitRepo
 import com.asr.core.interfaces.SoundPlayer
+import com.asr.core.interfaces.WidgetUpdater
 import com.asr.core.settings.SettingsRepo
 import com.asr.core.settings.SettingsStorage
 import com.asr.core.settings.SharedSettingsRepo
@@ -25,6 +25,7 @@ import com.asr.data.storage.RoomHabitStorage
 import com.asr.data.storage.RoomTagStorage
 import com.asr.data.storage.RoomTaskStorage
 import com.asr.ui.di.UIModules
+import com.asr.widget.getDatabase
 import org.koin.core.annotation.ComponentScan
 import org.koin.core.annotation.Module
 import org.koin.core.annotation.Single
@@ -33,11 +34,7 @@ import org.koin.core.annotation.Single
 @ComponentScan("com.asr")
 class AppModule {
     @Single
-    fun provideDatabase(context: Context): AppDatabase = Room.databaseBuilder(
-        context.applicationContext,
-        AppDatabase::class.java,
-        AppDatabase.DB_NAME,
-    ).addMigrations(AppDatabase.MIGRATION_4_5).build()
+    fun provideDatabase(context: Context): AppDatabase = getDatabase(context.applicationContext)
 
     @Single
     fun provideTaskDao(db: AppDatabase): TaskDao = db.taskDao()
@@ -61,10 +58,10 @@ class AppModule {
     fun provideSettingsStorage(context: Context): SettingsStorage = PrefsSettingsStorage(context)
 
     @Single(binds = [TaskRepo::class])
-    fun provideTaskRepo(storage: TaskStorage): TaskRepo = SharedTaskRepo(storage)
+    fun provideTaskRepo(storage: TaskStorage, widgetUpdater: WidgetUpdater): TaskRepo = SharedTaskRepo(storage, widgetUpdater)
 
     @Single(binds = [HabitRepo::class])
-    fun provideHabitRepo(storage: HabitStorage): HabitRepo = SharedHabitRepo(storage)
+    fun provideHabitRepo(storage: HabitStorage, widgetUpdater: WidgetUpdater): HabitRepo = SharedHabitRepo(storage, widgetUpdater)
 
     @Single(binds = [TagRepo::class])
     fun provideTagRepo(storage: TagStorage): TagRepo = SharedTagRepo(storage)

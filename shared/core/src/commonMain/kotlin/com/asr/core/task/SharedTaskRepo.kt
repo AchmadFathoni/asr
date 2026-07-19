@@ -1,10 +1,14 @@
 package com.asr.core.task
 
+import com.asr.core.interfaces.WidgetUpdater
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
-class SharedTaskRepo(private val storage: TaskStorage) : TaskRepo {
+class SharedTaskRepo(
+    private val storage: TaskStorage,
+    private val widgetUpdater: WidgetUpdater,
+) : TaskRepo {
     override fun getTasksFlow(): Flow<List<Task>> = storage.observeAll()
 
     override fun getUndoneTasksFlow(): Flow<List<Task>> =
@@ -22,7 +26,7 @@ class SharedTaskRepo(private val storage: TaskStorage) : TaskRepo {
             val parent = storage.getById(task.parentId)
             if (parent?.isDone == true) task.copy(isDone = true) else task
         } else task
-        return storage.upsert(updated)
+        return storage.upsert(updated).also { widgetUpdater.notifyDataChanged() }
     }
 
     override suspend fun toggleTask(id: Long) {
@@ -48,6 +52,7 @@ class SharedTaskRepo(private val storage: TaskStorage) : TaskRepo {
                 }
             }
         }
+        widgetUpdater.notifyDataChanged()
     }
 
     private suspend fun completeDescendants(parentId: Long) {
@@ -66,6 +71,7 @@ class SharedTaskRepo(private val storage: TaskStorage) : TaskRepo {
 
     override suspend fun deleteTask(task: Task) {
         deleteRecursive(task.id)
+        widgetUpdater.notifyDataChanged()
     }
 
     private suspend fun deleteRecursive(id: Long) {
@@ -75,7 +81,11 @@ class SharedTaskRepo(private val storage: TaskStorage) : TaskRepo {
 
     override suspend fun deleteDoneTasks() {
         storage.observeAll().first().filter { it.isDone }.map { it.id }.toSet().forEach { deleteRecursive(it) }
+        widgetUpdater.notifyDataChanged()
     }
 
-    override suspend fun insertAll(tasks: List<Task>) = storage.replaceAll(tasks)
+    override suspend fun insertAll(tasks: List<Task>) {
+        storage.replaceAll(tasks)
+        widgetUpdater.notifyDataChanged()
+    }
 }

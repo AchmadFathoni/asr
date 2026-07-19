@@ -101,6 +101,33 @@ Platform differences are handled via interface-based polymorphism — not `expec
 
 **Avoid `expect`/`actual` unless the interface pattern cannot work.** The current interface+DI approach keeps all platform variance at the module boundary, keeping shared code pure KMP.
 
+#### 7. Raw RemoteViews + trampoline activity for widget (not Glance)
+Android widget uses raw `RemoteViewsService` + `ListView` + transparent trampoline `Activity`, **not** Jetpack Glance. Chosen after extensive Samsung One UI testing (see codebase history):
+
+| Approach tested | Result on Samsung |
+|---|---|
+| Glance `Column` + `clickable(actionRunCallback)` | Clicks fire, widget refresh unreliable (Samsung skips Glance's null-RemoteViews update signal) |
+| Glance `LazyColumn` + `clickable` | Same refresh issue; per-item PendingIntents don't dispatch on Samsung |
+| Raw `RemoteViews` + `setPendingIntentTemplate` (broadcast) | Broadcast fires, fillInIntent extras **stripped** by Samsung's `HoneyAppWidgetHostView` |
+| Raw `RemoteViews` + `setPendingIntentTemplate` (activity) + trampoline | **Works** — fillInIntent data survives, trampoline does DB write + `notifyAppWidgetViewDataChanged()` |
+
+**Samsung quirk:** Samsung's `HoneyAppWidgetHostView` strips `fillInIntent` extras and URI data for **broadcast** `PendingIntent` templates — the extras arrive as `null` even though the broadcast fires. Activity `PendingIntent` templates correctly merge fillInIntent data (action, extras, data URI). This is why Glance's internal `InvisibleActionTrampolineActivity` uses an activity template: Samsung dispatches the activity with merged data, then the trampoline re-dispatches as a local broadcast. Google Keep uses the same pattern.
+
+**How it works:**
+- `ListView` with `setPendingIntentTemplate(activity)` → Samsung properly merges fillInIntent for activity intents
+- FillInIntent per item carries action (`TOGGLE_TASK` / `INCREMENT_HABIT`) + ID + appWidgetId
+- Transparent `WidgetActionActivity` (singleInstance, separate task, noHistory) does DB write via shared `getDatabase()` singleton → calls `notifyAppWidgetViewDataChanged()` for instant refresh → finishes
+
+**Widget flicker fix:** Hot-path refreshes (trampoline / `AndroidWidgetUpdater`) call only `notifyAppWidgetViewDataChanged()` — never `updateAppWidget()`. Building new `RemoteViews` + `updateAppWidget` triggers Samsung's animation and causes visible flicker. `notifyAppWidgetViewDataChanged` just re-queries the adapter (`onDataSetChanged → getViewAt`) with zero visual disruption. Full `updateAppWidget` is only used in `onUpdate()` for initial widget placement/resize.
+
+**DB singleton:** Both app (Koin DI) and widget share the same `getDatabase()` instance (`WidgetDatabase.kt`). Two separate Room instances would cause stale-read — the app's invalidation tracker must see widget writes.
+
+**Files:**
+- `TodayWidgetProvider.kt` — `AppWidgetProvider`, builds ListView RemoteViews, sets activity template
+- `TodayWidgetService.kt` / `TodayViewsFactory.kt` — `RemoteViewsService` + `RemoteViewsFactory` adapter
+- `WidgetActionActivity.kt` — transparent trampoline activity
+- `WidgetDatabase.kt` — shared Room singleton
+
 ### Code Style
 - UDF (Unidirectional Data Flow): sealed actions → ViewModel state
 - Immutable state data classes, exposed via `StateFlow`

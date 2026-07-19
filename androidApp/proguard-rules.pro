@@ -12,3 +12,10 @@
 -keep class * extends androidx.room3.RoomDatabase
 -keep @androidx.room3.Entity class *
 -dontwarn androidx.room3.paging.**
+
+# WorkManager
+-keep class * extends androidx.work.impl.WorkDatabase { <init>(); }
+-keep class androidx.work.** { *; }
+
+# Glance
+-keep class com.asr.widget.** { *; }

@@ -113,6 +113,10 @@ dependencies {
     implementation(libs.koin.compose.viewmodel.navigation)
     implementation(libs.koin.annotations)
     implementation(libs.koin.android)
+
+    implementation(libs.glance.appwidget)
+    implementation(libs.glance.material3)
+    implementation(libs.work.runtime.ktx)
 }
 
 room3 { schemaDirectory("$projectDir/schemas") }
