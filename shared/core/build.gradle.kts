@@ -8,15 +8,15 @@ plugins {
     alias(libs.plugins.android.kotlin.multiplatform.library)
 }
 
-val appVersionNameProvider = providers.gradleProperty("app.versionName")
-val appVersionCodeProvider = providers.exec {
-    commandLine("git", "rev-list", "--count", "HEAD")
-}.standardOutput.asText.map { it.trim() }
-
 val generateAppVersion = tasks.register("generateAppVersion") {
     val outputDir = layout.buildDirectory.dir("generated/version/src/commonMain/kotlin/com/asr/core")
-    inputs.property("versionName", appVersionNameProvider)
-    inputs.property("versionCode", appVersionCodeProvider)
+    val versionName = providers.gradleProperty("app.versionName")
+    val versionCode = providers.exec {
+        commandLine("git", "rev-list", "--count", "HEAD")
+    }.standardOutput.asText.map { it.trim() }
+
+    inputs.property("versionName", versionName)
+    inputs.property("versionCode", versionCode)
     outputs.dir(outputDir)
 
     doLast {
@@ -27,8 +27,8 @@ val generateAppVersion = tasks.register("generateAppVersion") {
             package com.asr.core
 
             object AppVersion {
-                val build: String = "${appVersionCodeProvider.get()}"
-                val release: String = "${appVersionNameProvider.get()}"
+                val build: String = "${versionCode.get()}"
+                val release: String = "${versionName.get()}"
             }
             """.trimIndent(),
         )
