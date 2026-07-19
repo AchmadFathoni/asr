@@ -74,7 +74,10 @@ class TodayViewModel(
         val noFilter = filter.searchQuery.isBlank() && filter.selectedTagIds.isEmpty()
         val allDone = noFilter && hasItems &&
             todayTasks.all { it.isDone } &&
-            todayHabits.all { h -> records.firstOrNull { it.habitId == h.id }?.state != HabitState.NOT_DONE }
+            todayHabits.all { h ->
+                val rec = records.firstOrNull { it.habitId == h.id }
+                rec != null && rec.state != HabitState.NOT_DONE
+            }
 
         TodayState(
             tasks = Filters.tasks(baseTasks.sortedByPinAndDate(), ttm, filter.searchQuery, filter.selectedTagIds, null),
