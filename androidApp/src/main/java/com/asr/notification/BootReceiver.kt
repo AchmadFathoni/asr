@@ -11,6 +11,7 @@ import com.asr.core.habit.HabitRepo
 import com.asr.core.habit.shouldShowToday
 import com.asr.core.interfaces.AlarmScheduler
 import com.asr.core.now
+import com.asr.widget.MidnightRefreshReceiver
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
@@ -60,6 +61,7 @@ class BootReceiver : BroadcastReceiver() {
         val taskRepo = koin.get<com.asr.core.task.TaskRepo>()
         val habitRepo = koin.get<HabitRepo>()
 
+        MidnightRefreshReceiver.scheduleNext(context)
         taskRepo.getTasksFlow().first().filter { it.reminderTime != null }.forEach { scheduler.schedule(it) }
         habitRepo.getHabitsFlow().first().filter { it.reminderTime != null }.forEach { scheduler.schedule(it) }
     }

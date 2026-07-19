@@ -12,6 +12,7 @@ import com.asr.R
 class TodayWidgetProvider : AppWidgetProvider() {
 
     override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
+        MidnightRefreshReceiver.scheduleNext(context)
         for (appWidgetId in appWidgetIds) {
             updateWidget(context, appWidgetId)
         }
