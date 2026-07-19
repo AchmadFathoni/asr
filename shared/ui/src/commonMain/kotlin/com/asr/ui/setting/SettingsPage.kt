@@ -146,6 +146,7 @@ fun SettingsPage(viewModel: SettingsViewModel) {
                         enabled = state.newTagName.isNotBlank(),
                     ) { Text("Create") }
                 }
+                Spacer(Modifier.height(8.dp))
                 TagColorPicker(
                     selectedColor = state.newTagColor,
                     onColorSelected = { viewModel.onAction(SettingsViewModel.Action.SetNewTagColor(it)) },
@@ -176,7 +177,7 @@ fun SettingsPage(viewModel: SettingsViewModel) {
                                 ) { Text("Delete", color = MaterialTheme.colorScheme.error) }
                             }
                             if (editingColorTagId.value == tag.id) {
-                                Spacer(Modifier.height(4.dp))
+                                Spacer(Modifier.height(8.dp))
                                 TagColorPicker(
                                     selectedColor = tag.color,
                                     onColorSelected = {

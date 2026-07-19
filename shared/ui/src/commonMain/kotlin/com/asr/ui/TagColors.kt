@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -80,7 +81,7 @@ fun TagColorPicker(
         TagColorRole.entries.chunked(5).forEach { row ->
             Row(
                 Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                horizontalArrangement = Arrangement.spacedBy(0.dp),
             ) {
                 row.forEach { role ->
                     val ordinal = role.ordinal.toLong()
@@ -88,25 +89,31 @@ fun TagColorPicker(
                     Box(
                         modifier = Modifier
                             .weight(1f)
-                            .aspectRatio(1f)
+                            .aspectRatio(1f),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Box(
+                        modifier = Modifier
+                            .fillMaxSize(0.92f)
                             .clip(CircleShape)
                             .background(resolveTagColor(role))
                             .clickable {
                                 onColorSelected(if (selected) null else ordinal)
                             },
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        if (selected) {
-                            Text(
-                                "✓",
-                                color = checkmarkColor(resolveTagColor(role)),
-                                style = MaterialTheme.typography.bodySmall,
-                            )
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            if (selected) {
+                                Text(
+                                    "✓",
+                                    color = checkmarkColor(resolveTagColor(role)),
+                                    style = MaterialTheme.typography.bodySmall,
+                                )
+                            }
                         }
                     }
                 }
             }
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(0.dp))
         }
     }
 }

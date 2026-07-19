@@ -181,7 +181,7 @@ fun CreateTagRow(
             ) { Text("Add") }
         }
         if (tagName.isNotBlank()) {
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(8.dp))
             TagColorPicker(
                 selectedColor = tagColor,
                 onColorSelected = onTagColorChange,
