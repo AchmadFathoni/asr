@@ -199,5 +199,5 @@ private fun repoWith(vararg tasks: Task): SharedTaskRepo {
         override suspend fun deleteDone() { list.removeAll { it.isDone }; flow.value = list.toList() }
         override suspend fun replaceAll(newTasks: List<Task>) { list.clear(); list.addAll(newTasks); flow.value = list.toList() }
     }
-    return SharedTaskRepo(storage)
+    return SharedTaskRepo(storage, object : com.asr.core.interfaces.WidgetUpdater { override fun notifyDataChanged() {} })
 }

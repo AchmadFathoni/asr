@@ -1,5 +1,6 @@
 package com.asr.core
 
+import com.asr.core.interfaces.WidgetUpdater
 import com.asr.core.task.SharedTaskRepo
 import com.asr.core.task.Task
 import com.asr.core.task.TaskStorage
@@ -13,7 +14,7 @@ import kotlin.test.assertTrue
 class TaskToggleTest {
     private fun runTest(block: suspend SharedTaskRepo.() -> Unit) {
         val store = InMemoryTaskStorage(mutableListOf())
-        val repo = SharedTaskRepo(store)
+        val repo = SharedTaskRepo(store, object : WidgetUpdater { override fun notifyDataChanged() {} })
         runBlocking { block(repo) }
     }
 

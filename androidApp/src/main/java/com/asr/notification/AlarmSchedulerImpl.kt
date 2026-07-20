@@ -9,8 +9,11 @@ import android.content.Intent
 import android.os.Build
 import android.util.Log
 import com.asr.core.habit.Habit
+import com.asr.core.habit.nextOccurrenceFrom
 import com.asr.core.interfaces.AlarmScheduler
+import com.asr.core.now
 import com.asr.core.task.Task
+import kotlinx.datetime.LocalDate
 import org.koin.core.annotation.Single
 import java.time.LocalTime
 
@@ -34,19 +37,45 @@ class AlarmSchedulerImpl(private val context: Context) : AlarmScheduler {
 
     override fun schedule(habit: Habit) {
         habit.reminderTime?.let { timeStr ->
+            val time = try { LocalTime.parse(timeStr) } catch (_: Exception) { return }
             val id = habit.id.toInt() + 10000
             scheduledIds.add(id)
-            scheduleAlarm(
-                id = id,
-                title = habit.title,
-                body = "Time to do: ${habit.title}",
-                timeStr = timeStr,
-                repeating = true,
-                type = "habit",
-                entityId = habit.id,
-            )
+
+            val today = LocalDate.now()
+            val targetDate = habit.nextOccurrenceFrom(today)
+
+            val triggerTime = buildCalendar(targetDate, time).timeInMillis
+            val finalTrigger = if (triggerTime <= System.currentTimeMillis()) {
+                val next = habit.nextOccurrenceFrom(LocalDate.fromEpochDays(today.toEpochDays() + 1))
+                buildCalendar(next, time).timeInMillis
+            } else triggerTime
+
+            val alarmManager = context.getSystemService(AlarmManager::class.java)
+            val intent = Intent(context, BootReceiver::class.java).apply {
+                putExtra("title", habit.title)
+                putExtra("body", "Time to do: ${habit.title}")
+                putExtra("type", "habit")
+                putExtra("entityId", habit.id)
+            }
+            val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            else PendingIntent.FLAG_UPDATE_CURRENT
+            val pending = PendingIntent.getBroadcast(context, id, intent, flags)
+
+            Log.d("ASR_Reminder", "habit alarm: id=$id title=${habit.title} targetDate=$targetDate triggerTime=$finalTrigger")
+            alarmManager.set(AlarmManager.RTC_WAKEUP, finalTrigger, pending)
         }
     }
+
+    private fun buildCalendar(date: LocalDate, time: LocalTime): java.util.Calendar =
+        java.util.Calendar.getInstance().apply {
+            set(java.util.Calendar.YEAR, date.year)
+            set(java.util.Calendar.MONTH, date.month.ordinal)
+            set(java.util.Calendar.DAY_OF_MONTH, date.day)
+            set(java.util.Calendar.HOUR_OF_DAY, time.hour)
+            set(java.util.Calendar.MINUTE, time.minute)
+            set(java.util.Calendar.SECOND, 0)
+        }
 
     override fun schedule(task: Task) {
         task.reminderTime?.let { timeStr ->

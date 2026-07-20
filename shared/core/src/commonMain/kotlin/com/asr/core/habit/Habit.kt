@@ -39,6 +39,14 @@ fun Habit.shouldShowToday(today: LocalDate): Boolean = when (frequencyType) {
     }
 }
 
+fun Habit.nextOccurrenceFrom(today: LocalDate): LocalDate {
+    var d = today
+    while (true) {
+        if (shouldShowToday(d)) return d
+        d = LocalDate.fromEpochDays(d.toEpochDays() + 1)
+    }
+}
+
 fun Habit.computeStreak(records: List<HabitRecord>, today: LocalDate, requireToday: Boolean = true): Int {
     fun periodKey(date: LocalDate): Long = when (frequencyType) {
         HabitFrequency.DAILY -> date.toEpochDays()

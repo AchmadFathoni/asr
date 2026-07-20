@@ -44,6 +44,8 @@ class BootReceiver : BroadcastReceiver() {
                     val habit = habitRepo.getHabitById(entityId) ?: return@launch
                     if (habit.shouldShowToday(LocalDate.now())) {
                         showNotification(context, title, body)
+                        val scheduler = koin.get<AlarmScheduler>()
+                        scheduler.schedule(habit)
                     }
                 } finally {
                     pendingResult.finish()
