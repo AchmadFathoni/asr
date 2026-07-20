@@ -11,6 +11,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -35,6 +36,7 @@ fun SparkleCheck(
     modifier: Modifier = Modifier,
 ) {
     var animating by remember { mutableStateOf(false) }
+    LaunchedEffect(isDone) { animating = false }
 
     val scale by animateFloatAsState(
         targetValue = if (isDone || animating) 1.0f else 0.75f,
