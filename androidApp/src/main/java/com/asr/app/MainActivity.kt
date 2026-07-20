@@ -1,7 +1,6 @@
 package com.asr.app
 
 import android.Manifest
-import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -21,9 +20,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             LaunchedEffect(Unit) {
-                if (Build.VERSION.SDK_INT >= 33) {
-                    requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                }
+                requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
             MainApp()
         }

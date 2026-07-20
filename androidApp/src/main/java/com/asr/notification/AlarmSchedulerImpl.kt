@@ -6,7 +6,6 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.os.Build
 import android.util.Log
 import com.asr.core.habit.Habit
 import com.asr.core.habit.nextOccurrenceFrom
@@ -26,13 +25,11 @@ class AlarmSchedulerImpl(private val context: Context) : AlarmScheduler {
     }
 
     init {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_DEFAULT
-            ).apply { description = "Reminders for tasks and habits" }
-            val manager = context.getSystemService(NotificationManager::class.java)
-            manager.createNotificationChannel(channel)
-        }
+        val channel = NotificationChannel(
+            CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_DEFAULT
+        ).apply { description = "Reminders for tasks and habits" }
+        val manager = context.getSystemService(NotificationManager::class.java)
+        manager.createNotificationChannel(channel)
     }
 
     override fun schedule(habit: Habit) {
@@ -61,13 +58,11 @@ class AlarmSchedulerImpl(private val context: Context) : AlarmScheduler {
                 putExtra("type", "habit")
                 putExtra("entityId", habit.id)
             }
-            val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            else PendingIntent.FLAG_UPDATE_CURRENT
-            val pending = PendingIntent.getBroadcast(context, id, intent, flags)
+            val pending = PendingIntent.getBroadcast(context, id, intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
 
             Log.d("ASR_Reminder", "habit alarm: id=$id title=${habit.title} targetDate=$targetDate triggerTime=$finalTrigger")
-            setExactAlarm(alarmManager, finalTrigger, pending)
+            alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, finalTrigger, pending)
         }
     }
 
@@ -90,7 +85,6 @@ class AlarmSchedulerImpl(private val context: Context) : AlarmScheduler {
                 title = task.title,
                 body = task.description.ifBlank { "Reminder: ${task.title}" },
                 timeStr = timeStr,
-                repeating = false,
             )
         }
     }
@@ -113,7 +107,7 @@ class AlarmSchedulerImpl(private val context: Context) : AlarmScheduler {
         scheduledIds.clear()
     }
 
-    private fun scheduleAlarm(id: Int, title: String, body: String, timeStr: String, repeating: Boolean, type: String? = null, entityId: Long = 0) {
+    private fun scheduleAlarm(id: Int, title: String, body: String, timeStr: String, type: String? = null, entityId: Long = 0) {
         val time = try { LocalTime.parse(timeStr) } catch (_: Exception) { return }
         val alarmManager = context.getSystemService(AlarmManager::class.java)
         val intent = Intent(context, BootReceiver::class.java).apply {
@@ -126,9 +120,7 @@ class AlarmSchedulerImpl(private val context: Context) : AlarmScheduler {
         }
         val pending = PendingIntent.getBroadcast(
             context, id, intent,
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            else PendingIntent.FLAG_UPDATE_CURRENT,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
 
         val triggerTime = java.util.Calendar.getInstance().apply {
@@ -140,30 +132,8 @@ class AlarmSchedulerImpl(private val context: Context) : AlarmScheduler {
             }
         }.timeInMillis
 
-        Log.d("ASR_Reminder", "scheduleAlarm: id=$id title=$title timeStr=$timeStr repeating=$repeating triggerTime=$triggerTime")
-
-        if (repeating) {
-            alarmManager.setRepeating(
-                AlarmManager.RTC_WAKEUP, triggerTime,
-                AlarmManager.INTERVAL_DAY, pending,
-            )
-            Log.d("ASR_Reminder", "setRepeating scheduled for $title at $triggerTime")
-        } else {
-            setExactAlarm(alarmManager, triggerTime, pending)
-            Log.d("ASR_Reminder", "set scheduled for $title at $triggerTime")
-        }
-    }
-
-    private fun setExactAlarm(alarmManager: AlarmManager, triggerTime: Long, pending: PendingIntent) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S || alarmManager.canScheduleExactAlarms()) {
-                alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerTime, pending)
-            } else {
-                alarmManager.set(AlarmManager.RTC_WAKEUP, triggerTime, pending)
-            }
-        } else {
-            alarmManager.set(AlarmManager.RTC_WAKEUP, triggerTime, pending)
-        }
+        Log.d("ASR_Reminder", "scheduleAlarm: id=$id title=$title timeStr=$timeStr triggerTime=$triggerTime")
+        alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerTime, pending)
     }
 
     private fun cancelAlarm(id: Int) {
@@ -171,9 +141,7 @@ class AlarmSchedulerImpl(private val context: Context) : AlarmScheduler {
         val intent = Intent(context, BootReceiver::class.java)
         val pending = PendingIntent.getBroadcast(
             context, id, intent,
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            else PendingIntent.FLAG_UPDATE_CURRENT,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
         alarmManager.cancel(pending)
     }
