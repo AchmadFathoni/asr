@@ -5,8 +5,11 @@ import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Build
+import android.util.Log
 import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
 import com.asr.core.habit.HabitRepo
 import com.asr.core.habit.shouldShowToday
 import com.asr.core.interfaces.AlarmScheduler
@@ -69,6 +72,14 @@ class BootReceiver : BroadcastReceiver() {
     }
 
     private fun showNotification(context: Context, title: String, body: String) {
+        if (Build.VERSION.SDK_INT >= 33 &&
+            ContextCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS)
+            != PackageManager.PERMISSION_GRANTED
+        ) {
+            Log.w("ASR_Reminder", "POST_NOTIFICATIONS not granted, suppressing notification for: $title")
+            return
+        }
+
         val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
             PendingIntent.FLAG_IMMUTABLE else 0
         val notification = NotificationCompat.Builder(context, AlarmSchedulerImpl.CHANNEL_ID)

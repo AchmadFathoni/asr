@@ -77,9 +77,16 @@ Uses `kotlin.time.Clock.System` (Kotlin stdlib, available in KMP common) — not
 Caveat: `androidApp` `AlarmSchedulerImpl.kt` uses `java.time.LocalTime` for alarm time arithmetic — a platform-constrained exception.
 
 #### 3. `nix-ld` for NixOS compatibility
-The Android Gradle Plugin downloads prebuilt `aapt2` binaries from Maven that fail on NixOS due to missing dynamic linker paths. Fix: the dev shell sets `NIX_LD` + `NIX_LD_LIBRARY_PATH` and uses `nix-ld` as the ELF interpreter via `scripts/gradlew`. `nix-ld` redirects library resolution through `NIX_LD_LIBRARY_PATH`, so no re-patching is needed if library paths change. Set `ANDROID_HOME` to `./.android-sdk` so SDK downloads stay local.
+The Android Gradle Plugin downloads prebuilt `aapt2` binaries from Maven that fail on NixOS due to missing dynamic linker paths. Two fixes in `scripts/gradlew`:
+
+- **AAPT2 override:** Sets `-Pandroid.aapt2FromMavenOverride=$AAPT2_PATH` (project property, *not* `-D` system property — AGP reads this as a project property, and `-D` silently ignores it on AGP 9.x). This redirects AGP to the SDK's pre-patched `aapt2` so the Maven one is never used at all.
+- **Post-build patching:** `patch-aapt2.sh` runs after every build to fix any newly downloaded Maven `aapt2` binaries, as a safety net.
+
+The dev shell sets `NIX_LD` + `NIX_LD_LIBRARY_PATH` and uses `nix-ld` as the ELF interpreter via `scripts/gradlew`. `nix-ld` redirects library resolution through `NIX_LD_LIBRARY_PATH`, so no re-patching is needed if library paths change. Set `ANDROID_HOME` to `./.android-sdk` so SDK downloads stay local.
 
 The same patching is applied to `adb` in the dev shell shellHook so `installDebug` works on NixOS.
+
+**Don't delete `.gradle-home/caches/` to fix AAPT2 issues.** Instead run `./scripts/gradlew assembleDebug` — the `-Pandroid.aapt2FromMavenOverride` flag makes AGP skip Maven's `aapt2` entirely. If the transform cache gets corrupted, delete only `.gradle-home/caches/*/transforms/` then rebuild.
 
 #### 4. Custom XML vector drawables via Compose Resources
 Custom XML vector drawables in `shared/ui/src/commonMain/composeResources/drawable/`, loaded with `vectorResource(Res.drawable.*)`. Generated resource package: `asr.shared.ui.generated.resources`. This sidesteps the `material-icons-core` version gap (1.7.3 vs Compose 1.11.1) entirely — same approach as Grit's 51 custom drawables.

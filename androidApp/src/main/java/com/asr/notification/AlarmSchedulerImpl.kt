@@ -46,8 +46,12 @@ class AlarmSchedulerImpl(private val context: Context) : AlarmScheduler {
 
             val triggerTime = buildCalendar(targetDate, time).timeInMillis
             val finalTrigger = if (triggerTime <= System.currentTimeMillis()) {
-                val next = habit.nextOccurrenceFrom(LocalDate.fromEpochDays(today.toEpochDays() + 1))
-                buildCalendar(next, time).timeInMillis
+                if (targetDate == today) {
+                    System.currentTimeMillis() + 30_000
+                } else {
+                    val next = habit.nextOccurrenceFrom(LocalDate.fromEpochDays(today.toEpochDays() + 1))
+                    buildCalendar(next, time).timeInMillis
+                }
             } else triggerTime
 
             val alarmManager = context.getSystemService(AlarmManager::class.java)
@@ -63,7 +67,7 @@ class AlarmSchedulerImpl(private val context: Context) : AlarmScheduler {
             val pending = PendingIntent.getBroadcast(context, id, intent, flags)
 
             Log.d("ASR_Reminder", "habit alarm: id=$id title=${habit.title} targetDate=$targetDate triggerTime=$finalTrigger")
-            alarmManager.set(AlarmManager.RTC_WAKEUP, finalTrigger, pending)
+            setExactAlarm(alarmManager, finalTrigger, pending)
         }
     }
 
@@ -131,7 +135,9 @@ class AlarmSchedulerImpl(private val context: Context) : AlarmScheduler {
             set(java.util.Calendar.HOUR_OF_DAY, time.hour)
             set(java.util.Calendar.MINUTE, time.minute)
             set(java.util.Calendar.SECOND, 0)
-            if (timeInMillis <= System.currentTimeMillis()) add(java.util.Calendar.DAY_OF_YEAR, 1)
+            if (timeInMillis <= System.currentTimeMillis()) {
+                setTimeInMillis(System.currentTimeMillis() + 30_000)
+            }
         }.timeInMillis
 
         Log.d("ASR_Reminder", "scheduleAlarm: id=$id title=$title timeStr=$timeStr repeating=$repeating triggerTime=$triggerTime")
@@ -143,8 +149,20 @@ class AlarmSchedulerImpl(private val context: Context) : AlarmScheduler {
             )
             Log.d("ASR_Reminder", "setRepeating scheduled for $title at $triggerTime")
         } else {
-            alarmManager.set(AlarmManager.RTC_WAKEUP, triggerTime, pending)
+            setExactAlarm(alarmManager, triggerTime, pending)
             Log.d("ASR_Reminder", "set scheduled for $title at $triggerTime")
+        }
+    }
+
+    private fun setExactAlarm(alarmManager: AlarmManager, triggerTime: Long, pending: PendingIntent) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S || alarmManager.canScheduleExactAlarms()) {
+                alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerTime, pending)
+            } else {
+                alarmManager.set(AlarmManager.RTC_WAKEUP, triggerTime, pending)
+            }
+        } else {
+            alarmManager.set(AlarmManager.RTC_WAKEUP, triggerTime, pending)
         }
     }
 

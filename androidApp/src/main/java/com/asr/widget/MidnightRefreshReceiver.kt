@@ -16,6 +16,7 @@ class MidnightRefreshReceiver : BroadcastReceiver() {
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 AndroidWidgetUpdater(context.applicationContext).notifyDataChanged()
+                scheduleNext(context.applicationContext)
             } finally {
                 pendingResult.finish()
             }
@@ -41,12 +42,15 @@ class MidnightRefreshReceiver : BroadcastReceiver() {
                 set(java.util.Calendar.MILLISECOND, 0)
             }.timeInMillis
 
-            alarmManager.setRepeating(
-                AlarmManager.RTC_WAKEUP,
-                nextMidnight,
-                AlarmManager.INTERVAL_DAY,
-                pending,
-            )
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S || alarmManager.canScheduleExactAlarms()) {
+                    alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, nextMidnight, pending)
+                } else {
+                    alarmManager.set(AlarmManager.RTC_WAKEUP, nextMidnight, pending)
+                }
+            } else {
+                alarmManager.set(AlarmManager.RTC_WAKEUP, nextMidnight, pending)
+            }
         }
     }
 }
