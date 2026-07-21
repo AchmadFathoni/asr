@@ -4,7 +4,6 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color as GColor
-import android.net.Uri
 import android.util.Log
 import android.widget.RemoteViews
 import android.widget.RemoteViewsService
@@ -93,19 +92,6 @@ class TodayViewsFactory(
         val views = RemoteViews(context.packageName, R.layout.widget_task_row)
         views.setTextViewText(R.id.task_title, item.task.title)
         views.setTextColor(R.id.task_title, if (item.isParent) textDim() else textPrimary())
-
-        val checkText = if (item.task.isDone) "\u2611" else "\u2610"
-        views.setTextViewText(R.id.task_check, checkText)
-        views.setTextColor(R.id.task_check, 0xFF4CAF50.toInt())
-
-        if (!item.isParent && !item.task.isDone) {
-            val fillInIntent = Intent().apply {
-                action = TodayWidgetProvider.ACTION_TOGGLE_TASK
-                putExtra("task_id", item.task.id)
-                putExtra("appWidgetId", appWidgetId)
-            }
-            views.setOnClickFillInIntent(R.id.task_row, fillInIntent)
-        }
 
         return views
     }
