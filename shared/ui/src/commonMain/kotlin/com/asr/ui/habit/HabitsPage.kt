@@ -102,7 +102,6 @@ fun HabitsPage(viewModel: HabitsViewModel) {
     var newHabitDescription by remember { mutableStateOf("") }
     var newHabitReminder by remember { mutableStateOf("") }
     var newFreq by remember { mutableStateOf(HabitFrequency.DAILY) }
-    var newFrequencyCount by remember { mutableStateOf("1") }
     val newDaysOfWeek = remember { mutableStateListOf<Int>() }
     val newDaysOfMonth = remember { mutableStateListOf<Int>() }
     val selectedYearlyDates = remember { mutableStateListOf<Int>() }
@@ -150,7 +149,6 @@ fun HabitsPage(viewModel: HabitsViewModel) {
                 onAdd = {
                     newHabitTitle = ""; newHabitDescription = ""; newHabitReminder = ""
                     newFreq = HabitFrequency.DAILY
-                    newFrequencyCount = "1"
                     newDaysOfWeek.clear(); newDaysOfMonth.clear(); selectedYearlyDates.clear(); activeYearlyMonth = 1
                     selectedTagIds = emptySet(); newTagName = ""; newTagColor = null
                     editingHabit = null
@@ -199,7 +197,6 @@ fun HabitsPage(viewModel: HabitsViewModel) {
                                 newHabitDescription = habit.description
                                 newHabitReminder = habit.reminderTime ?: ""
                                 newFreq = habit.frequencyType
-                                newFrequencyCount = habit.frequencyCount.toString()
                                 newDaysOfWeek.clear(); newDaysOfWeek.addAll(habit.daysOfWeek)
                                 newDaysOfMonth.clear(); newDaysOfMonth.addAll(habit.daysOfMonth)
                                 selectedYearlyDates.clear(); selectedYearlyDates.addAll(habit.yearlyDates); activeYearlyMonth = 1
@@ -330,14 +327,6 @@ fun HabitsPage(viewModel: HabitsViewModel) {
                                 )
                             }
                             Spacer(Modifier.height(8.dp))
-                            OutlinedTextField(
-                                value = newFrequencyCount,
-                                onValueChange = { newFrequencyCount = it.filter { c -> c.isDigit() } },
-                                label = { Text("Times per period") },
-                                singleLine = true,
-                                modifier = Modifier.width(100.dp),
-                            )
-                            Spacer(Modifier.height(8.dp))
                             TextButton(onClick = { showTimePicker = true }) {
                                 Text(if (newHabitReminder.isNotBlank()) "⏰ $newHabitReminder" else "Set reminder")
                             }
@@ -374,7 +363,12 @@ fun HabitsPage(viewModel: HabitsViewModel) {
                 TextButton(
                     onClick = {
                         if (newHabitTitle.isNotBlank()) {
-                            val count = newFrequencyCount.toIntOrNull() ?: 1
+                            val count = when (newFreq) {
+                                HabitFrequency.DAILY -> 1
+                                HabitFrequency.WEEKLY -> maxOf(1, newDaysOfWeek.size)
+                                HabitFrequency.MONTHLY -> maxOf(1, newDaysOfMonth.size)
+                                HabitFrequency.YEARLY -> maxOf(1, selectedYearlyDates.size)
+                            }
                             val habit = editingHabit?.copy(
                                 title = newHabitTitle,
                                 description = newHabitDescription,
@@ -592,14 +586,16 @@ fun HabitItem(
                     }
                     Spacer(Modifier.height(2.dp))
                 }
-                LinearProgressIndicator(
-                    progress = { currentCount.toFloat() / habit.frequencyCount.coerceAtLeast(1) },
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                    trackColor = MaterialTheme.colorScheme.surfaceVariant,
-                )
-                Text("$currentCount / ${habit.frequencyCount} ${habit.frequencyType.name.lowercase().replaceFirstChar { it.uppercase() }}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                if (habit.frequencyCount > 1) {
+                    LinearProgressIndicator(
+                        progress = { currentCount.toFloat() / habit.frequencyCount.coerceAtLeast(1) },
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                        trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                    )
+                    Text("$currentCount / ${habit.frequencyCount} ${habit.frequencyType.name.lowercase().replaceFirstChar { it.uppercase() }}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
                 if (streak > 0) Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = vectorResource(Res.drawable.fire),

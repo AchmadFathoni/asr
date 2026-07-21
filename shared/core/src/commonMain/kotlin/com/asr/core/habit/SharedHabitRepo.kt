@@ -2,16 +2,17 @@ package com.asr.core.habit
 
 import com.asr.core.interfaces.WidgetUpdater
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.datetime.LocalDate
 
 class SharedHabitRepo(
     private val storage: HabitStorage,
     private val widgetUpdater: WidgetUpdater,
 ) : HabitRepo {
-    override fun getHabitsFlow(): Flow<List<Habit>> = storage.observeHabits()
+    override fun getHabitsFlow(): Flow<List<Habit>> = storage.observeHabits().map { habits -> habits.map { h -> h.normalizeFrequencyCount() } }
     override fun getRecordsFlow(): Flow<List<HabitRecord>> = storage.observeRecords()
     override fun getRecordsForDateFlow(date: LocalDate): Flow<List<HabitRecord>> = storage.observeRecordsForDate(date)
-    override suspend fun getHabitById(id: Long): Habit? = storage.getHabitById(id)
+    override suspend fun getHabitById(id: Long): Habit? = storage.getHabitById(id)?.normalizeFrequencyCount()
     override suspend fun getRecordForDate(habitId: Long, date: LocalDate): HabitRecord? = storage.getRecordForDate(habitId, date)
     override suspend fun upsertHabit(habit: Habit): Long =
         storage.upsertHabit(habit).also { widgetUpdater.notifyDataChanged() }
@@ -34,4 +35,15 @@ class SharedHabitRepo(
         storage.replaceAll(habits, records)
         widgetUpdater.notifyDataChanged()
     }
+}
+
+private fun Habit.normalizeFrequencyCount(): Habit {
+    if (frequencyCount > 1 || frequencyType == HabitFrequency.DAILY) return this
+    val dayCount = when (frequencyType) {
+        HabitFrequency.WEEKLY -> daysOfWeek.size
+        HabitFrequency.MONTHLY -> daysOfMonth.size
+        HabitFrequency.YEARLY -> yearlyDates.size
+        HabitFrequency.DAILY -> 1
+    }
+    return if (dayCount > 1) copy(frequencyCount = dayCount) else this
 }
