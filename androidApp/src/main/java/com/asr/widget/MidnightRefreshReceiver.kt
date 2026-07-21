@@ -39,7 +39,11 @@ class MidnightRefreshReceiver : BroadcastReceiver() {
                 set(java.util.Calendar.MILLISECOND, 0)
             }.timeInMillis
 
-            alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, nextMidnight, pending)
+            try {
+                alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, nextMidnight, pending)
+            } catch (_: SecurityException) {
+                alarmManager.set(AlarmManager.RTC_WAKEUP, nextMidnight, pending)
+            }
         }
     }
 }

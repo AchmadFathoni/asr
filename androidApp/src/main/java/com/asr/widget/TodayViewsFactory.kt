@@ -151,7 +151,6 @@ class TodayViewsFactory(
         fun buildItems(context: android.content.Context): List<ListItem> {
             val db = getDatabase(context)
             val today = LocalDate.now()
-            val todayEpoch = today.toEpochDays()
 
             lateinit var allTaskEntities: List<TaskEntity>
             lateinit var allHabitEntities: List<HabitEntity>
@@ -163,6 +162,16 @@ class TodayViewsFactory(
                 allRecordEntities = db.habitDao().getAllRecords()
             }
 
+            return buildItemList(allTaskEntities, allHabitEntities, allRecordEntities, today)
+        }
+
+        fun buildItemList(
+            allTaskEntities: List<TaskEntity>,
+            allHabitEntities: List<HabitEntity>,
+            allRecordEntities: List<com.asr.data.database.HabitRecordEntity>,
+            today: LocalDate,
+        ): List<ListItem> {
+            val todayEpoch = today.toEpochDays()
             val parentIds = allTaskEntities.mapNotNull { it.parentId }.toSet()
 
             val tasks = allTaskEntities

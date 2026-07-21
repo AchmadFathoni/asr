@@ -12,7 +12,11 @@ import com.asr.R
 class TodayWidgetProvider : AppWidgetProvider() {
 
     override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
-        MidnightRefreshReceiver.scheduleNext(context)
+        try {
+            MidnightRefreshReceiver.scheduleNext(context)
+        } catch (_: SecurityException) {
+            // ponytail: SCHEDULE_EXACT_ALARM not granted — widget still works
+        }
         for (appWidgetId in appWidgetIds) {
             updateWidget(context, appWidgetId)
         }

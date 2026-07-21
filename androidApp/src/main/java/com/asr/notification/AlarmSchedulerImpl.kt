@@ -62,7 +62,11 @@ class AlarmSchedulerImpl(private val context: Context) : AlarmScheduler {
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
 
             Log.d("ASR_Reminder", "habit alarm: id=$id title=${habit.title} targetDate=$targetDate triggerTime=$finalTrigger")
-            alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, finalTrigger, pending)
+            try {
+                alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, finalTrigger, pending)
+            } catch (_: SecurityException) {
+                alarmManager.set(AlarmManager.RTC_WAKEUP, finalTrigger, pending)
+            }
         }
     }
 
@@ -133,7 +137,11 @@ class AlarmSchedulerImpl(private val context: Context) : AlarmScheduler {
         }.timeInMillis
 
         Log.d("ASR_Reminder", "scheduleAlarm: id=$id title=$title timeStr=$timeStr triggerTime=$triggerTime")
-        alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerTime, pending)
+        try {
+            alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerTime, pending)
+        } catch (_: SecurityException) {
+            alarmManager.set(AlarmManager.RTC_WAKEUP, triggerTime, pending)
+        }
     }
 
     private fun cancelAlarm(id: Int) {
