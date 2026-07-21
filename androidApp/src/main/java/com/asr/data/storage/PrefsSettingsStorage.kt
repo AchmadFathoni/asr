@@ -16,8 +16,15 @@ class PrefsSettingsStorage(context: Context) : SettingsStorage {
         prefs.edit().putString(KEY_THEME, theme.name).apply()
     }
 
+    override fun getPunishmentAcknowledgedDate(): String? = prefs.getString(KEY_PUNISHMENT_DATE, null)
+
+    override fun setPunishmentAcknowledgedDate(date: String?) {
+        prefs.edit().putString(KEY_PUNISHMENT_DATE, date).apply()
+    }
+
     companion object {
         private const val PREFS_NAME = "asr_settings"
         private const val KEY_THEME = "theme"
+        private const val KEY_PUNISHMENT_DATE = "punishment_date"
     }
 }

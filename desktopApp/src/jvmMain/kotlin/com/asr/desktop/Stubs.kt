@@ -24,6 +24,7 @@ data class PersistedData(
     val records: List<HabitRecord> = emptyList(),
     val tags: List<Tag> = emptyList(),
     val theme: String? = null,
+    val punishmentDate: String? = null,
     val taskTags: Map<Long, List<Long>> = emptyMap(),
     val habitTags: Map<Long, List<Long>> = emptyMap(),
 )

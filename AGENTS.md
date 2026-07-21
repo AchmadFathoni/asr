@@ -153,6 +153,17 @@ Android widget uses raw `RemoteViewsService` + `ListView` + transparent trampoli
 - Android tests in `androidApp/src/test/`
 - Focus areas: import/export validation, date edge cases, input validation
 
+#### 8. Punishment Dialog for backsliding (ponytail: daily reckoning)
+A punishment dialog on the Today tab triggers when **more than half of yesterday's scheduled items** (habits + tasks) were left undone or skipped. Implemented entirely in the UI layer to keep core logic clean:
+
+- **Trigger:** `undoneYesterday > totalYesterday / 2` computed in `TodayViewModel.kt:105-120` using the existing `shouldShowToday(yesterday)` for habits and `dueDate == yesterday` for tasks.
+- **Dialog:** Standard `AlertDialog` in `TodayPage.kt:256-281` with a guilt-inducing message and two buttons:
+  - **"I understand"** — acknowledges by persisting `yesterday.toString()` via `SettingsRepo.setPunishmentAcknowledgedDate()`. After app restart, the dialog won't re-show for the same yesterday.
+  - **"Remain ignorant"** — just dismisses (no persistence). After app restart, the dialog shows again for the same yesterday if the condition is still met.
+- **Frequency guard:** Once per day max (tracked via `_punishmentDismissed` `MutableStateFlow` reset on day change). "Relax on enough" built in via the >50% threshold — missing 1 of 5 items is fine, missing 3 of 5 triggers it.
+- **Settings persistence:** Both platforms implemented — `PrefsSettingsStorage` (Android SharedPreferences) and `JsonSettingsStorage` (desktop `~/.asr/data.json`).
+- **No settings toggle** (YAGNI). No sound/animation. Just a text dialog.
+
 ### Known Issues & TODOs
 - **CMP-10319**: TimePicker analog dial shows wrong selector color on desktop (Skia/OpenGL BlendMode bug). [Filed 2026-06-09](https://youtrack.jetbrains.com/issue/CMP-10319). Using analog `TimePicker` anyway — spatial awareness of clock dial is preferred over number input. Bug is desktop-only visual (wrong selector color), no functional impact. If the bug becomes intolerable, revisit with `GraphicsApi.SOFTWARE_FAST` or `TimeInput`.
 - **Desktop parity gaps**: Desktop export/restore uses `~/.asr/exports/` directory with no file picker; alarms and sound are no-ops. These are acceptable for now (desktop is secondary), but new features should implement both platform bindings in the same PR — see Design Decision #6.

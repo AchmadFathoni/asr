@@ -12,6 +12,7 @@ import com.asr.core.habit.shouldShowToday
 import com.asr.core.interfaces.AlarmScheduler
 import com.asr.core.currentDateFlow
 import com.asr.core.now
+import com.asr.core.settings.SettingsRepo
 import com.asr.core.sortedByPinAndDate
 import com.asr.core.sortedByPinAndTime
 import com.asr.core.tag.Tag
@@ -41,17 +42,32 @@ class TodayViewModel(
     @Provided private val habitRepo: HabitRepo,
     @Provided private val tagRepo: TagRepo,
     @Provided private val alarmScheduler: AlarmScheduler,
+    @Provided private val settingsRepo: SettingsRepo,
 ) : ViewModel() {
     private val todayFlow = currentDateFlow()
     private var currentToday: LocalDate = LocalDate.now()
 
-    init { viewModelScope.launch { todayFlow.collect { currentToday = it } } }
+    init {
+        viewModelScope.launch {
+            todayFlow.collect { newToday ->
+                if (newToday != currentToday) _punishmentDismissed.value = false
+                currentToday = newToday
+            }
+        }
+    }
 
     private val _filter = MutableStateFlow(FilterState())
     private val _pendingDeleted = MutableStateFlow<List<Task>?>(null)
+    private val _punishmentDismissed = MutableStateFlow(false)
 
     private val recordsWithDate = todayFlow.flatMapLatest { today ->
-        habitRepo.getRecordsForDateFlow(today).map { records -> today to records }
+        val yesterday = LocalDate.fromEpochDays(today.toEpochDays() - 1)
+        combine(
+            habitRepo.getRecordsForDateFlow(today),
+            habitRepo.getRecordsForDateFlow(yesterday)
+        ) { todayRecs, yesterdayRecs ->
+            Triple(today, todayRecs, yesterdayRecs)
+        }
     }
 
     private val _state: StateFlow<TodayState> = combine(
@@ -59,10 +75,10 @@ class TodayViewModel(
         habitRepo.getHabitsFlow(),
         recordsWithDate,
         tagRepo.getTagsFlow(),
-        combine(_filter, tagRepo.getTaskTagMappingsFlow(), tagRepo.getHabitTagMappingsFlow(), _pendingDeleted) { f, ttm, htm, p ->
-            FilterWithMappings(f, ttm, htm, p)
+        combine(_filter, tagRepo.getTaskTagMappingsFlow(), tagRepo.getHabitTagMappingsFlow(), _pendingDeleted, _punishmentDismissed) { f, ttm, htm, p, d ->
+            FilterWithMappings(f, ttm, htm, p, d)
         },
-    ) { tasks, habits, (today, records), tags, (filter, ttm, htm, pendingDeleted) ->
+    ) { tasks, habits, (today, records, yRecs), tags, (filter, ttm, htm, pendingDeleted, punishmentDismissed) ->
         val parentTaskIds = tasks.mapNotNull { it.parentId }.toSet()
         val undoneTasks = tasks.filter { !it.isDone }
         val baseTasks = undoneTasks.filter { val due = it.dueDate; due == null || due <= today }
@@ -85,6 +101,24 @@ class TodayViewModel(
         val periodCounts = todayHabits.associate { h ->
             h.id to records.filter { it.habitId == h.id && it.date >= h.periodStart(today) && it.date <= today }.sumOf { it.count }
         }
+
+        val yesterdayDate = LocalDate.fromEpochDays(today.toEpochDays() - 1)
+        val yesterdayTasks = tasks.filter { it.dueDate == yesterdayDate }
+        val yesterdayHabits = habits.filter { it.shouldShowToday(yesterdayDate) }
+        val totalYesterday = yesterdayTasks.size + yesterdayHabits.size
+        val undoneYesterday =
+            yesterdayTasks.count { !it.isDone } +
+            yesterdayHabits.count { h ->
+                val rec = yRecs.firstOrNull { it.habitId == h.id }
+                rec == null || rec.state != HabitState.DONE
+            }
+        val acknowledgedDate = settingsRepo.getPunishmentAcknowledgedDate()
+        val alreadyAcknowledged = acknowledgedDate == yesterdayDate.toString()
+        val showPunishment = totalYesterday > 0 &&
+            undoneYesterday > totalYesterday / 2 &&
+            !alreadyAcknowledged &&
+            !punishmentDismissed
+
         TodayState(
             tasks = Filters.tasks(baseTasks.sortedByPinAndDate(), ttm, filter.searchQuery, filter.selectedTagIds, null),
             habits = Filters.habits(baseHabits.sortedByPinAndTime(), htm, filter.searchQuery, filter.selectedTagIds, null),
@@ -97,6 +131,7 @@ class TodayViewModel(
             habitTagMappings = htm,
             parentTaskIds = parentTaskIds,
             allDone = allDone,
+            showPunishmentDialog = showPunishment,
             isLoading = false,
         )
     }.stateIn(
@@ -112,6 +147,7 @@ class TodayViewModel(
         val taskTagMappings: Map<Long, List<Long>>,
         val habitTagMappings: Map<Long, List<Long>>,
         val pendingDeleted: List<Task>? = null,
+        val punishmentDismissed: Boolean = false,
     )
 
     sealed interface Action {
@@ -126,6 +162,7 @@ class TodayViewModel(
         data class ToggleTag(val tagId: Long) : Action
         data object ClearTagFilter : Action
         data object ToggleFilterSheet : Action
+        data class DismissPunishmentDialog(val acknowledged: Boolean) : Action
     }
 
     fun onAction(action: Action) {
@@ -173,6 +210,13 @@ class TodayViewModel(
             }
             is Action.ClearTagFilter -> _filter.value = _filter.value.copy(selectedTagIds = emptySet())
             is Action.ToggleFilterSheet -> _filter.value = _filter.value.copy(showFilterSheet = !_filter.value.showFilterSheet)
+            is Action.DismissPunishmentDialog -> {
+                _punishmentDismissed.value = true
+                if (action.acknowledged) {
+                    val yesterday = LocalDate.fromEpochDays(currentToday.toEpochDays() - 1)
+                    settingsRepo.setPunishmentAcknowledgedDate(yesterday.toString())
+                }
+            }
         }
     }
 }
@@ -189,5 +233,6 @@ data class TodayState(
     val habitTagMappings: Map<Long, List<Long>> = emptyMap(),
     val parentTaskIds: Set<Long> = emptySet(),
     val allDone: Boolean = false,
+    val showPunishmentDialog: Boolean = false,
     val isLoading: Boolean = true,
 )
