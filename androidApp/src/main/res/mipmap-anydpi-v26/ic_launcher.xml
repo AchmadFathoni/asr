@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
-    <background android:drawable="@android:color/transparent"/>
-    <foreground android:drawable="@drawable/logo"/>
+    <background android:drawable="@android:color/white"/>
+    <foreground>
+        <inset android:drawable="@drawable/logo"
+            android:inset="18dp" />
+    </foreground>
 </adaptive-icon>
