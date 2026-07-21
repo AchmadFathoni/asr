@@ -23,6 +23,7 @@ espresso-core = "3.7.0"
 compose-junit = "1.11.4"
 truth = "1.4.5"
 kover = "0.9.1"
+robolectric = "4.14.1"
 
 [libraries]
 compose-windowsizeclass = { module = "org.jetbrains.compose.material3:material3-window-size-class", version.ref = "material3" }
@@ -60,6 +61,8 @@ truth = { module = "com.google.truth:truth", version.ref = "truth" }
 glance-appwidget = { module = "androidx.glance:glance-appwidget", version.ref = "glance" }
 glance-material3 = { module = "androidx.glance:glance-material3", version.ref = "glance" }
 work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version.ref = "work" }
+robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
+
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

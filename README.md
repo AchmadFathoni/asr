@@ -32,7 +32,7 @@ direnv allow                         # Enter Nix dev shell
 ./scripts/gradlew assembleDebug      # Build debug APK (patches AAPT2 for NixOS)
 ./scripts/gradlew installDebug       # Build + install on connected Android device with USB debugging
 ./scripts/gradlew :desktopApp:run    # Run desktop version for development
-./scripts/gradlew test               # Run tests
+./scripts/gradlew test :shared:core:jvmTest :shared:ui:jvmTest   # Run all tests
 ```
 
 > **USB debug:** Enable Developer options & USB debugging on your Android device, connect via USB, confirm with `adb devices`. The dev shell provides `adb` via `android-tools` and auto-patches it for NixOS.
@@ -71,8 +71,6 @@ gh release create v<version> --title "v<version>" \
 - Feature summary here"
 gh release upload v<version> androidApp/build/outputs/apk/release/androidApp-release.apk
 ```
-
-Only upload **release** APK (`androidApp-release.apk`), never debug. Version code is auto-derived from `git rev-list --count HEAD`.
 
 ## License
 

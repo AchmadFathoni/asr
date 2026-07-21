@@ -55,16 +55,6 @@
             if [ -f "$ANDROID_HOME/platform-tools/adb" ]; then
               patchelf --set-interpreter "${nixld}/bin/nix-ld" "$ANDROID_HOME/platform-tools/adb" 2>/dev/null || true
             fi
-
-            echo ""
-            echo "ASR dev shell ready"
-            echo "  JAVA_HOME=$JAVA_HOME"
-            echo "  ANDROID_HOME=$ANDROID_HOME"
-            echo ""
-            echo "  Build: ./scripts/gradlew assembleDebug"
-            echo "  Tests: ./scripts/gradlew test"
-            echo "  ADB:  adb devices"
-            echo ""
           '';
         };
       }

@@ -39,7 +39,7 @@ UI ← StateFlow<State> ← ViewModel ← Repository (Flow) ← Room
 |---------|-------------|
 | `./gradlew assembleDebug` | Build debug APK |
 | `./gradlew installDebug` | Build + install on connected Android device |
-| `./gradlew test` | Run unit tests |
+| `./gradlew test :shared:core:jvmTest :shared:ui:jvmTest` | Run all unit tests (Android + core + UI) |
 | `./gradlew assembleRelease` | Build release APK |
 | `./gradlew installRelease` | Build + sign + install release on connected device |
 | `./gradlew :desktopApp:run` | Run desktop app (via Compose Multiplatform) |

@@ -92,7 +92,7 @@ class TodayViewsFactory(
         val views = RemoteViews(context.packageName, R.layout.widget_task_row)
         views.setTextViewText(R.id.task_title, item.task.title)
         views.setTextColor(R.id.task_title, if (item.isParent) textDim() else textPrimary())
-
+        views.setOnClickFillInIntent(R.id.task_row, taskFillInIntent(item.task.id, appWidgetId))
         return views
     }
 
@@ -105,14 +105,7 @@ class TodayViewsFactory(
             "${item.periodCount} / ${item.habit.frequencyCount}"
         )
         views.setTextColor(R.id.habit_count, textDim())
-
-        val fillInIntent = Intent().apply {
-            action = TodayWidgetProvider.ACTION_INCREMENT_HABIT
-            putExtra("habit_id", item.habit.id)
-            putExtra("appWidgetId", appWidgetId)
-        }
-        views.setOnClickFillInIntent(R.id.habit_row, fillInIntent)
-
+        views.setOnClickFillInIntent(R.id.habit_row, habitFillInIntent(item.habit.id, appWidgetId))
         return views
     }
 
@@ -223,6 +216,18 @@ class TodayViewsFactory(
             return result
         }
     }
+}
+
+fun taskFillInIntent(taskId: Long, appWidgetId: Int) = Intent().apply {
+    action = TodayWidgetProvider.ACTION_TOGGLE_TASK
+    putExtra("task_id", taskId)
+    putExtra("appWidgetId", appWidgetId)
+}
+
+fun habitFillInIntent(habitId: Long, appWidgetId: Int) = Intent().apply {
+    action = TodayWidgetProvider.ACTION_INCREMENT_HABIT
+    putExtra("habit_id", habitId)
+    putExtra("appWidgetId", appWidgetId)
 }
 
 private fun TaskEntity.toTask() = Task(
