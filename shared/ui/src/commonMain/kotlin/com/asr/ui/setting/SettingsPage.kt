@@ -238,7 +238,7 @@ fun SettingsPage(viewModel: SettingsViewModel) {
                     style = MaterialTheme.typography.bodySmall.copy(
                         color = MaterialTheme.colorScheme.primary,
                     ),
-                    modifier = Modifier.clickable { uriHandler.openUri("https://github.com/anomalyco/asr") },
+                    modifier = Modifier.clickable { uriHandler.openUri("https://github.com/AchmadFathoni/asr") },
                 )
             }
         }
