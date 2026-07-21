@@ -47,11 +47,20 @@ class WidgetActionActivity : Activity() {
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 val db = getDatabase(applicationContext)
-                val todayEpoch = LocalDate.now().toEpochDays()
+                val today = LocalDate.now()
+                val todayEpoch = today.toEpochDays()
                 val habitEntity = db.habitDao().getHabitById(habitId) ?: return@launch
                 val recordEntity = db.habitDao().getRecordForDate(habitId, todayEpoch)
+                val periodStartEpoch = when (habitEntity.frequencyType) {
+                    "WEEKLY" -> todayEpoch - (today.dayOfWeek.ordinal)
+                    "MONTHLY" -> LocalDate(today.year, today.month, 1).toEpochDays()
+                    "YEARLY" -> LocalDate(today.year, 1, 1).toEpochDays()
+                    else -> todayEpoch
+                }
+                val periodTotal = db.habitDao().getPeriodTotalCount(habitId, periodStartEpoch, todayEpoch) ?: 0
                 val newCount = (recordEntity?.count ?: 0) + 1
-                val newState = if (newCount >= habitEntity.frequencyCount) "DONE" else "NOT_DONE"
+                val newPeriodTotal = periodTotal + 1
+                val newState = if (newPeriodTotal >= habitEntity.frequencyCount) "DONE" else "NOT_DONE"
                 db.habitDao().upsertRecord(
                     HabitRecordEntity(
                         id = recordEntity?.id ?: 0,
@@ -61,7 +70,7 @@ class WidgetActionActivity : Activity() {
                         count = newCount,
                     )
                 )
-                Log.d("Widget", "IncrementHabit id=$habitId count=$newCount")
+                Log.d("Widget", "IncrementHabit id=$habitId count=$newCount periodTotal=$newPeriodTotal")
                 if (widgetId > 0) TodayWidgetProvider.refreshWidget(applicationContext, widgetId)
             } finally {
                 finishAndRemoveTask()

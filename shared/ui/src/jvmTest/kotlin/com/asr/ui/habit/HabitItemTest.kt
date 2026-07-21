@@ -135,6 +135,7 @@ class HabitItemTest {
             HabitItem(
                 habit = habit,
                 record = HabitRecord(habitId = 1, date = date, state = HabitState.DONE, count = 1),
+                periodCount = 1,
                 onSetState = {},
             )
         }

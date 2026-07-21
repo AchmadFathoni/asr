@@ -34,6 +34,8 @@ fun SparkleCheck(
     isDone: Boolean,
     onToggle: () -> Unit,
     modifier: Modifier = Modifier,
+    doneContainerColor: Color = MaterialTheme.colorScheme.primary,
+    doneContentColor: Color = MaterialTheme.colorScheme.onPrimary,
 ) {
     var animating by remember { mutableStateOf(false) }
     LaunchedEffect(isDone) { animating = false }
@@ -48,12 +50,12 @@ fun SparkleCheck(
             .graphicsLayer { scaleX = scale; scaleY = scale }
             .clip(CircleShape)
             .background(
-                color = if (isDone || animating) MaterialTheme.colorScheme.primary
+                color = if (isDone || animating) doneContainerColor
                         else Color.Transparent,
             )
             .border(
                 width = 2.dp,
-                color = if (isDone || animating) MaterialTheme.colorScheme.primary
+                color = if (isDone || animating) doneContainerColor
                         else MaterialTheme.colorScheme.onSurfaceVariant,
                 shape = CircleShape,
             )
@@ -70,7 +72,7 @@ fun SparkleCheck(
             imageVector = vectorResource(Res.drawable.sparkle),
             contentDescription = if (isDone) "Done" else "Mark done",
             modifier = Modifier.size(24.dp),
-            tint = if (isDone || animating) MaterialTheme.colorScheme.onPrimary
+            tint = if (isDone || animating) doneContentColor
                    else MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }

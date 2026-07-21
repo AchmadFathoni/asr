@@ -77,7 +77,7 @@ class JsonHabitStorage : HabitStorage {
     override suspend fun getRecordsForHabit(habitId: Long): List<HabitRecord> = _records.value.filter { it.habitId == habitId }
 
     override suspend fun getCompletionCountInPeriod(habitId: Long, start: LocalDate, end: LocalDate): Int =
-        _records.value.count { it.habitId == habitId && it.date >= start && it.date <= end }
+        _records.value.filter { it.habitId == habitId && it.date >= start && it.date <= end }.sumOf { it.count }
 
     override suspend fun replaceAll(habits: List<Habit>, records: List<HabitRecord>) {
         _habits.value = habits; _records.value = records; save()

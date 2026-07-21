@@ -68,6 +68,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.asr.core.interfaces.SoundPlayer
+import com.asr.ui.app.SparkleCheck
 import kotlinx.coroutines.delay
 import org.koin.compose.koinInject
 import kotlinx.datetime.LocalDate
@@ -101,6 +102,7 @@ fun HabitsPage(viewModel: HabitsViewModel) {
     var newHabitDescription by remember { mutableStateOf("") }
     var newHabitReminder by remember { mutableStateOf("") }
     var newFreq by remember { mutableStateOf(HabitFrequency.DAILY) }
+    var newFrequencyCount by remember { mutableStateOf("1") }
     val newDaysOfWeek = remember { mutableStateListOf<Int>() }
     val newDaysOfMonth = remember { mutableStateListOf<Int>() }
     val selectedYearlyDates = remember { mutableStateListOf<Int>() }
@@ -148,6 +150,7 @@ fun HabitsPage(viewModel: HabitsViewModel) {
                 onAdd = {
                     newHabitTitle = ""; newHabitDescription = ""; newHabitReminder = ""
                     newFreq = HabitFrequency.DAILY
+                    newFrequencyCount = "1"
                     newDaysOfWeek.clear(); newDaysOfMonth.clear(); selectedYearlyDates.clear(); activeYearlyMonth = 1
                     selectedTagIds = emptySet(); newTagName = ""; newTagColor = null
                     editingHabit = null
@@ -196,6 +199,7 @@ fun HabitsPage(viewModel: HabitsViewModel) {
                                 newHabitDescription = habit.description
                                 newHabitReminder = habit.reminderTime ?: ""
                                 newFreq = habit.frequencyType
+                                newFrequencyCount = habit.frequencyCount.toString()
                                 newDaysOfWeek.clear(); newDaysOfWeek.addAll(habit.daysOfWeek)
                                 newDaysOfMonth.clear(); newDaysOfMonth.addAll(habit.daysOfMonth)
                                 selectedYearlyDates.clear(); selectedYearlyDates.addAll(habit.yearlyDates); activeYearlyMonth = 1
@@ -203,6 +207,7 @@ fun HabitsPage(viewModel: HabitsViewModel) {
                                 showAddDialog = true
                             },
                             streak = state.streaks[habit.id] ?: 0,
+                            periodCount = state.periodCounts[habit.id] ?: 0,
                             onDelete = { habitToDelete = habit },
                             onDuplicate = { viewModel.onAction(HabitsViewModel.Action.DuplicateHabit(habit.id)) },
                             tags = state.tags.filter { state.habitTagMappings[habit.id]?.contains(it.id) == true },
@@ -325,6 +330,14 @@ fun HabitsPage(viewModel: HabitsViewModel) {
                                 )
                             }
                             Spacer(Modifier.height(8.dp))
+                            OutlinedTextField(
+                                value = newFrequencyCount,
+                                onValueChange = { newFrequencyCount = it.filter { c -> c.isDigit() } },
+                                label = { Text("Times per period") },
+                                singleLine = true,
+                                modifier = Modifier.width(100.dp),
+                            )
+                            Spacer(Modifier.height(8.dp))
                             TextButton(onClick = { showTimePicker = true }) {
                                 Text(if (newHabitReminder.isNotBlank()) "⏰ $newHabitReminder" else "Set reminder")
                             }
@@ -361,11 +374,12 @@ fun HabitsPage(viewModel: HabitsViewModel) {
                 TextButton(
                     onClick = {
                         if (newHabitTitle.isNotBlank()) {
+                            val count = newFrequencyCount.toIntOrNull() ?: 1
                             val habit = editingHabit?.copy(
                                 title = newHabitTitle,
                                 description = newHabitDescription,
                                 frequencyType = newFreq,
-                                frequencyCount = 1,
+                                frequencyCount = count,
                                 daysOfWeek = newDaysOfWeek.toSet(),
                                 daysOfMonth = newDaysOfMonth.toSet(),
                                 yearlyDates = selectedYearlyDates.toSet(),
@@ -373,7 +387,7 @@ fun HabitsPage(viewModel: HabitsViewModel) {
                             ) ?: Habit(
                                 title = newHabitTitle,
                                 frequencyType = newFreq,
-                                frequencyCount = 1,
+                                frequencyCount = count,
                                 daysOfWeek = newDaysOfWeek.toSet(),
                                 daysOfMonth = newDaysOfMonth.toSet(),
                                 yearlyDates = selectedYearlyDates.toSet(),
@@ -536,10 +550,11 @@ fun HabitItem(
     streak: Int = 0,
     tags: List<Tag> = emptyList(),
     onTogglePin: (() -> Unit)? = null,
+    periodCount: Int = 0,
 ) {
     val soundPlayer = koinInject<SoundPlayer>()
     val currentState = record?.state ?: HabitState.NOT_DONE
-    val currentCount = record?.count ?: 0
+    val currentCount = periodCount
     val isDone = currentState == HabitState.DONE
     val isSkipped = currentState == HabitState.SKIPPED
 
@@ -547,11 +562,6 @@ fun HabitItem(
         targetValue = if (isDone) 1.05f else 1f,
         animationSpec = spring(dampingRatio = 0.5f, stiffness = 400f),
     )
-    val sparkleScale by animateFloatAsState(
-        targetValue = if (isDone) 1.0f else 0.8f,
-        animationSpec = spring(dampingRatio = 0.6f, stiffness = 600f),
-    )
-
     Card(
         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
             .graphicsLayer { scaleX = scale; scaleY = scale }
@@ -603,23 +613,15 @@ fun HabitItem(
                 }
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
-                OutlinedButton(
-                    onClick = {
+                SparkleCheck(
+                    isDone = isDone,
+                    onToggle = {
                         soundPlayer.play(1f + (streak.coerceAtMost(10) * 0.05f))
                         onSetState(HabitState.DONE)
                     },
-                    contentPadding = ButtonDefaults.TextButtonContentPadding,
-                ) {
-                    Icon(
-                        imageVector = vectorResource(Res.drawable.sparkle),
-                        contentDescription = if (isDone) "Done" else "Mark done",
-                        modifier = Modifier.size(20.dp).graphicsLayer {
-                            scaleX = sparkleScale; scaleY = sparkleScale
-                        },
-                        tint = if (isDone) MaterialTheme.colorScheme.primary
-                               else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-                    )
-                }
+                    doneContainerColor = MaterialTheme.colorScheme.tertiary,
+                    doneContentColor = MaterialTheme.colorScheme.onTertiary,
+                )
                 if (!isSkipped) {
                     TextButton(onClick = { onSetState(HabitState.SKIPPED) }) { Text("Skip") }
                 }

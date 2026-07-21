@@ -21,11 +21,10 @@ import kotlin.test.assertTrue
 
 class BusinessLogicTest {
 
-    // Habit period counting algorithm extracted from TodayViewModel / HabitsViewModel
+    // Habit period counting — delegates to habitRecordWithNewState
     private fun computeHabitState(habit: Habit, existingRecord: HabitRecord?): HabitState {
-        val currentCount = existingRecord?.takeUnless { it.state == HabitState.SKIPPED }?.count ?: 0
-        val newCount = currentCount + 1
-        return if (newCount >= habit.frequencyCount) HabitState.DONE else HabitState.NOT_DONE
+        val periodTotal = existingRecord?.takeUnless { it.state == HabitState.SKIPPED }?.count ?: 0
+        return habitRecordWithNewState(existingRecord, habit, LocalDate(2026, 8, 1), HabitState.DONE, periodTotal).state
     }
 
     @Test
@@ -61,12 +60,12 @@ class BusinessLogicTest {
     }
 
     @Test
-    fun exceedingFrequencyKeepsDone() {
+    fun exceedingFrequencyTogglesOff() {
         val habit = Habit(id = 1, title = "H", frequencyCount = 3)
         val existing =
             HabitRecord(habitId = 1, date = LocalDate(2026, 7, 13), count = 3, state = HabitState.DONE)
         val state = computeHabitState(habit, existing)
-        assertEquals(HabitState.DONE, state)
+        assertEquals(HabitState.NOT_DONE, state)
     }
 
     @Test
@@ -486,7 +485,7 @@ class BusinessLogicTest {
     @Test fun recordNewFirstTapCreatesDone() {
         val h = Habit(title = "H")
         val d = LocalDate(2026, 8, 1)
-        val r = habitRecordWithNewState(null, h, d, HabitState.DONE)
+        val r = habitRecordWithNewState(null, h, d, HabitState.DONE, periodTotalCount = 0)
         assertEquals(HabitState.DONE, r.state)
         assertEquals(1, r.count)
         assertEquals(h.id, r.habitId)
@@ -497,7 +496,7 @@ class BusinessLogicTest {
         val h = Habit(title = "H")
         val d = LocalDate(2026, 8, 1)
         val existing = HabitRecord(habitId = h.id, date = d, state = HabitState.DONE, count = 1)
-        val r = habitRecordWithNewState(existing, h, d, HabitState.DONE)
+        val r = habitRecordWithNewState(existing, h, d, HabitState.DONE, periodTotalCount = 1)
         assertEquals(HabitState.NOT_DONE, r.state)
         assertEquals(0, r.count)
     }
@@ -513,7 +512,7 @@ class BusinessLogicTest {
     @Test fun recordFirstOfThreeTapsNotDoneYet() {
         val h = Habit(title = "H", frequencyCount = 3)
         val d = LocalDate(2026, 8, 1)
-        val r = habitRecordWithNewState(null, h, d, HabitState.DONE)
+        val r = habitRecordWithNewState(null, h, d, HabitState.DONE, periodTotalCount = 0)
         assertEquals(HabitState.NOT_DONE, r.state)
         assertEquals(1, r.count)
     }
@@ -522,7 +521,7 @@ class BusinessLogicTest {
         val h = Habit(title = "H", frequencyCount = 3)
         val d = LocalDate(2026, 8, 1)
         val existing = HabitRecord(habitId = h.id, date = d, state = HabitState.NOT_DONE, count = 1)
-        val r = habitRecordWithNewState(existing, h, d, HabitState.DONE)
+        val r = habitRecordWithNewState(existing, h, d, HabitState.DONE, periodTotalCount = 1)
         assertEquals(HabitState.NOT_DONE, r.state)
         assertEquals(2, r.count)
     }
@@ -531,7 +530,7 @@ class BusinessLogicTest {
         val h = Habit(title = "H", frequencyCount = 3)
         val d = LocalDate(2026, 8, 1)
         val existing = HabitRecord(habitId = h.id, date = d, state = HabitState.NOT_DONE, count = 2)
-        val r = habitRecordWithNewState(existing, h, d, HabitState.DONE)
+        val r = habitRecordWithNewState(existing, h, d, HabitState.DONE, periodTotalCount = 2)
         assertEquals(HabitState.DONE, r.state)
         assertEquals(3, r.count)
     }
@@ -540,7 +539,7 @@ class BusinessLogicTest {
         val h = Habit(title = "H", frequencyCount = 3)
         val d = LocalDate(2026, 8, 1)
         val existing = HabitRecord(habitId = h.id, date = d, state = HabitState.DONE, count = 3)
-        val r = habitRecordWithNewState(existing, h, d, HabitState.DONE)
+        val r = habitRecordWithNewState(existing, h, d, HabitState.DONE, periodTotalCount = 3)
         assertEquals(HabitState.NOT_DONE, r.state)
         assertEquals(0, r.count)
     }
@@ -549,7 +548,7 @@ class BusinessLogicTest {
         val h = Habit(title = "H")
         val d = LocalDate(2026, 8, 1)
         val existing = HabitRecord(habitId = h.id, date = d, state = HabitState.SKIPPED)
-        val r = habitRecordWithNewState(existing, h, d, HabitState.DONE)
+        val r = habitRecordWithNewState(existing, h, d, HabitState.DONE, periodTotalCount = 0)
         assertEquals(HabitState.DONE, r.state)
         assertEquals(1, r.count)
     }

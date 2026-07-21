@@ -44,7 +44,10 @@ class BootReceiver : BroadcastReceiver() {
                     val koin = GlobalContext.getOrNull() ?: return@launch
                     val habitRepo = koin.get<HabitRepo>()
                     val habit = habitRepo.getHabitById(entityId) ?: return@launch
-                    if (habit.shouldShowToday(LocalDate.now())) {
+                    val today = LocalDate.now()
+                    val todayRecord = habitRepo.getRecordForDate(entityId, today)
+                    if (todayRecord?.state == com.asr.core.habit.HabitState.DONE) return@launch
+                    if (habit.shouldShowToday(today)) {
                         showNotification(context, title, body)
                         val scheduler = koin.get<AlarmScheduler>()
                         scheduler.schedule(habit)

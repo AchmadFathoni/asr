@@ -45,7 +45,7 @@ class RoomHabitStorage(private val habitDao: HabitDao) : HabitStorage {
         habitDao.getRecordsForHabit(habitId).map { it.toDomain() }
 
     override suspend fun getCompletionCountInPeriod(habitId: Long, start: LocalDate, end: LocalDate): Int =
-        habitDao.getCompletionCount(habitId, start.toEpochDays(), end.toEpochDays()) ?: 0
+        habitDao.getPeriodTotalCount(habitId, start.toEpochDays(), end.toEpochDays()) ?: 0
 
     override suspend fun replaceAll(habits: List<Habit>, records: List<HabitRecord>) {
         habitDao.deleteAllHabits()

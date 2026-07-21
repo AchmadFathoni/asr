@@ -9,6 +9,7 @@ import com.asr.core.habit.HabitRepo
 import com.asr.core.habit.HabitState
 import com.asr.core.habit.computeStreak
 import com.asr.core.habit.habitRecordWithNewState
+import com.asr.core.habit.periodStart
 import com.asr.core.interfaces.AlarmScheduler
 import com.asr.core.currentDateFlow
 import com.asr.core.now
@@ -69,10 +70,14 @@ class HabitsViewModel(
             StatusFilter.DUE -> habits.filter { !it.isDoneInPeriod(today, allRecords) }
             StatusFilter.DONE -> habits.filter { it.isDoneInPeriod(today, allRecords) }
         }
+        val periodCounts = habits.associate { h ->
+            h.id to allRecords.filter { it.habitId == h.id && it.date >= h.periodStart(today) && it.date <= today }.sumOf { it.count }
+        }
         HabitsState(
             habits = Filters.habits(base.sortedByPinAndTime(), tagMappings, filter.searchQuery, filter.selectedTagIds, filter.filterDate),
             allRecords = allRecords,
             todayRecords = records.associateBy { it.habitId },
+            periodCounts = periodCounts,
             streaks = habits.associate { it.id to it.computeStreak(allRecords, today, requireToday = false) },
             habitFilter = habitFilter,
             tags = tags,
@@ -134,7 +139,11 @@ class HabitsViewModel(
                 val d = currentToday
                 val existing = habitRepo.getRecordForDate(action.habitId, d)
                 val habit = habitRepo.getHabitById(action.habitId) ?: return@launch
-                habitRepo.upsertRecord(habitRecordWithNewState(existing, habit, d, action.state))
+                val periodTotal = habitRepo.getRecordsForHabit(action.habitId)
+                    .filter { it.date >= habit.periodStart(d) && it.date <= d }
+                    .sumOf { it.count }
+                habitRepo.upsertRecord(habitRecordWithNewState(existing, habit, d, action.state, periodTotal))
+                if (action.state != HabitState.NOT_DONE) alarmScheduler.cancel(habit)
             }
             is Action.CreateTag -> viewModelScope.launch {
                 if (action.name.isNotBlank()) {
@@ -186,6 +195,7 @@ data class HabitsState(
     val habits: List<Habit> = emptyList(),
     val allRecords: List<HabitRecord> = emptyList(),
     val todayRecords: Map<Long, HabitRecord> = emptyMap(),
+    val periodCounts: Map<Long, Int> = emptyMap(),
     val streaks: Map<Long, Int> = emptyMap(),
     val tags: List<Tag> = emptyList(),
     val filter: FilterState = FilterState(),
@@ -197,11 +207,6 @@ data class HabitsState(
 )
 
 private fun Habit.isDoneInPeriod(today: LocalDate, allRecords: List<HabitRecord>): Boolean {
-    val periodStart: LocalDate = when (frequencyType) {
-        HabitFrequency.DAILY -> today
-        HabitFrequency.WEEKLY -> LocalDate.fromEpochDays(today.toEpochDays() - today.dayOfWeek.ordinal)
-        HabitFrequency.MONTHLY -> LocalDate(today.year, today.month, 1)
-        HabitFrequency.YEARLY -> LocalDate(today.year, 1, 1)
-    }
-    return allRecords.any { it.habitId == id && it.state == HabitState.DONE && it.date >= periodStart }
+    val pStart = periodStart(today)
+    return allRecords.any { it.habitId == id && it.state == HabitState.DONE && it.date >= pStart }
 }

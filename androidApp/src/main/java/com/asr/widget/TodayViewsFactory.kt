@@ -102,7 +102,7 @@ class TodayViewsFactory(
         views.setTextColor(R.id.habit_title, textPrimary())
         views.setTextViewText(
             R.id.habit_count,
-            "${item.record?.count ?: 0} / ${item.habit.frequencyCount}"
+            "${item.periodCount} / ${item.habit.frequencyCount}"
         )
         views.setTextColor(R.id.habit_count, textDim())
 
@@ -126,7 +126,7 @@ class TodayViewsFactory(
     sealed class ListItem {
         data class Label(val text: String, val style: LabelStyle) : ListItem()
         data class TaskItem(val task: Task, val isParent: Boolean) : ListItem()
-        data class HabitItem(val habit: Habit, val record: HabitRecord?) : ListItem()
+        data class HabitItem(val habit: Habit, val record: HabitRecord?, val periodCount: Int = 0) : ListItem()
     }
 
     enum class LabelStyle { HEADER, SECTION_TASKS, SECTION_HABITS, MESSAGE }
@@ -206,7 +206,17 @@ class TodayViewsFactory(
             if (habits.isNotEmpty()) {
                 result.add(ListItem.Label("HABITS", LabelStyle.SECTION_HABITS))
                 habits.forEach { habit ->
-                    result.add(ListItem.HabitItem(habit, todayRecords[habit.id]))
+                    val pStart = when (habit.frequencyType) {
+                        HabitFrequency.WEEKLY -> LocalDate.fromEpochDays(todayEpoch - today.dayOfWeek.ordinal)
+                        HabitFrequency.MONTHLY -> LocalDate(today.year, today.month, 1)
+                        HabitFrequency.YEARLY -> LocalDate(today.year, 1, 1)
+                        else -> today
+                    }
+                    val pStartEpoch = pStart.toEpochDays()
+                    val periodCount = allRecordEntities
+                        .filter { it.habitId == habit.id && it.date >= pStartEpoch && it.date <= todayEpoch }
+                        .sumOf { it.count }
+                    result.add(ListItem.HabitItem(habit, todayRecords[habit.id], periodCount))
                 }
             }
 

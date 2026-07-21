@@ -39,6 +39,13 @@ fun Habit.shouldShowToday(today: LocalDate): Boolean = when (frequencyType) {
     }
 }
 
+fun Habit.periodStart(today: LocalDate): LocalDate = when (frequencyType) {
+    HabitFrequency.DAILY -> today
+    HabitFrequency.WEEKLY -> LocalDate.fromEpochDays(today.toEpochDays() - today.dayOfWeek.ordinal)
+    HabitFrequency.MONTHLY -> LocalDate(today.year, today.month, 1)
+    HabitFrequency.YEARLY -> LocalDate(today.year, 1, 1)
+}
+
 fun Habit.nextOccurrenceFrom(today: LocalDate): LocalDate {
     var d = today
     while (true) {

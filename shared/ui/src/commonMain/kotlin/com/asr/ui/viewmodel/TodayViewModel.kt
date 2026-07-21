@@ -7,7 +7,9 @@ import com.asr.core.habit.HabitRecord
 import com.asr.core.habit.HabitRepo
 import com.asr.core.habit.HabitState
 import com.asr.core.habit.habitRecordWithNewState
+import com.asr.core.habit.periodStart
 import com.asr.core.habit.shouldShowToday
+import com.asr.core.interfaces.AlarmScheduler
 import com.asr.core.currentDateFlow
 import com.asr.core.now
 import com.asr.core.sortedByPinAndDate
@@ -38,6 +40,7 @@ class TodayViewModel(
     @Provided private val taskRepo: TaskRepo,
     @Provided private val habitRepo: HabitRepo,
     @Provided private val tagRepo: TagRepo,
+    @Provided private val alarmScheduler: AlarmScheduler,
 ) : ViewModel() {
     private val todayFlow = currentDateFlow()
     private var currentToday: LocalDate = LocalDate.now()
@@ -79,11 +82,15 @@ class TodayViewModel(
                 rec != null && rec.state != HabitState.NOT_DONE
             }
 
+        val periodCounts = todayHabits.associate { h ->
+            h.id to records.filter { it.habitId == h.id && it.date >= h.periodStart(today) && it.date <= today }.sumOf { it.count }
+        }
         TodayState(
             tasks = Filters.tasks(baseTasks.sortedByPinAndDate(), ttm, filter.searchQuery, filter.selectedTagIds, null),
             habits = Filters.habits(baseHabits.sortedByPinAndTime(), htm, filter.searchQuery, filter.selectedTagIds, null),
             tags = tags,
             habitRecords = records.associateBy { it.habitId },
+            periodCounts = periodCounts,
             filter = filter,
             pendingDeletedTasks = pendingDeleted,
             taskTagMappings = ttm,
@@ -130,7 +137,11 @@ class TodayViewModel(
                 val d = currentToday
                 val existing = habitRepo.getRecordForDate(action.habitId, d)
                 val habit = habitRepo.getHabitById(action.habitId) ?: return@launch
-                habitRepo.upsertRecord(habitRecordWithNewState(existing, habit, d, action.newState))
+                val periodTotal = habitRepo.getRecordsForHabit(action.habitId)
+                    .filter { it.date >= habit.periodStart(d) && it.date <= d }
+                    .sumOf { it.count }
+                habitRepo.upsertRecord(habitRecordWithNewState(existing, habit, d, action.newState, periodTotal))
+                if (action.newState != HabitState.NOT_DONE) alarmScheduler.cancel(habit)
             }
             is Action.TogglePinTask -> viewModelScope.launch {
                 val task = taskRepo.getTaskById(action.taskId) ?: return@launch
@@ -171,6 +182,7 @@ data class TodayState(
     val habits: List<Habit> = emptyList(),
     val tags: List<Tag> = emptyList(),
     val habitRecords: Map<Long, HabitRecord> = emptyMap(),
+    val periodCounts: Map<Long, Int> = emptyMap(),
     val filter: FilterState = FilterState(),
     val pendingDeletedTasks: List<Task>? = null,
     val taskTagMappings: Map<Long, List<Long>> = emptyMap(),

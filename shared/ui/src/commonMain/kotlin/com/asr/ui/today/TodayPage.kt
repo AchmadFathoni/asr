@@ -213,6 +213,7 @@ fun TodayPage(viewModel: TodayViewModel) {
                         habit = habit,
                         record = state.habitRecords[habit.id],
                         onSetState = { viewModel.onAction(TodayViewModel.Action.ToggleHabit(habit.id, it)) },
+                        periodCount = state.periodCounts[habit.id] ?: 0,
                         onTogglePin = { viewModel.onAction(TodayViewModel.Action.TogglePinHabit(habit.id)) },
                         tags = state.tags.filter { state.habitTagMappings[habit.id]?.contains(it.id) == true },
                     )

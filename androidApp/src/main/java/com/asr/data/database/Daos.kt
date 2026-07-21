@@ -88,6 +88,15 @@ interface HabitDao {
     )
     suspend fun getCompletionCount(habitId: Long, start: Long, end: Long): Int?
 
+    @Query(
+        """
+        SELECT SUM(count) FROM habit_records 
+        WHERE habitId = :habitId 
+        AND date >= :start AND date <= :end
+        """
+    )
+    suspend fun getPeriodTotalCount(habitId: Long, start: Long, end: Long): Int?
+
     @Query("DELETE FROM habits")
     suspend fun deleteAllHabits()
 
