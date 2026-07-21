@@ -7,7 +7,9 @@ import com.asr.ui.app.MainApp
 import org.koin.plugin.module.dsl.startKoin
 
 fun main() {
-    startKoin<DesktopAppModule>()
+    startKoin<DesktopAppModule> {
+        allowOverride(true)
+    }
 
     application {
         Window(

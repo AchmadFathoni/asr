@@ -65,6 +65,8 @@ class SettingsViewModelTest {
             settingsRepo = object : SettingsRepo {
                 override fun getTheme(): ThemeOption = repo.getTheme()
                 override fun setTheme(t: ThemeOption) = repo.setTheme(t)
+                override fun getPunishmentAcknowledgedDate(): String? = null
+                override fun setPunishmentAcknowledgedDate(date: String?) {}
             },
         )
     }

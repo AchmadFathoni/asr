@@ -131,15 +131,16 @@ class HabitItemTest {
 
     @Test
     fun `shows title and progress text`() {
+        val multiHabit = habit.copy(frequencyCount = 3)
         composeTestRule.setContent {
             HabitItem(
-                habit = habit,
-                record = HabitRecord(habitId = 1, date = date, state = HabitState.DONE, count = 1),
-                periodCount = 1,
+                habit = multiHabit,
+                record = HabitRecord(habitId = 1, date = date, state = HabitState.DONE, count = 2),
+                periodCount = 2,
                 onSetState = {},
             )
         }
         composeTestRule.onNodeWithText("Morning run").assertIsDisplayed()
-        composeTestRule.onNodeWithText("1 / 1 Daily").assertIsDisplayed()
+        composeTestRule.onNodeWithText("2 / 3 Daily").assertIsDisplayed()
     }
 }
