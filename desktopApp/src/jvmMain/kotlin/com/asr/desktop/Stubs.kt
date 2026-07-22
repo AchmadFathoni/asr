@@ -27,7 +27,6 @@ data class PersistedData(
     val punishmentDate: String? = null,
     val taskTags: Map<Long, List<Long>> = emptyMap(),
     val habitTags: Map<Long, List<Long>> = emptyMap(),
-    val notifDebug: Boolean = false,
 )
 
 object DataStore {

@@ -22,16 +22,9 @@ class PrefsSettingsStorage(context: Context) : SettingsStorage {
         prefs.edit().putString(KEY_PUNISHMENT_DATE, date).apply()
     }
 
-    override fun isNotifDebugEnabled(): Boolean = prefs.getBoolean(KEY_NOTIF_DEBUG, false)
-
-    override fun setNotifDebugEnabled(enabled: Boolean) {
-        prefs.edit().putBoolean(KEY_NOTIF_DEBUG, enabled).apply()
-    }
-
     companion object {
         private const val PREFS_NAME = "asr_settings"
         private const val KEY_THEME = "theme"
         private const val KEY_PUNISHMENT_DATE = "punishment_date"
-        private const val KEY_NOTIF_DEBUG = "notif_debug"
     }
 }

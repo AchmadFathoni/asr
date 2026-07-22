@@ -29,15 +29,11 @@ class AlarmSchedulerImpl(private val context: Context) : AlarmScheduler {
         ).apply { description = "Reminders for tasks and habits" }
         val manager = context.getSystemService(NotificationManager::class.java)
         manager.createNotificationChannel(channel)
-        NotifDebugLog.init(context)
     }
 
     override fun schedule(habit: Habit) {
         habit.reminderTime?.let { timeStr ->
-            val time = try { LocalTime.parse(timeStr) } catch (_: Exception) {
-                NotifDebugLog.w("ASR_BUGTRACE", "schedule(habit) FAIL: bad time parse timeStr=$timeStr habitId=${habit.id} title=${habit.title}")
-                return
-            }
+            val time = try { LocalTime.parse(timeStr) } catch (_: Exception) { return }
             val id = habit.id.toInt() + 10000
             scheduledIds.add(id)
 
@@ -58,13 +54,6 @@ class AlarmSchedulerImpl(private val context: Context) : AlarmScheduler {
                 decisionTag = "FUTURE"
                 finalTrigger = triggerTime
             }
-
-            NotifDebugLog.d("ASR_BUGTRACE", "schedule(habit) id=$id title=${habit.title} " +
-                "freq=${habit.frequencyType} daysOfMonth=${habit.daysOfMonth} daysOfWeek=${habit.daysOfWeek} " +
-                "reminder=$timeStr today=$today targetDate=$targetDate " +
-                "triggerTime=$triggerTime nowMs=$nowMs deltaMs=$deltaMs " +
-                "decision=$decisionTag finalTrigger=$finalTrigger " +
-                "finalDate=${java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", java.util.Locale.US).format(java.util.Date(finalTrigger))}")
 
             val alarmManager = context.getSystemService(AlarmManager::class.java)
             val intent = Intent(context, BootReceiver::class.java).apply {
@@ -90,7 +79,6 @@ class AlarmSchedulerImpl(private val context: Context) : AlarmScheduler {
             set(java.util.Calendar.MINUTE, time.minute)
             set(java.util.Calendar.SECOND, 0)
             set(java.util.Calendar.MILLISECOND, 0)
-            NotifDebugLog.d("ASR_BUGTRACE", "buildCalendar date=$date time=$time resultMs=$timeInMillis zone=${timeZone.id} hasDST=${timeZone.observesDaylightTime()}")
         }
 
     override fun schedule(task: Task) {
@@ -109,29 +97,23 @@ class AlarmSchedulerImpl(private val context: Context) : AlarmScheduler {
     override fun cancel(habit: Habit) {
         val id = habit.id.toInt() + 10000
         scheduledIds.remove(id)
-        NotifDebugLog.d("ASR_BUGTRACE", "cancel(habit) id=$id title=${habit.title} freq=${habit.frequencyType} daysOfMonth=${habit.daysOfMonth}")
         cancelAlarm(id)
     }
 
     override fun cancel(task: Task) {
         val id = task.id.toInt()
         scheduledIds.remove(id)
-        NotifDebugLog.d("ASR_BUGTRACE", "cancel(task) id=$id title=${task.title}")
         cancelAlarm(id)
     }
 
     override fun cancelAll() {
         val ids = scheduledIds.toSet()
-        NotifDebugLog.d("ASR_BUGTRACE", "cancelAll ids=$ids")
         ids.forEach { cancelAlarm(it) }
         scheduledIds.clear()
     }
 
     private fun scheduleAlarm(id: Int, title: String, body: String, timeStr: String, type: String? = null, entityId: Long = 0) {
-        val time = try { LocalTime.parse(timeStr) } catch (_: Exception) {
-            NotifDebugLog.w("ASR_BUGTRACE", "scheduleAlarm FAIL: bad time parse timeStr=$timeStr id=$id")
-            return
-        }
+        val time = try { LocalTime.parse(timeStr) } catch (_: Exception) { return }
         val alarmManager = context.getSystemService(AlarmManager::class.java)
         val intent = Intent(context, BootReceiver::class.java).apply {
             putExtra("title", title)
@@ -154,13 +136,8 @@ class AlarmSchedulerImpl(private val context: Context) : AlarmScheduler {
             set(java.util.Calendar.MILLISECOND, 0)
             if (timeInMillis <= nowMs) {
                 setTimeInMillis(nowMs + 30_000)
-                NotifDebugLog.d("ASR_BUGTRACE", "scheduleAlarm(id=$id title=$title) TRIGGER_PASSED: originalTime=$timeStr nowMs=$nowMs → bumped +30s")
             }
         }.timeInMillis
-
-        NotifDebugLog.d("ASR_BUGTRACE", "scheduleAlarm(id=$id title=$title) timeStr=$timeStr " +
-            "triggerTime=$triggerTime nowMs=$nowMs deltaMs=${triggerTime - nowMs} " +
-            "triggerDate=${java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", java.util.Locale.US).format(java.util.Date(triggerTime))}")
 
         val info = AlarmManager.AlarmClockInfo(triggerTime, null)
         alarmManager.setAlarmClock(info, pending)
