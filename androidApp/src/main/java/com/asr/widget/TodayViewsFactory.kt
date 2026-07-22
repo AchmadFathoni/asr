@@ -4,6 +4,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color as GColor
+import android.view.Gravity
 import android.util.Log
 import android.widget.RemoteViews
 import android.widget.RemoteViewsService
@@ -81,11 +82,14 @@ class TodayViewsFactory(
             LabelStyle.MESSAGE -> textDim()
         })
         views.setFloat(R.id.label_text, "setTextSize", when (item.style) {
-            LabelStyle.HEADER -> 21f
-            LabelStyle.SECTION_HABITS -> 21f
+            LabelStyle.HEADER -> 24f
+            LabelStyle.SECTION_TASKS, LabelStyle.SECTION_HABITS -> 18f
             LabelStyle.MESSAGE -> 14f
             else -> 12f
         })
+        if (item.style == LabelStyle.HEADER || item.style == LabelStyle.SECTION_TASKS || item.style == LabelStyle.SECTION_HABITS) {
+            views.setInt(R.id.label_text, "setGravity", Gravity.CENTER)
+        }
         return views
     }
 
@@ -173,7 +177,7 @@ class TodayViewsFactory(
                 (allTaskEntities.any { it.isDone } || allHabitEntities.isNotEmpty())
 
             val result = mutableListOf<ListItem>()
-            result.add(ListItem.Label("Today", LabelStyle.HEADER))
+            result.add(ListItem.Label("Today To-do List", LabelStyle.HEADER))
 
             if (allDone) {
                 result.add(ListItem.Label("All done for today!", LabelStyle.MESSAGE))
@@ -191,7 +195,7 @@ class TodayViewsFactory(
             }
 
             if (tasks.isNotEmpty()) {
-                result.add(ListItem.Label("TASKS", LabelStyle.SECTION_TASKS))
+                result.add(ListItem.Label("Tasks", LabelStyle.SECTION_TASKS))
                 tasks.forEach { task ->
                     result.add(ListItem.TaskItem(task, task.id in parentIds))
                 }
