@@ -42,7 +42,7 @@ fun SparkleCheck(
 
     val scale by animateFloatAsState(
         targetValue = if (isDone || animating) 1.0f else 0.75f,
-        animationSpec = spring(dampingRatio = 0.3f, stiffness = 200f),
+        animationSpec = spring(dampingRatio = 0.5f, stiffness = 80f),
     )
     Box(
         modifier = modifier

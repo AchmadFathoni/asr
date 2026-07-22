@@ -55,12 +55,22 @@ class TodayViewModel(
                 currentToday = newToday
             }
         }
+        viewModelScope.launch {
+            taskRepo.getTasksFlow().collect { allTasks ->
+                val undoneIds = allTasks.filter { !it.isDone }.map { it.id }.toSet()
+                val toRemove = _hiddenTaskIds.value.intersect(undoneIds)
+                if (toRemove.isNotEmpty()) {
+                    _hiddenTaskIds.value = _hiddenTaskIds.value - toRemove
+                }
+            }
+        }
     }
 
     private val _filter = MutableStateFlow(FilterState())
     private val _pendingDeleted = MutableStateFlow<List<Task>?>(null)
     private val _punishmentDismissed = MutableStateFlow(false)
-    private val _completingTaskIds = MutableStateFlow<Set<Long>>(emptySet())
+    private val _hiddenTaskIds = MutableStateFlow<Set<Long>>(emptySet())
+    private val _hiddenHabitIds = MutableStateFlow<Set<Long>>(emptySet())
 
     private val recordsWithDate = todayFlow.flatMapLatest { today ->
         val yesterday = LocalDate.fromEpochDays(today.toEpochDays() - 1)
@@ -81,15 +91,14 @@ class TodayViewModel(
         habitRepo.getHabitsFlow(),
         recordsWithDate,
         tagRepo.getTagsFlow(),
-        combine(filterAndMappings, _completingTaskIds) { m, c -> m.copy(completingTaskIds = c) },
-    ) { tasks, habits, (today, records, yRecs), tags, (filter, ttm, htm, pendingDeleted, punishmentDismissed, completingTaskIds) ->
+        combine(filterAndMappings, _hiddenTaskIds, _hiddenHabitIds) { m, t, h -> m.copy(hiddenTaskIds = t, hiddenHabitIds = h) },
+    ) { tasks, habits, (today, records, yRecs), tags, (filter, ttm, htm, pendingDeleted, punishmentDismissed, hiddenTaskIds, hiddenHabitIds) ->
         val parentTaskIds = tasks.mapNotNull { it.parentId }.toSet()
-        val undoneTasks = tasks.filter { !it.isDone || it.id in completingTaskIds }
-        val baseTasks = undoneTasks.filter { val due = it.dueDate; due == null || due <= today }
+        val baseTasks = tasks.filter { val due = it.dueDate; (due == null || due <= today) && it.id !in hiddenTaskIds }
         val todayHabits = habits.filter { it.shouldShowToday(today) }
         val baseHabits = todayHabits.filter { h ->
             val rec = records.firstOrNull { it.habitId == h.id }
-            rec == null || rec.state == HabitState.NOT_DONE
+            (rec == null || rec.state == HabitState.NOT_DONE) || h.id in hiddenHabitIds
         }
 
         val todayTasks = tasks.filter { val due = it.dueDate; due == null || due <= today }
@@ -152,7 +161,8 @@ class TodayViewModel(
         val habitTagMappings: Map<Long, List<Long>>,
         val pendingDeleted: List<Task>? = null,
         val punishmentDismissed: Boolean = false,
-        val completingTaskIds: Set<Long> = emptySet(),
+        val hiddenTaskIds: Set<Long> = emptySet(),
+        val hiddenHabitIds: Set<Long> = emptySet(),
     )
 
     sealed interface Action {
@@ -175,12 +185,11 @@ class TodayViewModel(
             is Action.ToggleTask -> viewModelScope.launch {
                 val task = taskRepo.getTaskById(action.taskId)
                 if (task != null && !task.isDone) {
-                    _completingTaskIds.value = _completingTaskIds.value + action.taskId
-                }
-                taskRepo.toggleTask(action.taskId)
-                if (task != null && !task.isDone) {
-                    delay(1200)
-                    _completingTaskIds.value = _completingTaskIds.value - action.taskId
+                    taskRepo.toggleTask(action.taskId)
+                    delay(500)
+                    _hiddenTaskIds.value = _hiddenTaskIds.value + action.taskId
+                } else {
+                    taskRepo.toggleTask(action.taskId)
                 }
             }
             is Action.ToggleHabit -> viewModelScope.launch {
@@ -190,11 +199,19 @@ class TodayViewModel(
                 val periodTotal = habitRepo.getRecordsForHabit(action.habitId)
                     .filter { it.date >= habit.periodStart(d) && it.date <= d }
                     .sumOf { it.count }
+                val wasNotDone = existing == null || existing.state == HabitState.NOT_DONE
+                if (wasNotDone && action.newState == HabitState.DONE) {
+                    _hiddenHabitIds.value = _hiddenHabitIds.value + action.habitId
+                }
                 habitRepo.upsertRecord(habitRecordWithNewState(existing, habit, d, action.newState, periodTotal))
                 if (action.newState != HabitState.NOT_DONE) {
                     alarmScheduler.cancel(habit)
                 } else {
                     alarmScheduler.schedule(habit)
+                }
+                if (wasNotDone && action.newState == HabitState.DONE) {
+                    delay(500)
+                    _hiddenHabitIds.value = _hiddenHabitIds.value - action.habitId
                 }
             }
             is Action.TogglePinTask -> viewModelScope.launch {

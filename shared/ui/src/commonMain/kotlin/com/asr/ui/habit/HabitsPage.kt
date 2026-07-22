@@ -554,7 +554,7 @@ fun HabitItem(
 
     val scale by animateFloatAsState(
         targetValue = if (isDone) 1.05f else 1f,
-        animationSpec = spring(dampingRatio = 0.5f, stiffness = 400f),
+        animationSpec = spring(dampingRatio = 0.5f, stiffness = 100f),
     )
     Card(
         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
