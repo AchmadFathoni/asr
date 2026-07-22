@@ -474,7 +474,13 @@ fun HabitsPage(viewModel: HabitsViewModel) {
                                             else -> MaterialTheme.colorScheme.surfaceVariant
                                         }
                                         val fc = if (habit.shouldShowToday(date)) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
-                                        Box(modifier = Modifier.weight(1f).padding(1.dp).background(bg, CircleShape).padding(4.dp), contentAlignment = Alignment.Center) {
+                                        val isPast = date < LocalDate.now()
+                                        Box(
+                                            modifier = Modifier.weight(1f).padding(1.dp)
+                                                .background(bg, CircleShape).padding(4.dp)
+                                                .then(if (isPast) Modifier.clickable { viewModel.onAction(HabitsViewModel.Action.ToggleLogDate(habitId, date)) } else Modifier),
+                                            contentAlignment = Alignment.Center
+                                        ) {
                                             Text("$day", color = fc)
                                         }
                                         day++

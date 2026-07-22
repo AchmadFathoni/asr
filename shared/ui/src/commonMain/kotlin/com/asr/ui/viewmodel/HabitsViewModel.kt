@@ -103,6 +103,7 @@ class HabitsViewModel(
         data class DeleteHabit(val habitId: Long) : Action
         data class SetRecordState(val habitId: Long, val state: HabitState) : Action
         data class ViewHabitHistory(val habitId: Long) : Action
+        data class ToggleLogDate(val habitId: Long, val date: LocalDate) : Action
         data class CreateTag(val name: String, val color: Long? = null) : Action
         data class TogglePinHabit(val habitId: Long) : Action
         data class SetSearchQuery(val query: String) : Action
@@ -173,6 +174,16 @@ class HabitsViewModel(
                     val history = habitRepo.getRecordsForHabit(action.habitId)
                     _selected.value = SelectedHabit(action.habitId, history)
                 }
+            }
+            is Action.ToggleLogDate -> viewModelScope.launch {
+                val habit = habitRepo.getHabitById(action.habitId) ?: return@launch
+                val existing = habitRepo.getRecordForDate(action.habitId, action.date)
+                val periodTotal = habitRepo.getRecordsForHabit(action.habitId)
+                    .filter { it.date >= habit.periodStart(action.date) && it.date <= action.date }
+                    .sumOf { it.count }
+                habitRepo.upsertRecord(habitRecordWithNewState(existing, habit, action.date, HabitState.DONE, periodTotal))
+                val history = habitRepo.getRecordsForHabit(action.habitId)
+                _selected.value = SelectedHabit(action.habitId, history)
             }
             is Action.SetSearchQuery -> _filter.value = _filter.value.copy(searchQuery = action.query)
             is Action.ToggleTag -> {
