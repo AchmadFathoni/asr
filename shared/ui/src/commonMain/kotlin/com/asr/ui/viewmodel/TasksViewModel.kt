@@ -7,6 +7,7 @@ import com.asr.core.tag.TagRepo
 import com.asr.core.interfaces.AlarmScheduler
 import com.asr.core.task.Task
 import com.asr.core.task.TaskRepo
+import com.asr.core.hideAfter
 import com.asr.core.sortedByPinAndDate
 import com.asr.core.StatusFilter
 import com.asr.ui.app.FilterState
@@ -33,6 +34,7 @@ class TasksViewModel(
     private val _expandedIds = MutableStateFlow<Set<Long>>(emptySet())
     private val _filter = MutableStateFlow(FilterState())
     private val _pendingDeleted = MutableStateFlow<List<Task>?>(null)
+    private val _completingTaskIds = MutableStateFlow<Set<Long>>(emptySet())
     private val _createdTagId = MutableStateFlow<Long?>(null)
     val createdTagId: StateFlow<Long?> = _createdTagId.asStateFlow()
 
@@ -41,14 +43,14 @@ class TasksViewModel(
         tagRepo.getTagsFlow(),
         _taskFilter,
         _expandedIds,
-        combine(_filter, tagRepo.getTaskTagMappingsFlow(), _pendingDeleted) { f, m, p ->
-            FilterWithMappings(f, m, p)
+        combine(_filter, tagRepo.getTaskTagMappingsFlow(), _pendingDeleted, _completingTaskIds) { f, m, p, c ->
+            FilterWithMappings(f, m, p, c)
         },
-    ) { all, tags, taskFilter, expandedIds, (filter, tagMappings, pendingDeleted) ->
+    ) { all, tags, taskFilter, expandedIds, (filter, tagMappings, pendingDeleted, completingTaskIds) ->
         val parentTaskIds = all.mapNotNull { it.parentId }.toSet()
         val base = when (taskFilter) {
             StatusFilter.ALL -> all
-            StatusFilter.DUE -> all.filter { !it.isDone }
+            StatusFilter.DUE -> all.filter { !it.isDone || it.id in completingTaskIds }
             StatusFilter.DONE -> all.filter { it.isDone }
         }
 
@@ -75,6 +77,7 @@ class TasksViewModel(
         val filter: FilterState,
         val tagMappings: Map<Long, List<Long>>,
         val pendingDeleted: List<Task>? = null,
+        val completingTaskIds: Set<Long> = emptySet(),
     )
 
     sealed interface Action {
@@ -113,7 +116,11 @@ class TasksViewModel(
                 taskRepo.deleteTask(action.task)
             }
             is Action.ToggleTask -> viewModelScope.launch {
+                val task = taskRepo.getTaskById(action.taskId)
+                val completing = task != null && !task.isDone
+                if (completing) _completingTaskIds.value = _completingTaskIds.value + action.taskId
                 taskRepo.toggleTask(action.taskId)
+                if (completing) _completingTaskIds.hideAfter(500, action.taskId)
             }
             is Action.ToggleExpand -> {
                 val id = action.taskId

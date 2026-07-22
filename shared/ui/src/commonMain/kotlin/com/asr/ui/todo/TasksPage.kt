@@ -184,7 +184,7 @@ fun TasksPage(viewModel: TasksViewModel) {
             LazyColumn(modifier = Modifier.weight(1f), state = listState) {
                 val lastPinnedIdx = flatTasks.indexOfLast { (task, _) -> task.isPinned }
                 val hasUnpinnedAfter = lastPinnedIdx >= 0 && lastPinnedIdx < flatTasks.size - 1
-                items(flatTasks) { (task, depth) ->
+                items(flatTasks, key = { (task, _) -> task.id }) { (task, depth) ->
                     val hasChildren = subTaskMap.containsKey(task.id)
                     val progress = if (hasChildren) countProgress(task.id, subTaskMap) else null
                     TaskRow(

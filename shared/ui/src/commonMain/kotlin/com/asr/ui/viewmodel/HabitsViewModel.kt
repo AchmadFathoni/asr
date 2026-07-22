@@ -13,6 +13,7 @@ import com.asr.core.habit.periodStart
 import com.asr.core.interfaces.AlarmScheduler
 import com.asr.core.currentDateFlow
 import com.asr.core.now
+import com.asr.core.hideAfter
 import com.asr.core.sortedByPinAndTime
 import com.asr.core.StatusFilter
 import com.asr.core.tag.Tag
@@ -51,6 +52,7 @@ class HabitsViewModel(
     private val _selected = MutableStateFlow(SelectedHabit())
     private val _filter = MutableStateFlow(FilterState())
     private val _habitFilter = MutableStateFlow(StatusFilter.DUE)
+    private val _completingHabitIds = MutableStateFlow<Set<Long>>(emptySet())
     private val _createdTagId = MutableStateFlow<Long?>(null)
     val createdTagId: StateFlow<Long?> = _createdTagId.asStateFlow()
 
@@ -63,11 +65,11 @@ class HabitsViewModel(
         habitRepo.getRecordsFlow(),
         recordsForDate,
         tagRepo.getTagsFlow(),
-        combine(_filter, _selected, _habitFilter, tagRepo.getHabitTagMappingsFlow()) { f, s, hf, m -> FilterStateWithHistory(f, s, hf, m) },
-    ) { habits, allRecords, (today, records), tags, (filter, selected, habitFilter, tagMappings) ->
+        combine(_filter, _selected, _habitFilter, tagRepo.getHabitTagMappingsFlow(), _completingHabitIds) { f, s, hf, m, c -> FilterStateWithHistory(f, s, hf, m, c) },
+    ) { habits, allRecords, (today, records), tags, (filter, selected, habitFilter, tagMappings, completingHabitIds) ->
         val base = when (habitFilter) {
             StatusFilter.ALL -> habits
-            StatusFilter.DUE -> habits.filter { !it.isDoneInPeriod(today, allRecords) }
+            StatusFilter.DUE -> habits.filter { !it.isDoneInPeriod(today, allRecords) || it.id in completingHabitIds }
             StatusFilter.DONE -> habits.filter { it.isDoneInPeriod(today, allRecords) }
         }
         val periodCounts = habits.associate { h ->
@@ -139,6 +141,9 @@ class HabitsViewModel(
                 val d = currentToday
                 val existing = habitRepo.getRecordForDate(action.habitId, d)
                 val habit = habitRepo.getHabitById(action.habitId) ?: return@launch
+                val wasNotDone = existing == null || existing.state == HabitState.NOT_DONE
+                val completing = wasNotDone && action.state == HabitState.DONE
+                if (completing) _completingHabitIds.value = _completingHabitIds.value + action.habitId
                 val periodTotal = habitRepo.getRecordsForHabit(action.habitId)
                     .filter { it.date >= habit.periodStart(d) && it.date <= d }
                     .sumOf { it.count }
@@ -148,6 +153,7 @@ class HabitsViewModel(
                 } else {
                     alarmScheduler.schedule(habit)
                 }
+                if (completing) _completingHabitIds.hideAfter(500, action.habitId)
             }
             is Action.CreateTag -> viewModelScope.launch {
                 if (action.name.isNotBlank()) {
@@ -193,6 +199,7 @@ private data class FilterStateWithHistory(
     val selected: SelectedHabit,
     val habitFilter: StatusFilter,
     val tagMappings: Map<Long, List<Long>>,
+    val completingHabitIds: Set<Long> = emptySet(),
 )
 
 data class HabitsState(
