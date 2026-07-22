@@ -6,6 +6,7 @@ import com.asr.core.habit.HabitRecord
 import com.asr.core.habit.HabitState
 import com.asr.core.habit.computeStreak
 import com.asr.core.habit.habitRecordWithNewState
+import com.asr.core.habit.isCompleteForPeriod
 import com.asr.core.habit.shouldShowToday
 import com.asr.core.tag.Tag
 import com.asr.core.task.Task
@@ -440,6 +441,80 @@ class BusinessLogicTest {
     @Test fun yearlyDec31() {
         val h = Habit(title = "Y", frequencyType = HabitFrequency.YEARLY, yearlyDates = setOf(1231))
         assertTrue(h.shouldShowToday( LocalDate(2026, 12, 31)))
+    }
+
+    // isCompleteForPeriod
+
+    @Test fun dailyDoneToday_isComplete() {
+        val today = LocalDate(2026, 7, 13)
+        val h = Habit(id = 1, title = "D", frequencyType = HabitFrequency.DAILY, frequencyCount = 1)
+        val records = listOf(HabitRecord(habitId = 1, date = today, state = HabitState.DONE, count = 1))
+        assertTrue(h.isCompleteForPeriod(today, records))
+    }
+
+    @Test fun dailyNotDoneToday_isNotComplete() {
+        val today = LocalDate(2026, 7, 13)
+        val h = Habit(id = 1, title = "D", frequencyType = HabitFrequency.DAILY, frequencyCount = 1)
+        assertFalse(h.isCompleteForPeriod(today, emptyList()))
+    }
+
+    @Test fun dailySkippedToday_isComplete() {
+        val today = LocalDate(2026, 7, 13)
+        val h = Habit(id = 1, title = "D", frequencyType = HabitFrequency.DAILY, frequencyCount = 1)
+        val records = listOf(HabitRecord(habitId = 1, date = today, state = HabitState.SKIPPED))
+        assertTrue(h.isCompleteForPeriod(today, records))
+    }
+
+    @Test fun weeklyTarget1DoneYesterday_isNotCompleteForToday() {
+        val yesterday = LocalDate(2026, 7, 12)
+        val today = LocalDate(2026, 7, 13)
+        val h = Habit(id = 1, title = "W", frequencyType = HabitFrequency.WEEKLY, frequencyCount = 1)
+        val records = listOf(HabitRecord(habitId = 1, date = yesterday, state = HabitState.DONE, count = 1))
+        assertFalse(h.isCompleteForPeriod(today, records))
+    }
+
+    @Test fun weeklyTarget2PartialDone_isNotComplete() {
+        val today = LocalDate(2026, 7, 13)
+        val h = Habit(id = 1, title = "W", frequencyType = HabitFrequency.WEEKLY, frequencyCount = 2)
+        val records = listOf(HabitRecord(habitId = 1, date = today, state = HabitState.NOT_DONE, count = 1))
+        assertFalse(h.isCompleteForPeriod(today, records))
+    }
+
+    @Test fun weeklyTarget2FullDone_isComplete() {
+        val today = LocalDate(2026, 7, 13)
+        val h = Habit(id = 1, title = "W", frequencyType = HabitFrequency.WEEKLY, frequencyCount = 2)
+        val records = listOf(
+            HabitRecord(habitId = 1, date = today, state = HabitState.DONE, count = 2),
+        )
+        assertTrue(h.isCompleteForPeriod(today, records))
+    }
+
+    @Test fun weeklyTarget2Skipped_isComplete() {
+        val today = LocalDate(2026, 7, 13)
+        val h = Habit(id = 1, title = "W", frequencyType = HabitFrequency.WEEKLY, frequencyCount = 2)
+        val records = listOf(HabitRecord(habitId = 1, date = today, state = HabitState.SKIPPED))
+        assertTrue(h.isCompleteForPeriod(today, records))
+    }
+
+    @Test fun weeklyTarget2DoneOverTwoDays_isComplete() {
+        val mon = LocalDate(2026, 7, 13)
+        val wed = LocalDate(2026, 7, 15)
+        val h = Habit(id = 1, title = "W", frequencyType = HabitFrequency.WEEKLY, frequencyCount = 2)
+        val records = listOf(
+            HabitRecord(habitId = 1, date = mon, state = HabitState.NOT_DONE, count = 1),
+            HabitRecord(habitId = 1, date = wed, state = HabitState.NOT_DONE, count = 1),
+        )
+        assertTrue(h.isCompleteForPeriod(wed, records))
+    }
+
+    @Test fun weeklyDaysOfWeekScheduled_dayDone_unscheduledDayDoesNotCount() {
+        val mon = LocalDate(2026, 7, 13)
+        val tue = LocalDate(2026, 7, 14)
+        val h = Habit(id = 1, title = "W", frequencyType = HabitFrequency.WEEKLY, frequencyCount = 2, daysOfWeek = setOf(1, 3))
+        val records = listOf(
+            HabitRecord(habitId = 1, date = tue, state = HabitState.DONE, count = 1), // Tuesday: not scheduled
+        )
+        assertFalse(h.isCompleteForPeriod(tue, records))
     }
 
     @Test fun dailyStreakConsecutive() {

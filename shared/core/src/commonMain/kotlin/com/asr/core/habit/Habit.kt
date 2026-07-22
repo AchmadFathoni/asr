@@ -86,6 +86,16 @@ fun Habit.computeStreak(records: List<HabitRecord>, today: LocalDate, requireTod
     return if (prevKey in completePeriods) countFrom(prevKey) else 0
 }
 
+fun Habit.isCompleteForPeriod(today: LocalDate, allRecords: List<HabitRecord>): Boolean {
+    if (frequencyType == HabitFrequency.DAILY || frequencyCount == 1) {
+        return allRecords.any { it.habitId == id && it.date == today && it.state != HabitState.NOT_DONE }
+    }
+    val pStart = periodStart(today)
+    val myRecords = allRecords.filter { it.habitId == id && it.date >= pStart && it.date <= today && shouldShowToday(it.date) }
+    if (myRecords.any { it.state == HabitState.SKIPPED }) return true
+    return myRecords.sumOf { it.count } >= frequencyCount
+}
+
 fun daysInMonth(year: Int, month: Int): Int = when (month) {
     1, 3, 5, 7, 8, 10, 12 -> 31
     4, 6, 9, 11 -> 30

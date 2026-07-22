@@ -8,6 +8,7 @@ import com.asr.core.habit.HabitRecord
 import com.asr.core.habit.HabitRepo
 import com.asr.core.habit.HabitState
 import com.asr.core.habit.habitRecordWithNewState
+import com.asr.core.habit.isCompleteForPeriod
 import com.asr.core.habit.periodStart
 import com.asr.core.habit.shouldShowToday
 import com.asr.core.interfaces.AlarmScheduler
@@ -111,7 +112,7 @@ class TodayViewModel(
                 h.frequencyType == HabitFrequency.DAILY || h.frequencyCount == 1 ->
                     todayRec != null && todayRec.state != HabitState.NOT_DONE
                 else ->
-                    todayRec != null || allRecs.any { it.habitId == h.id && it.date >= h.periodStart(today) && it.date <= today && h.shouldShowToday(it.date) && (it.state == HabitState.DONE || it.state == HabitState.SKIPPED) }
+                    todayRec != null || h.isCompleteForPeriod(today, allRecs)
             }
             !hidden || h.id in completingHabitIds
         }
@@ -127,7 +128,7 @@ class TodayViewModel(
                     h.frequencyType == HabitFrequency.DAILY || h.frequencyCount == 1 ->
                         todayRec != null && todayRec.state != HabitState.NOT_DONE
                     else ->
-                    todayRec != null || allRecs.any { it.habitId == h.id && it.date >= h.periodStart(today) && it.date <= today && h.shouldShowToday(it.date) && (it.state == HabitState.DONE || it.state == HabitState.SKIPPED) }
+                    todayRec != null || h.isCompleteForPeriod(today, allRecs)
                 }
             }
 

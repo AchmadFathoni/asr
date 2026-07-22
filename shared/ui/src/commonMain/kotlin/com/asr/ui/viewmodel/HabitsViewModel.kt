@@ -9,6 +9,7 @@ import com.asr.core.habit.HabitRepo
 import com.asr.core.habit.HabitState
 import com.asr.core.habit.computeStreak
 import com.asr.core.habit.habitRecordWithNewState
+import com.asr.core.habit.isCompleteForPeriod
 import com.asr.core.habit.periodStart
 import com.asr.core.habit.shouldShowToday
 import com.asr.core.interfaces.AlarmScheduler
@@ -70,8 +71,8 @@ class HabitsViewModel(
     ) { habits, allRecords, (today, records), tags, (filter, selected, habitFilter, tagMappings, completingHabitIds) ->
         val base = when (habitFilter) {
             StatusFilter.ALL -> habits
-            StatusFilter.DUE -> habits.filter { !it.isDoneInPeriod(today, allRecords) || it.id in completingHabitIds }
-            StatusFilter.DONE -> habits.filter { it.isDoneInPeriod(today, allRecords) }
+            StatusFilter.DUE -> habits.filter { !it.isCompleteForPeriod(today, allRecords) || it.id in completingHabitIds }
+            StatusFilter.DONE -> habits.filter { it.isCompleteForPeriod(today, allRecords) }
         }
         val periodCounts = habits.associate { h ->
             h.id to allRecords.filter { it.habitId == h.id && it.date >= h.periodStart(today) && it.date <= today && h.shouldShowToday(it.date) }.sumOf { it.count }
@@ -229,11 +230,4 @@ data class HabitsState(
     val isLoading: Boolean = true,
 )
 
-private fun Habit.isDoneInPeriod(today: LocalDate, allRecords: List<HabitRecord>): Boolean {
-    if (frequencyType == HabitFrequency.DAILY || frequencyCount == 1) {
-        return allRecords.any { it.habitId == id && it.state == HabitState.DONE && it.date == today }
-    }
-    val pStart = periodStart(today)
-    return allRecords.filter { it.habitId == id && it.date >= pStart && it.date <= today && shouldShowToday(it.date) }
-        .sumOf { it.count } >= frequencyCount
-}
+
