@@ -81,7 +81,8 @@ class TodayViewsFactory(
             LabelStyle.MESSAGE -> textDim()
         })
         views.setFloat(R.id.label_text, "setTextSize", when (item.style) {
-            LabelStyle.HEADER -> 16f
+            LabelStyle.HEADER -> 21f
+            LabelStyle.SECTION_HABITS -> 21f
             LabelStyle.MESSAGE -> 14f
             else -> 12f
         })
@@ -197,7 +198,7 @@ class TodayViewsFactory(
             }
 
             if (habits.isNotEmpty()) {
-                result.add(ListItem.Label("HABITS", LabelStyle.SECTION_HABITS))
+                result.add(ListItem.Label("Habits", LabelStyle.SECTION_HABITS))
                 habits.forEach { habit ->
                     val pStart = when (habit.frequencyType) {
                         HabitFrequency.WEEKLY -> LocalDate.fromEpochDays(todayEpoch - today.dayOfWeek.ordinal)
