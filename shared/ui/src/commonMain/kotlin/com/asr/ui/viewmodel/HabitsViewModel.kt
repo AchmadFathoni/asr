@@ -118,6 +118,7 @@ class HabitsViewModel(
                 val id = habitRepo.upsertHabit(action.habit)
                 val effectiveId = if (id <= 0) action.habit.id else id
                 if (effectiveId <= 0) return@launch
+                println("ASR_BUGTRACE UpsertHabit id=$effectiveId title=${action.habit.title} freq=${action.habit.frequencyType} daysOfMonth=${action.habit.daysOfMonth} reminder=${action.habit.reminderTime}")
                 tagRepo.setTagsForHabit(effectiveId, action.tagIds)
                 alarmScheduler.schedule(action.habit.copy(id = effectiveId))
             }
@@ -131,6 +132,7 @@ class HabitsViewModel(
             is Action.DeleteHabit -> viewModelScope.launch {
                 val habit = habitRepo.getHabitById(action.habitId)
                 if (habit != null) {
+                    println("ASR_BUGTRACE DeleteHabit id=${habit.id} title=${habit.title} freq=${habit.frequencyType}")
                     alarmScheduler.cancel(habit)
                     habitRepo.deleteHabit(habit.id)
                 }
@@ -139,11 +141,18 @@ class HabitsViewModel(
                 val d = currentToday
                 val existing = habitRepo.getRecordForDate(action.habitId, d)
                 val habit = habitRepo.getHabitById(action.habitId) ?: return@launch
+                println("ASR_BUGTRACE SetRecordState habitId=${action.habitId} newState=${action.state} today=$d existingRecord=${existing?.state} habitDaysOfMonth=${habit.daysOfMonth} habitFreq=${habit.frequencyType}")
                 val periodTotal = habitRepo.getRecordsForHabit(action.habitId)
                     .filter { it.date >= habit.periodStart(d) && it.date <= d }
                     .sumOf { it.count }
                 habitRepo.upsertRecord(habitRecordWithNewState(existing, habit, d, action.state, periodTotal))
-                if (action.state != HabitState.NOT_DONE) alarmScheduler.cancel(habit)
+                if (action.state != HabitState.NOT_DONE) {
+                    println("ASR_BUGTRACE SetRecordState habitId=${action.habitId} newState=${action.state} → CANCEL alarm")
+                    alarmScheduler.cancel(habit)
+                } else {
+                    println("ASR_BUGTRACE SetRecordState habitId=${action.habitId} newState=NOT_DONE → RESCHEDULE alarm")
+                    alarmScheduler.schedule(habit)
+                }
             }
             is Action.CreateTag -> viewModelScope.launch {
                 if (action.name.isNotBlank()) {

@@ -7,4 +7,6 @@ interface SettingsRepo {
     fun setTheme(theme: ThemeOption)
     fun getPunishmentAcknowledgedDate(): String?
     fun setPunishmentAcknowledgedDate(date: String?)
+    fun isNotifDebugEnabled(): Boolean
+    fun setNotifDebugEnabled(enabled: Boolean)
 }

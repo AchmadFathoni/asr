@@ -46,6 +46,8 @@ UI ← StateFlow<State> ← ViewModel ← Repository (Flow) ← Room
 | `./scripts/gradlew` | Script that auto-patches AAPT2 via nix-ld, available inside dev shell |
 | `nix run .#gradlew` | Run via FHS environment (no patching needed) |
 
+**Debug vs Release on device:** `installDebug` installs `com.asr.debug` (separate app, safe for testing). `installRelease` installs `com.asr` (user data). **Never `adb uninstall com.asr`** — wipes the production database. If debugging a release build issue, use `installDebug` and restore user data from Settings → Export/Import, or build a debug variant without `applicationIdSuffix`.
+
 Version code auto-derived from `git rev-list --count HEAD`.
 
 ### Release

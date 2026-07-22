@@ -5,4 +5,6 @@ class SharedSettingsRepo(private val storage: SettingsStorage) : SettingsRepo {
     override fun setTheme(theme: ThemeOption) = storage.setTheme(theme)
     override fun getPunishmentAcknowledgedDate(): String? = storage.getPunishmentAcknowledgedDate()
     override fun setPunishmentAcknowledgedDate(date: String?) = storage.setPunishmentAcknowledgedDate(date)
+    override fun isNotifDebugEnabled(): Boolean = storage.isNotifDebugEnabled()
+    override fun setNotifDebugEnabled(enabled: Boolean) = storage.setNotifDebugEnabled(enabled)
 }

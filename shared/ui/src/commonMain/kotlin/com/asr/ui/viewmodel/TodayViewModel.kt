@@ -174,11 +174,18 @@ class TodayViewModel(
                 val d = currentToday
                 val existing = habitRepo.getRecordForDate(action.habitId, d)
                 val habit = habitRepo.getHabitById(action.habitId) ?: return@launch
+                println("ASR_BUGTRACE ToggleHabit habitId=${action.habitId} newState=${action.newState} today=$d existingRecord=${existing?.state} habitDaysOfMonth=${habit.daysOfMonth} habitFreq=${habit.frequencyType}")
                 val periodTotal = habitRepo.getRecordsForHabit(action.habitId)
                     .filter { it.date >= habit.periodStart(d) && it.date <= d }
                     .sumOf { it.count }
                 habitRepo.upsertRecord(habitRecordWithNewState(existing, habit, d, action.newState, periodTotal))
-                if (action.newState != HabitState.NOT_DONE) alarmScheduler.cancel(habit)
+                if (action.newState != HabitState.NOT_DONE) {
+                    println("ASR_BUGTRACE ToggleHabit habitId=${action.habitId} newState=${action.newState} → CANCEL alarm")
+                    alarmScheduler.cancel(habit)
+                } else {
+                    println("ASR_BUGTRACE ToggleHabit habitId=${action.habitId} newState=NOT_DONE → RESCHEDULE alarm")
+                    alarmScheduler.schedule(habit)
+                }
             }
             is Action.TogglePinTask -> viewModelScope.launch {
                 val task = taskRepo.getTaskById(action.taskId) ?: return@launch

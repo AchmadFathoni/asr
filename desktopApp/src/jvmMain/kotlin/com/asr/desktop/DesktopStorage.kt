@@ -133,6 +133,7 @@ class JsonTagStorage : TagStorage {
 class JsonSettingsStorage : SettingsStorage {
     private var theme: ThemeOption = runCatching { ThemeOption.valueOf(DataStore.data.theme ?: "SYSTEM") }.getOrDefault(ThemeOption.SYSTEM)
     private var punishmentDate: String? = DataStore.data.punishmentDate
+    private var notifDebug: Boolean = DataStore.data.notifDebug
 
     override fun getTheme(): ThemeOption = theme
     override fun setTheme(theme: ThemeOption) {
@@ -145,5 +146,12 @@ class JsonSettingsStorage : SettingsStorage {
     override fun setPunishmentAcknowledgedDate(date: String?) {
         punishmentDate = date
         DataStore.update { it.copy(punishmentDate = date) }
+    }
+
+    override fun isNotifDebugEnabled(): Boolean = notifDebug
+
+    override fun setNotifDebugEnabled(enabled: Boolean) {
+        notifDebug = enabled
+        DataStore.update { it.copy(notifDebug = enabled) }
     }
 }

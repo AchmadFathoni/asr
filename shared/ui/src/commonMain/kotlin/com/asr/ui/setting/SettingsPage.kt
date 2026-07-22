@@ -26,6 +26,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -116,6 +117,16 @@ fun SettingsPage(viewModel: SettingsViewModel) {
                         }
                     )
                 }
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(bottom = 16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text("Notification debug log", modifier = Modifier.weight(1f))
+                Switch(
+                    checked = state.notifDebugEnabled,
+                    onCheckedChange = { viewModel.onAction(SettingsViewModel.Action.ToggleNotifDebug) },
+                )
             }
         }
 

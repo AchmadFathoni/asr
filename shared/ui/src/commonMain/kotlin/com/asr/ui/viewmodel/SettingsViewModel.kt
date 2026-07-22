@@ -32,14 +32,15 @@ class SettingsViewModel(
     private val _newTagName = MutableStateFlow("")
     private val _newTagColor = MutableStateFlow<Long?>(null)
     private val _theme = MutableStateFlow(settingsRepo.getTheme())
+    private val _notifDebug = MutableStateFlow(settingsRepo.isNotifDebugEnabled())
 
     val state: StateFlow<SettingsState> = combine(
         _exportState,
         _restoreState,
         tagRepo.getTagsFlow(),
         combine(_newTagName, _newTagColor) { n, c -> n to c },
-        _theme,
-    ) { exportState, restoreState, tags, (newName, newColor), theme ->
+        combine(_theme, _notifDebug) { t, d -> t to d },
+    ) { exportState, restoreState, tags, (newName, newColor), (theme, notifDebug) ->
         SettingsState(
             exportState = exportState,
             restoreState = restoreState,
@@ -47,6 +48,7 @@ class SettingsViewModel(
             newTagName = newName,
             newTagColor = newColor,
             theme = theme,
+            notifDebugEnabled = notifDebug,
         )
     }.stateIn(
         scope = viewModelScope,
@@ -63,6 +65,7 @@ class SettingsViewModel(
         data class DeleteTag(val id: Long) : Action
         data class SetTagColor(val tagId: Long, val color: Long?) : Action
         data class SetTheme(val theme: ThemeOption) : Action
+        data object ToggleNotifDebug : Action
     }
 
     fun onAction(action: Action) {
@@ -102,6 +105,11 @@ class SettingsViewModel(
                 _theme.value = action.theme
                 settingsRepo.setTheme(action.theme)
             }
+            Action.ToggleNotifDebug -> {
+                val newValue = !_notifDebug.value
+                _notifDebug.value = newValue
+                settingsRepo.setNotifDebugEnabled(newValue)
+            }
         }
     }
 }
@@ -113,4 +121,5 @@ data class SettingsState(
     val newTagName: String = "",
     val newTagColor: Long? = null,
     val theme: ThemeOption = ThemeOption.SYSTEM,
+    val notifDebugEnabled: Boolean = false,
 )
