@@ -3,14 +3,53 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-# Point AGP at the SDK's aapt2 (already patched by dev shell via nix-ld)
-# instead of the Maven-downloaded one, which is a dynamically-linked ELF
-# that cannot run on NixOS without manual patching.
+# ── NixOS auto-bootstrap ─────────────────────────────────────────────
+# Ensures scripts/gradlew works without `nix develop` or `direnv`,
+# so opencode agents and other tools can run it directly.
+# Only fires when required env vars aren't already set (no-op in direnv).
+# ----------------------------------------------------------------------
+if grep -q NixOS /etc/os-release 2>/dev/null; then
+  if [ -z "${JAVA_HOME:-}" ] || [ -z "${NIX_LD:-}" ]; then
+    CACHE="$PWD/.gradle-home/.nix-env-cache"
+    if [ -f "$CACHE" ]; then
+      eval "$(cat "$CACHE")"
+    fi
+    # Re-check after cache load; if still missing, eval from nixpkgs
+    if [ -z "${JAVA_HOME:-}" ] || [ -z "${NIX_LD:-}" ]; then
+      JAVA_HOME=$(nix eval nixpkgs#jdk21.outPath 2>/dev/null | tr -d '"')
+      GLIBC=$(nix eval nixpkgs#glibc.outPath 2>/dev/null | tr -d '"')
+      ZLIB=$(nix eval nixpkgs#zlib.outPath 2>/dev/null | tr -d '"')
+      NCURSES=$(nix eval nixpkgs#ncurses.outPath 2>/dev/null | tr -d '"')
+      GCC_LIB=$(nix eval nixpkgs#gcc.cc.lib.outPath 2>/dev/null | tr -d '"')
+      if [ -n "$JAVA_HOME" ] && [ -n "$GLIBC" ]; then
+        cat > "$CACHE" <<CACHEEOF
+JAVA_HOME=$JAVA_HOME
+NIX_LD=$GLIBC/lib/ld-linux-x86-64.so.2
+NIX_LD_LIBRARY_PATH=$ZLIB/lib:$NCURSES/lib:$GCC_LIB/lib
+CACHEEOF
+        eval "$(cat "$CACHE")"
+      fi
+    fi
+  fi
+
+  export JAVA_HOME="${JAVA_HOME:-}"
+  export NIX_LD="${NIX_LD:-}"
+  export NIX_LD_LIBRARY_PATH="${NIX_LD_LIBRARY_PATH:-}"
+  export ANDROID_HOME="${ANDROID_HOME:-$PWD/.android-sdk}"
+  export GRADLE_USER_HOME="${GRADLE_USER_HOME:-$PWD/.gradle-home}"
+
+  mkdir -p "$ANDROID_HOME/licenses"
+  [ -f "$ANDROID_HOME/licenses/android-sdk-license" ] || \
+    echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" > "$ANDROID_HOME/licenses/android-sdk-license"
+fi
+
+# ── AAPT2 override ───────────────────────────────────────────────────
 AAPT2_PATH=$(find "$PWD/.android-sdk/build-tools" -name aapt2 -type f 2>/dev/null | head -1)
 if [ -n "$AAPT2_PATH" ]; then
   set -- -Pandroid.aapt2FromMavenOverride="$AAPT2_PATH" "$@"
 fi
 
+# ── Build ────────────────────────────────────────────────────────────
 "$PWD/scripts/patch-aapt2.sh"
 "$PWD/gradlew" "$@"
 "$PWD/scripts/patch-aapt2.sh"

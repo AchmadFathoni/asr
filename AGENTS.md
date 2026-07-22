@@ -4,10 +4,11 @@
 
 ### Quick Start (NixOS)
 ```bash
-direnv allow                 # Enter Nix dev shell (first time: downloads Android SDK ~1GB)
-./scripts/gradlew assembleDebug  # Build APK (auto-patches AAPT2 via nix-ld)
+./scripts/gradlew assembleDebug  # Build APK (auto-bootstraps env on NixOS)
 ./scripts/gradlew :desktopApp:run  # Run desktop app for development
 ```
+`scripts/gradlew` is self-contained on NixOS — no `nix develop` or `direnv` needed.
+`direnv` is optional (faster env loading for interactive use).
 
 ### Technology Stack
 - **Language:** Kotlin 2.4.0
@@ -43,8 +44,7 @@ UI ← StateFlow<State> ← ViewModel ← Repository (Flow) ← Room
 | `./gradlew assembleRelease` | Build release APK |
 | `./gradlew installRelease` | Build + sign + install release on connected device |
 | `./gradlew :desktopApp:run` | Run desktop app (via Compose Multiplatform) |
-| `./scripts/gradlew` | Script that auto-patches AAPT2 via nix-ld, available inside dev shell |
-| `nix run .#gradlew` | Run via FHS environment (no patching needed) |
+| `./scripts/gradlew` | Script that auto-bootstraps NixOS env and patches AAPT2 |
 
 **Debug vs Release on device:** `installDebug` installs `com.asr.debug` (separate app, safe for testing). `installRelease` installs `com.asr` (user data). **Never `adb uninstall com.asr`** — wipes the production database. If debugging a release build issue, use `installDebug` and restore user data from Settings → Export/Import, or build a debug variant without `applicationIdSuffix`.
 
@@ -74,11 +74,24 @@ Uses `kotlin.time.Clock.System` (Kotlin stdlib) — not `kotlinx.datetime.Clock.
 Caveat: `AlarmSchedulerImpl.kt` in `:androidApp` uses `java.time.LocalTime` for alarm arithmetic — unavoidable platform constraint.
 
 #### 3. NixOS compatibility
-`scripts/gradlew` uses two fixes for AAPT2 on NixOS:
+`scripts/gradlew` is self-contained on NixOS — it auto-detects the OS, resolves
+`JAVA_HOME`, `NIX_LD`, `NIX_LD_LIBRARY_PATH` via `nix eval`, and sets
+`ANDROID_HOME` / `GRADLE_USER_HOME` to project-local dirs automatically.
+Results are cached in `.gradle-home/.nix-env-cache` for sub-second subsequent runs.
+
+AAPT2 handling:
 - **AAPT2 override:** `-Pandroid.aapt2FromMavenOverride=$AAPT2_PATH` (project property, not `-D` — AGP silently ignores `-D`). Redirects AGP to the SDK's pre-patched `aapt2`, skipping Maven's binary entirely.
 - **Post-build patching:** `patch-aapt2.sh` runs after every build as safety net for newly downloaded Maven binaries.
 
-`nix-ld` handles library resolution via `NIX_LD` + `NIX_LD_LIBRARY_PATH` in the dev shell. Set `ANDROID_HOME` to `./.android-sdk`. `adb` patched similarly in shellHook for `installDebug`.
+**Important for opencode agents:** Do NOT use `nix develop --command` or `nix develop --print-env` — these produce no output in opencode's terminal. Instead, set env vars directly or just run `./scripts/gradlew` (it handles everything). The correct pattern is:
+```bash
+GRADLE_USER_HOME="$PWD/.gradle-home" ANDROID_HOME="$PWD/.android-sdk" \
+JAVA_HOME=/nix/store/.../openjdk NIX_LD=... NIX_LD_LIBRARY_PATH=... \
+./scripts/gradlew installDebug
+```
+Or simply `./scripts/gradlew installDebug` (auto-bootstraps).
+
+If the transform cache gets corrupted, delete only `.gradle-home/caches/*/transforms/` then rebuild. Don't nuke the whole cache.
 
 If the transform cache gets corrupted, delete only `.gradle-home/caches/*/transforms/` then rebuild. Don't nuke the whole cache.
 
