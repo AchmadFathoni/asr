@@ -102,15 +102,13 @@ class TodayViewModel(
         combine(filterAndMappings, _completingTaskIds, _completingHabitIds) { m, t, h -> m.copy(completingTaskIds = t, completingHabitIds = h) },
     ) { tasks, habits, (today, records, yRecs, allRecs), tags, (filter, ttm, htm, pendingDeleted, punishmentDismissed, completingTaskIds, completingHabitIds) ->
         val parentTaskIds = tasks.mapNotNull { it.parentId }.toSet()
-        val baseTasks = tasks.filter { val due = it.dueDate; (due == null || due <= today) && it.id !in completingTaskIds }
+        val baseTasks = tasks.filter { val due = it.dueDate; (due == null || due <= today) && !it.isDone && it.id !in completingTaskIds }
         val todayHabits = habits.filter { it.shouldShowToday(today) }
         val baseHabits = todayHabits.filter { h ->
             val todayRec = records.firstOrNull { it.habitId == h.id }
-            val todayDoneOrSkipped = todayRec != null && todayRec.state != HabitState.NOT_DONE
-            val periodRecs = allRecs.filter { it.habitId == h.id && it.date >= h.periodStart(today) && it.date <= today }
-            val periodTotal = periodRecs.sumOf { it.count }
-            val periodSkipped = periodRecs.any { it.state == HabitState.SKIPPED }
-            (!todayDoneOrSkipped && periodTotal < h.frequencyCount && !periodSkipped) || h.id in completingHabitIds
+            val doneForToday = todayRec != null
+            val periodDone = allRecs.any { it.habitId == h.id && it.date >= h.periodStart(today) && it.date <= today && (it.state == HabitState.SKIPPED || it.state == HabitState.DONE) }
+            (!doneForToday && !periodDone) || h.id in completingHabitIds
         }
 
         val todayTasks = tasks.filter { val due = it.dueDate; due == null || due <= today }
@@ -120,9 +118,8 @@ class TodayViewModel(
             todayTasks.all { it.isDone } &&
             todayHabits.all { h ->
                 val todayRec = records.firstOrNull { it.habitId == h.id }
-                val todayDoneOrSkipped = todayRec != null && todayRec.state != HabitState.NOT_DONE
-                val periodRecs = allRecs.filter { it.habitId == h.id && it.date >= h.periodStart(today) && it.date <= today }
-                todayDoneOrSkipped || periodRecs.sumOf { it.count } >= h.frequencyCount || periodRecs.any { it.state == HabitState.SKIPPED }
+                val periodDone = allRecs.any { it.habitId == h.id && it.date >= h.periodStart(today) && it.date <= today && (it.state == HabitState.SKIPPED || it.state == HabitState.DONE) }
+                todayRec != null || periodDone
             }
 
         val periodCounts = todayHabits.associate { h ->
@@ -138,8 +135,8 @@ class TodayViewModel(
             yesterdayHabits.count { h ->
                 val rec = yRecs.firstOrNull { it.habitId == h.id }
                 val skippedOrUndoneYesterday = rec == null || rec.state != HabitState.DONE
-                val periodRecs = allRecs.filter { it.habitId == h.id && it.date >= h.periodStart(yesterdayDate) && it.date <= yesterdayDate }
-                skippedOrUndoneYesterday && periodRecs.sumOf { it.count } < h.frequencyCount
+                val periodDone = allRecs.any { it.habitId == h.id && it.date >= h.periodStart(yesterdayDate) && it.date <= yesterdayDate && it.state == HabitState.DONE }
+                skippedOrUndoneYesterday && !periodDone
             }
         val acknowledgedDate = settingsRepo.getPunishmentAcknowledgedDate()
         val alreadyAcknowledged = acknowledgedDate == yesterdayDate.toString()
