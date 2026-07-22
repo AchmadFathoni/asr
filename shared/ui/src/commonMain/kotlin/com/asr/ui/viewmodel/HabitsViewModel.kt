@@ -10,6 +10,7 @@ import com.asr.core.habit.HabitState
 import com.asr.core.habit.computeStreak
 import com.asr.core.habit.habitRecordWithNewState
 import com.asr.core.habit.periodStart
+import com.asr.core.habit.shouldShowToday
 import com.asr.core.interfaces.AlarmScheduler
 import com.asr.core.currentDateFlow
 import com.asr.core.now
@@ -73,7 +74,7 @@ class HabitsViewModel(
             StatusFilter.DONE -> habits.filter { it.isDoneInPeriod(today, allRecords) }
         }
         val periodCounts = habits.associate { h ->
-            h.id to allRecords.filter { it.habitId == h.id && it.date >= h.periodStart(today) && it.date <= today }.sumOf { it.count }
+            h.id to allRecords.filter { it.habitId == h.id && it.date >= h.periodStart(today) && it.date <= today && h.shouldShowToday(it.date) }.sumOf { it.count }
         }
         HabitsState(
             habits = Filters.habits(base.sortedByPinAndTime(), tagMappings, filter.searchQuery, filter.selectedTagIds, filter.filterDate),
@@ -230,5 +231,5 @@ data class HabitsState(
 
 private fun Habit.isDoneInPeriod(today: LocalDate, allRecords: List<HabitRecord>): Boolean {
     val pStart = periodStart(today)
-    return allRecords.any { it.habitId == id && it.state == HabitState.DONE && it.date >= pStart }
+    return allRecords.any { it.habitId == id && it.state == HabitState.DONE && it.date >= pStart && shouldShowToday(it.date) }
 }

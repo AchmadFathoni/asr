@@ -111,7 +111,7 @@ class TodayViewModel(
                 h.frequencyType == HabitFrequency.DAILY || h.frequencyCount == 1 ->
                     todayRec != null && todayRec.state != HabitState.NOT_DONE
                 else ->
-                    todayRec != null || allRecs.any { it.habitId == h.id && it.date >= h.periodStart(today) && it.date <= today && (it.state == HabitState.DONE || it.state == HabitState.SKIPPED) }
+                    todayRec != null || allRecs.any { it.habitId == h.id && it.date >= h.periodStart(today) && it.date <= today && h.shouldShowToday(it.date) && (it.state == HabitState.DONE || it.state == HabitState.SKIPPED) }
             }
             !hidden || h.id in completingHabitIds
         }
@@ -127,12 +127,12 @@ class TodayViewModel(
                     h.frequencyType == HabitFrequency.DAILY || h.frequencyCount == 1 ->
                         todayRec != null && todayRec.state != HabitState.NOT_DONE
                     else ->
-                        todayRec != null || allRecs.any { it.habitId == h.id && it.date >= h.periodStart(today) && it.date <= today && (it.state == HabitState.DONE || it.state == HabitState.SKIPPED) }
+                    todayRec != null || allRecs.any { it.habitId == h.id && it.date >= h.periodStart(today) && it.date <= today && h.shouldShowToday(it.date) && (it.state == HabitState.DONE || it.state == HabitState.SKIPPED) }
                 }
             }
 
         val periodCounts = todayHabits.associate { h ->
-            h.id to allRecs.filter { it.habitId == h.id && it.date >= h.periodStart(today) && it.date <= today }.sumOf { it.count }
+            h.id to allRecs.filter { it.habitId == h.id && it.date >= h.periodStart(today) && it.date <= today && h.shouldShowToday(it.date) }.sumOf { it.count }
         }
 
         val yesterdayDate = LocalDate.fromEpochDays(today.toEpochDays() - 1)
