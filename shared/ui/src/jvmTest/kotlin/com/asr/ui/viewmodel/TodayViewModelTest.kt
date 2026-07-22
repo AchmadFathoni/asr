@@ -236,6 +236,20 @@ class TodayViewModelTest {
         assertTrue(s.habits.none { it.id == 1L })
     }
 
+    @Test fun `weekly daysOfWeek today+yesterday, done yesterday, still shows today`() = runBlocking {
+        val yesterday = LocalDate.fromEpochDays(today.toEpochDays() - 1)
+        val yesterdayDow = yesterday.dayOfWeek.ordinal + 1
+        val todayDow = today.dayOfWeek.ordinal + 1
+        habits.value = listOf(Habit(
+            id = 1, title = "H",
+            frequencyType = HabitFrequency.WEEKLY, frequencyCount = 1,
+            daysOfWeek = setOf(yesterdayDow, todayDow)
+        ))
+        records.value = listOf(HabitRecord(habitId = 1, date = yesterday, state = HabitState.DONE, count = 1))
+        val s = waitForState()
+        assertContains(s.habits.map { it.id }, 1L, "habit scheduled for today should still show")
+    }
+
     // ── Weekly habits (frequencyCount > 1) ────────────────────────
 
     @Test fun `weekly target3 tapped once today hides for the day`() = runBlocking {
