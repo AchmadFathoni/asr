@@ -46,6 +46,12 @@ class TodayViewModel(
     @Provided private val alarmScheduler: AlarmScheduler,
     @Provided private val settingsRepo: SettingsRepo,
 ) : ViewModel() {
+    private val _filter = MutableStateFlow(FilterState())
+    private val _pendingDeleted = MutableStateFlow<List<Task>?>(null)
+    private val _punishmentDismissed = MutableStateFlow(false)
+    private val _completingTaskIds = MutableStateFlow<Set<Long>>(emptySet())
+    private val _completingHabitIds = MutableStateFlow<Set<Long>>(emptySet())
+
     private val todayFlow = currentDateFlow()
     private var currentToday: LocalDate = LocalDate.now()
 
@@ -66,12 +72,6 @@ class TodayViewModel(
             }
         }
     }
-
-    private val _filter = MutableStateFlow(FilterState())
-    private val _pendingDeleted = MutableStateFlow<List<Task>?>(null)
-    private val _punishmentDismissed = MutableStateFlow(false)
-    private val _completingTaskIds = MutableStateFlow<Set<Long>>(emptySet())
-    private val _completingHabitIds = MutableStateFlow<Set<Long>>(emptySet())
 
     private data class RecordsSet(
         val today: LocalDate,
