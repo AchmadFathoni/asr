@@ -203,7 +203,7 @@ fun SettingsPage(viewModel: SettingsViewModel) {
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
-                    "ASR — Todo & Habit App",
+                    "ASR — Tasks & Habits",
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                 )
                 Spacer(Modifier.height(4.dp))

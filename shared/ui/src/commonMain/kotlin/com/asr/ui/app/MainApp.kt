@@ -25,7 +25,7 @@ import asr.shared.ui.generated.resources.*
 import com.asr.ui.habit.HabitsPage
 import com.asr.ui.setting.SettingsPage
 import com.asr.ui.today.TodayPage
-import com.asr.ui.todo.TasksPage
+import com.asr.ui.tasks.TasksPage
 import com.asr.ui.viewmodel.HabitsViewModel
 import com.asr.ui.viewmodel.SettingsViewModel
 import com.asr.ui.viewmodel.TasksViewModel
@@ -64,16 +64,16 @@ fun MainApp() {
                     label = { Text("Today", maxLines = 1) },
                 )
                 NavigationBarItem(
-                    selected = selectedTab == AppRoute.Todo,
-                    onClick = { selectedTab = AppRoute.Todo },
+                    selected = selectedTab == AppRoute.Tasks,
+                    onClick = { selectedTab = AppRoute.Tasks },
                     alwaysShowLabel = true,
                     icon = {
                         Icon(
                             imageVector = vectorResource(Res.drawable.check_list),
-                            contentDescription = "To-do",
+                            contentDescription = "Tasks",
                         )
                     },
-                    label = { Text("To-do", maxLines = 1) },
+                    label = { Text("Tasks", maxLines = 1) },
                 )
                 NavigationBarItem(
                     selected = selectedTab == AppRoute.Habit,
@@ -106,7 +106,7 @@ fun MainApp() {
             AnimatedContent(targetState = selectedTab, transitionSpec = { fadeIn() togetherWith fadeOut() }) { tab ->
                 when (tab) {
                     AppRoute.Today -> TodayPage(todayVM)
-                    AppRoute.Todo -> TasksPage(tasksVM)
+                    AppRoute.Tasks -> TasksPage(tasksVM)
                     AppRoute.Habit -> HabitsPage(habitsVM)
                     AppRoute.Settings -> SettingsPage(settingsVM)
                 }

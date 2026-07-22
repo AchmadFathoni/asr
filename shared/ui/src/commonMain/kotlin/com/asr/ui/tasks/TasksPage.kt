@@ -1,4 +1,4 @@
-package com.asr.ui.todo
+package com.asr.ui.tasks
 
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
