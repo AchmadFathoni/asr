@@ -230,6 +230,10 @@ data class HabitsState(
 )
 
 private fun Habit.isDoneInPeriod(today: LocalDate, allRecords: List<HabitRecord>): Boolean {
+    if (frequencyType == HabitFrequency.DAILY || frequencyCount == 1) {
+        return allRecords.any { it.habitId == id && it.state == HabitState.DONE && it.date == today }
+    }
     val pStart = periodStart(today)
-    return allRecords.any { it.habitId == id && it.state == HabitState.DONE && it.date >= pStart && shouldShowToday(it.date) }
+    return allRecords.filter { it.habitId == id && it.date >= pStart && it.date <= today && shouldShowToday(it.date) }
+        .sumOf { it.count } >= frequencyCount
 }
