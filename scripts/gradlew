@@ -8,7 +8,7 @@ cd "$(dirname "$0")/.."
 # that cannot run on NixOS without manual patching.
 AAPT2_PATH=$(find "$PWD/.android-sdk/build-tools" -name aapt2 -type f 2>/dev/null | head -1)
 if [ -n "$AAPT2_PATH" ]; then
-  GRADLE_OPTS="${GRADLE_OPTS:-} -Pandroid.aapt2FromMavenOverride=$AAPT2_PATH"
+  set -- -Pandroid.aapt2FromMavenOverride="$AAPT2_PATH" "$@"
 fi
 
 "$PWD/scripts/patch-aapt2.sh"

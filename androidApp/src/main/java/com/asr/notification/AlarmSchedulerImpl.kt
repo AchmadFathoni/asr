@@ -25,7 +25,7 @@ class AlarmSchedulerImpl(private val context: Context) : AlarmScheduler {
 
     init {
         val channel = NotificationChannel(
-            CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_DEFAULT
+            CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_HIGH
         ).apply { description = "Reminders for tasks and habits" }
         val manager = context.getSystemService(NotificationManager::class.java)
         manager.createNotificationChannel(channel)
