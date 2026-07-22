@@ -1,9 +1,6 @@
 package com.asr.ui.today
 
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -49,14 +46,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import com.asr.core.interfaces.SoundPlayer
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import org.koin.compose.koinInject
 import com.asr.ui.app.EmptyState
@@ -131,16 +126,11 @@ fun TodayPage(viewModel: TodayViewModel) {
                 }
                 val lastTaskPinIdx = state.tasks.indexOfLast { it.isPinned }
                 val hasTaskUnpinnedAfter = lastTaskPinIdx >= 0 && lastTaskPinIdx < state.tasks.size - 1
-                items(state.tasks) { task ->
+                items(state.tasks, key = { it.id }) { task ->
                     val isParent = task.id in state.parentTaskIds
-                    val scale by animateFloatAsState(
-                        targetValue = if (task.isDone) 1.05f else 1f,
-                        animationSpec = spring(dampingRatio = 0.5f, stiffness = 400f),
-                    )
                     Card(
                         modifier = Modifier.fillMaxWidth()
                             .padding(vertical = 4.dp)
-                            .graphicsLayer { scaleX = scale; scaleY = scale }
                             .clipToBounds()
                             .clickable {
                                 if (!isParent) {
@@ -210,7 +200,7 @@ fun TodayPage(viewModel: TodayViewModel) {
                 }
                 val lastHabitPinIdx = state.habits.indexOfLast { it.isPinned }
                 val hasHabitUnpinnedAfter = lastHabitPinIdx >= 0 && lastHabitPinIdx < state.habits.size - 1
-                items(state.habits) { habit ->
+                items(state.habits, key = { it.id }) { habit ->
                     HabitItem(
                         habit = habit,
                         record = state.habitRecords[habit.id],
