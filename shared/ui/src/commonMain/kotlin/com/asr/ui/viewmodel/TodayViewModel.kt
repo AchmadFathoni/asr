@@ -26,6 +26,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
@@ -59,6 +60,7 @@ class TodayViewModel(
     private val _filter = MutableStateFlow(FilterState())
     private val _pendingDeleted = MutableStateFlow<List<Task>?>(null)
     private val _punishmentDismissed = MutableStateFlow(false)
+    private val _completingTaskIds = MutableStateFlow<Set<Long>>(emptySet())
 
     private val recordsWithDate = todayFlow.flatMapLatest { today ->
         val yesterday = LocalDate.fromEpochDays(today.toEpochDays() - 1)
@@ -70,17 +72,19 @@ class TodayViewModel(
         }
     }
 
+    private val filterAndMappings = combine(
+        _filter, tagRepo.getTaskTagMappingsFlow(), tagRepo.getHabitTagMappingsFlow(), _pendingDeleted, _punishmentDismissed
+    ) { f, ttm, htm, p, d -> FilterWithMappings(f, ttm, htm, p, d) }
+
     private val _state: StateFlow<TodayState> = combine(
         taskRepo.getTasksFlow(),
         habitRepo.getHabitsFlow(),
         recordsWithDate,
         tagRepo.getTagsFlow(),
-        combine(_filter, tagRepo.getTaskTagMappingsFlow(), tagRepo.getHabitTagMappingsFlow(), _pendingDeleted, _punishmentDismissed) { f, ttm, htm, p, d ->
-            FilterWithMappings(f, ttm, htm, p, d)
-        },
-    ) { tasks, habits, (today, records, yRecs), tags, (filter, ttm, htm, pendingDeleted, punishmentDismissed) ->
+        combine(filterAndMappings, _completingTaskIds) { m, c -> m.copy(completingTaskIds = c) },
+    ) { tasks, habits, (today, records, yRecs), tags, (filter, ttm, htm, pendingDeleted, punishmentDismissed, completingTaskIds) ->
         val parentTaskIds = tasks.mapNotNull { it.parentId }.toSet()
-        val undoneTasks = tasks.filter { !it.isDone }
+        val undoneTasks = tasks.filter { !it.isDone || it.id in completingTaskIds }
         val baseTasks = undoneTasks.filter { val due = it.dueDate; due == null || due <= today }
         val todayHabits = habits.filter { it.shouldShowToday(today) }
         val baseHabits = todayHabits.filter { h ->
@@ -148,6 +152,7 @@ class TodayViewModel(
         val habitTagMappings: Map<Long, List<Long>>,
         val pendingDeleted: List<Task>? = null,
         val punishmentDismissed: Boolean = false,
+        val completingTaskIds: Set<Long> = emptySet(),
     )
 
     sealed interface Action {
@@ -168,7 +173,15 @@ class TodayViewModel(
     fun onAction(action: Action) {
         when (action) {
             is Action.ToggleTask -> viewModelScope.launch {
+                val task = taskRepo.getTaskById(action.taskId)
+                if (task != null && !task.isDone) {
+                    _completingTaskIds.value = _completingTaskIds.value + action.taskId
+                }
                 taskRepo.toggleTask(action.taskId)
+                if (task != null && !task.isDone) {
+                    delay(1200)
+                    _completingTaskIds.value = _completingTaskIds.value - action.taskId
+                }
             }
             is Action.ToggleHabit -> viewModelScope.launch {
                 val d = currentToday
