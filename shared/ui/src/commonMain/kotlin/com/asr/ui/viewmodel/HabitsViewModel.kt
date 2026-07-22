@@ -178,10 +178,11 @@ class HabitsViewModel(
             is Action.ToggleLogDate -> viewModelScope.launch {
                 val habit = habitRepo.getHabitById(action.habitId) ?: return@launch
                 val existing = habitRepo.getRecordForDate(action.habitId, action.date)
-                val periodTotal = habitRepo.getRecordsForHabit(action.habitId)
-                    .filter { it.date >= habit.periodStart(action.date) && it.date <= action.date }
-                    .sumOf { it.count }
-                habitRepo.upsertRecord(habitRecordWithNewState(existing, habit, action.date, HabitState.DONE, periodTotal))
+                val newRecord = when (existing?.state) {
+                    HabitState.DONE -> HabitRecord(id = existing.id, habitId = action.habitId, date = action.date, state = HabitState.NOT_DONE, count = 0)
+                    else -> HabitRecord(id = existing?.id ?: 0, habitId = action.habitId, date = action.date, state = HabitState.DONE, count = habit.frequencyCount)
+                }
+                habitRepo.upsertRecord(newRecord)
                 val history = habitRepo.getRecordsForHabit(action.habitId)
                 _selected.value = SelectedHabit(action.habitId, history)
             }
