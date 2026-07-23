@@ -97,6 +97,13 @@ class TodayViewsFactory(
         val views = RemoteViews(context.packageName, R.layout.widget_task_row)
         views.setTextViewText(R.id.task_title, item.task.title)
         views.setTextColor(R.id.task_title, if (item.isParent) textDim() else textPrimary())
+        if (item.indentDp > 0) {
+            val density = context.resources.displayMetrics.density
+            val startPx = ((12 + item.indentDp) * density).toInt()
+            val verticalPx = (6 * density).toInt()
+            val endPx = (12 * density).toInt()
+            views.setViewPadding(R.id.task_row, startPx, verticalPx, endPx, verticalPx)
+        }
         views.setOnClickFillInIntent(R.id.task_row, taskFillInIntent(item.task.id, appWidgetId))
         return views
     }
@@ -123,7 +130,7 @@ class TodayViewsFactory(
 
     sealed class ListItem {
         data class Label(val text: String, val style: LabelStyle) : ListItem()
-        data class TaskItem(val task: Task, val isParent: Boolean) : ListItem()
+        data class TaskItem(val task: Task, val isParent: Boolean, val indentDp: Int = 0) : ListItem()
         data class HabitItem(val habit: Habit, val record: HabitRecord?, val periodCount: Int = 0) : ListItem()
     }
 
@@ -195,7 +202,7 @@ class TodayViewsFactory(
             if (tasks.isNotEmpty()) {
                 result.add(ListItem.Label("Tasks", LabelStyle.SECTION_TASKS))
                 tasks.forEach { task ->
-                    result.add(ListItem.TaskItem(task, task.id in parentIds))
+                    result.add(ListItem.TaskItem(task, task.id in parentIds, if (task.parentId != null) 24 else 0))
                 }
             }
 
