@@ -147,6 +147,9 @@ A dialog on Today triggers when **more than half of yesterday's scheduled items*
 #### 9. No-op stubs in shared/ui must not carry `@Single`
 No-op implementations in `shared:ui` (like `DefaultSoundPlayer`, `DefaultWidgetUpdater`) must NOT be annotated with `@Single(binds = [...])` — `UIModules` component-scans `com.asr.ui` and auto-registers them, creating duplicate bindings that override the real platform implementations in `:androidApp` / `:desktopApp`. Instead, they're plain classes instantiated explicitly by platform `@Single` functions (e.g., `DesktopAppModule.provideSoundPlayer()`). Platform-specific implementations sit in their respective modules with `@Single(binds = [...])`.
 
+#### 10. Habits are done once per day (no tap-counting)
+A habit is either DONE or NOT_DONE for a given day. `HabitRecord.count` is always 0 (NOT_DONE/SKIPPED) or 1 (DONE). Period progress is the number of DONE days in the period, not the sum of intra-day taps. `habitRecordWithNewState` in `shared/core` uses a pure toggle: DONE ↔ NOT_DONE, no increment logic. Widget `ACTION_INCREMENT_HABIT` is a misnomer — it toggles the day state. The DAO's `upsertRecordForDate` uses `@Transaction` + DELETE-then-INSERT for atomicity (see `Daos.kt`) to prevent duplicate records.
+
 ### Code Style
 - UDF: sealed actions → ViewModel state
 - Immutable state data classes, exposed via `StateFlow`

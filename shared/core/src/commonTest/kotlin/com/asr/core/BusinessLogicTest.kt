@@ -22,74 +22,43 @@ import kotlin.test.assertTrue
 
 class BusinessLogicTest {
 
-    // Habit period counting — delegates to habitRecordWithNewState
+    // Habit record state transitions — delegates to habitRecordWithNewState
     private fun computeHabitState(habit: Habit, existingRecord: HabitRecord?): HabitState {
-        val periodTotal = existingRecord?.takeUnless { it.state == HabitState.SKIPPED }?.count ?: 0
-        return habitRecordWithNewState(existingRecord, habit, LocalDate(2026, 8, 1), HabitState.DONE, periodTotal).state
+        return habitRecordWithNewState(existingRecord, habit, LocalDate(2026, 8, 1), HabitState.DONE).state
     }
 
     @Test
-    fun firstTapWhenFrequencyIs1_setsDone() {
+    fun tapOnNullCreatesDone() {
         val habit = Habit(id = 1, title = "H", frequencyCount = 1)
         val state = computeHabitState(habit, null)
         assertEquals(HabitState.DONE, state)
     }
 
     @Test
-    fun firstTapWhenFrequencyIs3_staysNotDone() {
-        val habit = Habit(id = 1, title = "H", frequencyCount = 3)
-        val state = computeHabitState(habit, null)
-        assertEquals(HabitState.NOT_DONE, state)
-    }
-
-    @Test
-    fun secondTapWhenFrequencyIs3_staysNotDone() {
+    fun tapOnDoneTogglesToNotDone() {
         val habit = Habit(id = 1, title = "H", frequencyCount = 3)
         val existing =
-            HabitRecord(habitId = 1, date = LocalDate(2026, 7, 13), count = 1, state = HabitState.NOT_DONE)
+            HabitRecord(habitId = 1, date = LocalDate(2026, 7, 13), count = 1, state = HabitState.DONE)
         val state = computeHabitState(habit, existing)
         assertEquals(HabitState.NOT_DONE, state)
     }
 
     @Test
-    fun thirdTapWhenFrequencyIs3_setsDone_at_exact_boundary() {
+    fun tapOnNotDoneCreatesDone() {
         val habit = Habit(id = 1, title = "H", frequencyCount = 3)
         val existing =
-            HabitRecord(habitId = 1, date = LocalDate(2026, 7, 13), count = 2, state = HabitState.NOT_DONE)
+            HabitRecord(habitId = 1, date = LocalDate(2026, 7, 13), count = 0, state = HabitState.NOT_DONE)
         val state = computeHabitState(habit, existing)
         assertEquals(HabitState.DONE, state)
     }
 
     @Test
-    fun exceedingFrequencyTogglesOff() {
-        val habit = Habit(id = 1, title = "H", frequencyCount = 3)
-        val existing =
-            HabitRecord(habitId = 1, date = LocalDate(2026, 7, 13), count = 3, state = HabitState.DONE)
-        val state = computeHabitState(habit, existing)
-        assertEquals(HabitState.NOT_DONE, state)
-    }
-
-    @Test
-    fun skippedRecordDoesNotCountTowardProgress() {
+    fun tapOnSkippedCreatesDone() {
         val habit = Habit(id = 1, title = "H", frequencyCount = 2)
         val existing =
-            HabitRecord(habitId = 1, date = LocalDate(2026, 7, 13), count = 1, state = HabitState.SKIPPED)
-        // Skipped → count treated as 0, so newCount = 1, freqCount = 2 → NOT_DONE
+            HabitRecord(habitId = 1, date = LocalDate(2026, 7, 13), count = 0, state = HabitState.SKIPPED)
         val state = computeHabitState(habit, existing)
-        assertEquals(HabitState.NOT_DONE, state)
-    }
-
-    @Test
-    fun highFrequencyCountBoundary() {
-        val habit = Habit(id = 1, title = "H", frequencyCount = 99)
-        // 97 taps so far → 98th tap < 99 → NOT_DONE
-        val notDone =
-            HabitRecord(habitId = 1, date = LocalDate(2026, 7, 13), count = 97, state = HabitState.NOT_DONE)
-        assertEquals(HabitState.NOT_DONE, computeHabitState(habit, notDone))
-        // 98 taps so far → 99th tap = 99 → exactly at boundary → DONE
-        val atBoundary =
-            HabitRecord(habitId = 1, date = LocalDate(2026, 7, 13), count = 98, state = HabitState.NOT_DONE)
-        assertEquals(HabitState.DONE, computeHabitState(habit, atBoundary))
+        assertEquals(HabitState.DONE, state)
     }
 
     // Task filtering logic from TasksViewModel
@@ -560,7 +529,7 @@ class BusinessLogicTest {
     @Test fun recordNewFirstTapCreatesDone() {
         val h = Habit(title = "H")
         val d = LocalDate(2026, 8, 1)
-        val r = habitRecordWithNewState(null, h, d, HabitState.DONE, periodTotalCount = 0)
+        val r = habitRecordWithNewState(null, h, d, HabitState.DONE)
         assertEquals(HabitState.DONE, r.state)
         assertEquals(1, r.count)
         assertEquals(h.id, r.habitId)
@@ -571,7 +540,7 @@ class BusinessLogicTest {
         val h = Habit(title = "H")
         val d = LocalDate(2026, 8, 1)
         val existing = HabitRecord(habitId = h.id, date = d, state = HabitState.DONE, count = 1)
-        val r = habitRecordWithNewState(existing, h, d, HabitState.DONE, periodTotalCount = 1)
+        val r = habitRecordWithNewState(existing, h, d, HabitState.DONE)
         assertEquals(HabitState.NOT_DONE, r.state)
         assertEquals(0, r.count)
     }
@@ -584,46 +553,29 @@ class BusinessLogicTest {
         assertEquals(0, r.count)
     }
 
-    @Test fun recordFirstOfThreeTapsNotDoneYet() {
+    @Test fun recordTapOnNotDoneBecomesDone() {
         val h = Habit(title = "H", frequencyCount = 3)
         val d = LocalDate(2026, 8, 1)
-        val r = habitRecordWithNewState(null, h, d, HabitState.DONE, periodTotalCount = 0)
-        assertEquals(HabitState.NOT_DONE, r.state)
+        val existing = HabitRecord(habitId = h.id, date = d, state = HabitState.NOT_DONE, count = 0)
+        val r = habitRecordWithNewState(existing, h, d, HabitState.DONE)
+        assertEquals(HabitState.DONE, r.state)
         assertEquals(1, r.count)
     }
 
-    @Test fun recordSecondOfThreeTapsStillNotDone() {
+    @Test fun recordTapOnDoneResetsToNotDone() {
         val h = Habit(title = "H", frequencyCount = 3)
         val d = LocalDate(2026, 8, 1)
-        val existing = HabitRecord(habitId = h.id, date = d, state = HabitState.NOT_DONE, count = 1)
-        val r = habitRecordWithNewState(existing, h, d, HabitState.DONE, periodTotalCount = 1)
-        assertEquals(HabitState.NOT_DONE, r.state)
-        assertEquals(2, r.count)
-    }
-
-    @Test fun recordThirdTapCompletes() {
-        val h = Habit(title = "H", frequencyCount = 3)
-        val d = LocalDate(2026, 8, 1)
-        val existing = HabitRecord(habitId = h.id, date = d, state = HabitState.NOT_DONE, count = 2)
-        val r = habitRecordWithNewState(existing, h, d, HabitState.DONE, periodTotalCount = 2)
-        assertEquals(HabitState.DONE, r.state)
-        assertEquals(3, r.count)
-    }
-
-    @Test fun recordAlReadyDoneTapsAgainResets() {
-        val h = Habit(title = "H", frequencyCount = 3)
-        val d = LocalDate(2026, 8, 1)
-        val existing = HabitRecord(habitId = h.id, date = d, state = HabitState.DONE, count = 3)
-        val r = habitRecordWithNewState(existing, h, d, HabitState.DONE, periodTotalCount = 3)
+        val existing = HabitRecord(habitId = h.id, date = d, state = HabitState.DONE, count = 1)
+        val r = habitRecordWithNewState(existing, h, d, HabitState.DONE)
         assertEquals(HabitState.NOT_DONE, r.state)
         assertEquals(0, r.count)
     }
 
-    @Test fun recordSkippedThenTapMakesNotDone() {
+    @Test fun recordSkippedThenTapCreatesDone() {
         val h = Habit(title = "H")
         val d = LocalDate(2026, 8, 1)
         val existing = HabitRecord(habitId = h.id, date = d, state = HabitState.SKIPPED)
-        val r = habitRecordWithNewState(existing, h, d, HabitState.DONE, periodTotalCount = 0)
+        val r = habitRecordWithNewState(existing, h, d, HabitState.DONE)
         assertEquals(HabitState.DONE, r.state)
         assertEquals(1, r.count)
     }

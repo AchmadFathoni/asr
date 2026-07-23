@@ -2,6 +2,7 @@ package com.asr.data.database
 
 import androidx.room3.Dao
 import androidx.room3.Query
+import androidx.room3.Transaction
 import androidx.room3.Upsert
 import kotlinx.coroutines.flow.Flow
 
@@ -75,6 +76,12 @@ interface HabitDao {
 
     @Upsert
     suspend fun upsertRecord(record: HabitRecordEntity)
+
+    @Transaction
+    suspend fun upsertRecordForDate(habitId: Long, date: Long, state: String, count: Int) {
+        deleteRecord(habitId, date)
+        upsertRecord(HabitRecordEntity(habitId = habitId, date = date, state = state, count = count))
+    }
 
     @Query("DELETE FROM habit_records WHERE habitId = :habitId AND date = :date")
     suspend fun deleteRecord(habitId: Long, date: Long)

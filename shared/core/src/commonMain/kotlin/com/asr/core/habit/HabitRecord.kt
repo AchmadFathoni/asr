@@ -8,27 +8,22 @@ fun habitRecordWithNewState(
     habit: Habit,
     date: LocalDate,
     targetState: HabitState,
-    periodTotalCount: Int = 0,
 ): HabitRecord {
     if (targetState == HabitState.DONE) {
-        val existingState = existing?.state
-        if (existingState == HabitState.DONE) {
+        if (existing?.state == HabitState.DONE) {
             return HabitRecord(
                 id = existing.id, habitId = habit.id, date = date,
                 state = HabitState.NOT_DONE, count = 0,
             )
         }
-        val newCount = (existing?.count ?: 0) + 1
-        val newPeriodTotal = periodTotalCount + 1
-        val state = if (newPeriodTotal >= habit.frequencyCount) HabitState.DONE else HabitState.NOT_DONE
         return HabitRecord(
             id = existing?.id ?: 0, habitId = habit.id, date = date,
-            state = state, count = newCount,
+            state = HabitState.DONE, count = 1,
         )
     }
     return HabitRecord(
         id = existing?.id ?: 0, habitId = habit.id, date = date,
-        state = targetState,
+        state = targetState, count = 0,
     )
 }
 

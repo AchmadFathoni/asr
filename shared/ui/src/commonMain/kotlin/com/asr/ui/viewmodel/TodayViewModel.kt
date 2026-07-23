@@ -217,10 +217,7 @@ class TodayViewModel(
                 val wasNotDone = existing == null || existing.state == HabitState.NOT_DONE
                 val completing = wasNotDone && action.newState == HabitState.DONE
                 if (completing) _completingHabitIds.value = _completingHabitIds.value + action.habitId
-                val periodTotal = habitRepo.getRecordsForHabit(action.habitId)
-                    .filter { it.date >= habit.periodStart(d) && it.date <= d }
-                    .sumOf { it.count }
-                habitRepo.upsertRecord(habitRecordWithNewState(existing, habit, d, action.newState, periodTotal))
+                habitRepo.upsertRecord(habitRecordWithNewState(existing, habit, d, action.newState))
                 if (action.newState != HabitState.NOT_DONE) {
                     alarmScheduler.cancel(habit)
                 } else {

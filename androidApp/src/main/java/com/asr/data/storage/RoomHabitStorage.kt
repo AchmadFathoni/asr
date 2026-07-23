@@ -35,8 +35,14 @@ class RoomHabitStorage(private val habitDao: HabitDao) : HabitStorage {
     override suspend fun deleteHabit(habitId: Long) =
         habitDao.deleteHabit(habitId)
 
-    override suspend fun upsertRecord(record: HabitRecord) =
-        habitDao.upsertRecord(record.toEntity())
+    override suspend fun upsertRecord(record: HabitRecord) {
+        val entity = record.toEntity()
+        if (entity.id == 0L) {
+            habitDao.upsertRecordForDate(entity.habitId, entity.date, entity.state, entity.count)
+        } else {
+            habitDao.upsertRecord(entity)
+        }
+    }
 
     override suspend fun deleteRecord(habitId: Long, date: LocalDate) =
         habitDao.deleteRecord(habitId, date.toEpochDays())
