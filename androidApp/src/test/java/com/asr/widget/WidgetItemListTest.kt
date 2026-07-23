@@ -60,7 +60,7 @@ class WidgetItemListTest {
     fun `header label is always first`() {
         val tasks = listOf(TaskEntity(id = 1, title = "Buy milk"))
         val items = TodayViewsFactory.buildItemList(tasks, emptyList(), emptyList(), today)
-        assertEquals(TodayViewsFactory.ListItem.Label("Today", TodayViewsFactory.LabelStyle.HEADER), items.first())
+        assertEquals(TodayViewsFactory.ListItem.Label("Today To-do List", TodayViewsFactory.LabelStyle.HEADER), items.first())
     }
 
     @Test

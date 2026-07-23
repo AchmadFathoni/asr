@@ -24,6 +24,7 @@ import com.asr.core.task.Task
 import com.asr.core.task.TaskRepo
 import com.asr.ui.app.FilterState
 import com.asr.ui.app.Filters
+import com.asr.ui.app.countProgress
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -53,6 +54,7 @@ class TodayViewModel(
     private val _punishmentDismissed = MutableStateFlow(false)
     private val _completingTaskIds = MutableStateFlow<Set<Long>>(emptySet())
     private val _completingHabitIds = MutableStateFlow<Set<Long>>(emptySet())
+    private val _expandedTaskIds = MutableStateFlow<Set<Long>>(emptySet())
 
     private val todayFlow = currentDateFlow()
     private var currentToday: LocalDate = LocalDate.now()
@@ -102,12 +104,30 @@ class TodayViewModel(
         habitRepo.getHabitsFlow(),
         recordsWithDate,
         tagRepo.getTagsFlow(),
-        combine(filterAndMappings, _completingTaskIds, _completingHabitIds) { m, t, h -> m.copy(completingTaskIds = t, completingHabitIds = h) },
-    ) { tasks, habits, (today, records, yRecs, allRecs), tags, (filter, ttm, htm, pendingDeleted, punishmentDismissed, completingTaskIds, completingHabitIds) ->
-        val parentTaskIds = tasks.mapNotNull { it.parentId }.toSet()
+        combine(filterAndMappings, _completingTaskIds, _completingHabitIds, _expandedTaskIds) { m, t, h, e -> m.copy(completingTaskIds = t, completingHabitIds = h, expandedTaskIds = e) },
+    ) { tasks, habits, (today, records, yRecs, allRecs), tags, (filter, ttm, htm, pendingDeleted, punishmentDismissed, completingTaskIds, completingHabitIds, expandedTaskIds) ->
         val baseTasks = TodayItems.tasks(tasks, today, completingTaskIds)
         val todayHabits = habits.filter { it.shouldShowToday(today) }
         val baseHabits = TodayItems.habits(habits, today, allRecs, records, completingHabitIds)
+
+        val filteredTasks = Filters.tasks(baseTasks.sortedByPinAndDate(), ttm, filter.searchQuery, filter.selectedTagIds, null)
+        val subTaskMap = filteredTasks.mapNotNull { t -> t.parentId?.let { pid -> pid to t } }
+            .groupBy({ it.first }, { it.second })
+        val parentTaskIds = subTaskMap.keys
+        val taskProgress = parentTaskIds.associateWith { countProgress(it, subTaskMap) }
+
+        val flatTasks = mutableListOf<Pair<Task, Int>>()
+        fun recurse(items: List<Task>, depth: Int) {
+            for (task in items) {
+                flatTasks.add(task to depth)
+                if (task.id in expandedTaskIds) {
+                    recurse(subTaskMap[task.id].orEmpty(), depth + 1)
+                }
+            }
+        }
+        recurse(filteredTasks.filter { it.parentId == null }, 0)
+        val visibleTasks = flatTasks.map { it.first }
+        val visibleDepths = flatTasks.associate { it.first.id to it.second }
 
         val todayTasks = tasks.filter { val due = it.dueDate; due == null || due <= today }
         val hasItems = todayTasks.isNotEmpty() || todayHabits.isNotEmpty()
@@ -146,7 +166,7 @@ class TodayViewModel(
             !punishmentDismissed
 
         TodayState(
-            tasks = Filters.tasks(baseTasks.sortedByPinAndDate(), ttm, filter.searchQuery, filter.selectedTagIds, null),
+            tasks = visibleTasks,
             habits = Filters.habits(baseHabits.sortedByPinAndTime(), htm, filter.searchQuery, filter.selectedTagIds, null),
             tags = tags,
             habitRecords = records.associateBy { it.habitId },
@@ -156,6 +176,9 @@ class TodayViewModel(
             taskTagMappings = ttm,
             habitTagMappings = htm,
             parentTaskIds = parentTaskIds,
+            taskDepths = visibleDepths,
+            taskProgress = taskProgress,
+            expandedTaskIds = expandedTaskIds,
             allDone = allDone,
             showPunishmentDialog = showPunishment,
             isLoading = false,
@@ -176,6 +199,7 @@ class TodayViewModel(
         val punishmentDismissed: Boolean = false,
         val completingTaskIds: Set<Long> = emptySet(),
         val completingHabitIds: Set<Long> = emptySet(),
+        val expandedTaskIds: Set<Long> = emptySet(),
     )
 
     sealed interface Action {
@@ -186,6 +210,7 @@ class TodayViewModel(
         data object DeleteDoneTasks : Action
         data object UndoDeleteDoneTasks : Action
         data object DismissDeletedTasks : Action
+        data class ToggleExpandTask(val taskId: Long) : Action
         data class SetSearchQuery(val query: String) : Action
         data class ToggleTag(val tagId: Long) : Action
         data object ClearTagFilter : Action
@@ -238,6 +263,10 @@ class TodayViewModel(
             is Action.DismissDeletedTasks -> {
                 _pendingDeleted.value = null
             }
+            is Action.ToggleExpandTask -> {
+                val ids = _expandedTaskIds.value
+                _expandedTaskIds.value = if (action.taskId in ids) ids - action.taskId else ids + action.taskId
+            }
             is Action.SetSearchQuery -> _filter.value = _filter.value.copy(searchQuery = action.query)
             is Action.ToggleTag -> {
                 val ids = _filter.value.selectedTagIds
@@ -269,6 +298,9 @@ data class TodayState(
     val taskTagMappings: Map<Long, List<Long>> = emptyMap(),
     val habitTagMappings: Map<Long, List<Long>> = emptyMap(),
     val parentTaskIds: Set<Long> = emptySet(),
+    val taskDepths: Map<Long, Int> = emptyMap(),
+    val taskProgress: Map<Long, Pair<Int, Int>> = emptyMap(),
+    val expandedTaskIds: Set<Long> = emptySet(),
     val allDone: Boolean = false,
     val showPunishmentDialog: Boolean = false,
     val isLoading: Boolean = true,

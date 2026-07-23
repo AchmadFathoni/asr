@@ -77,7 +77,9 @@ import com.asr.ui.app.PinnedItemDivider
 import com.asr.ui.app.SparkleCheck
 import com.asr.ui.app.StatusFilterChips
 import com.asr.ui.app.TagFilterRow
+import com.asr.ui.app.TaskItemCard
 import com.asr.ui.app.TopActionRow
+import com.asr.ui.app.countProgress
 import com.asr.ui.app.UndoDeleteSnackbarEffect
 import com.asr.ui.tagColorForValue
 import com.asr.core.StatusFilter
@@ -91,6 +93,7 @@ import org.jetbrains.compose.resources.vectorResource
 @Composable
 fun TasksPage(viewModel: TasksViewModel) {
     val state by viewModel.state.collectAsState()
+    val soundPlayer = koinInject<SoundPlayer>()
     var showAddDialog by remember { mutableStateOf(false) }
     var newTaskTitle by remember { mutableStateOf("") }
     var newTaskDescription by remember { mutableStateOf("") }
@@ -186,15 +189,19 @@ fun TasksPage(viewModel: TasksViewModel) {
                 val hasUnpinnedAfter = lastPinnedIdx >= 0 && lastPinnedIdx < flatTasks.size - 1
                 items(flatTasks, key = { (task, _) -> task.id }) { (task, depth) ->
                     val hasChildren = subTaskMap.containsKey(task.id)
-                    val progress = if (hasChildren) countProgress(task.id, subTaskMap) else null
-                    TaskRow(
+                    val progress = if (hasChildren && state.filter == StatusFilter.ALL) countProgress(task.id, subTaskMap) else null
+                    TaskItemCard(
                         task = task,
                         depth = depth,
-                        hasChildren = hasChildren,
+                        isParent = hasChildren,
+                        showChevron = hasChildren,
                         isExpanded = task.id in state.expandedTaskIds,
                         progress = progress,
+                        tags = state.tags.filter { state.taskTagMappings[task.id]?.contains(it.id) == true },
+                        soundPlayer = soundPlayer,
                         onToggle = { viewModel.onAction(TasksViewModel.Action.ToggleTask(task.id)) },
                         onToggleExpand = { viewModel.onAction(TasksViewModel.Action.ToggleExpand(task.id)) },
+                        onTogglePin = { viewModel.onAction(TasksViewModel.Action.TogglePinTask(task.id)) },
                         onDelete = { taskToDelete = task },
                         onAddSub = {
                             newTaskTitle = ""
@@ -217,8 +224,6 @@ fun TasksPage(viewModel: TasksViewModel) {
                             newTaskParentId = null
                             showAddDialog = true
                         },
-                        tags = state.tags.filter { state.taskTagMappings[task.id]?.contains(it.id) == true },
-                        onTogglePin = { viewModel.onAction(TasksViewModel.Action.TogglePinTask(task.id)) },
                     )
                     PinnedItemDivider(flatTasks, task to depth, lastPinnedIdx, hasUnpinnedAfter, showThinDividers = false)
                 }
@@ -423,116 +428,7 @@ fun TasksPage(viewModel: TasksViewModel) {
     )
 }
 
-@Composable
-fun TaskRow(
-    task: Task,
-    depth: Int,
-    hasChildren: Boolean,
-    isExpanded: Boolean,
-    progress: Pair<Int, Int>?,
-    onToggle: () -> Unit,
-    onToggleExpand: () -> Unit,
-    onDelete: () -> Unit,
-    onAddSub: () -> Unit,
-    onEdit: () -> Unit,
-    onTogglePin: (() -> Unit)? = null,
-    tags: List<Tag> = emptyList(),
-) {
-    val soundPlayer = koinInject<SoundPlayer>()
-    val scale by animateFloatAsState(
-        targetValue = if (task.isDone) 1.05f else 1f,
-        animationSpec = spring(dampingRatio = 0.5f, stiffness = 400f),
-    )
 
-    Card(
-        modifier = Modifier.fillMaxWidth()
-            .padding(vertical = 4.dp)
-            .padding(start = (depth * 24).dp)
-            .graphicsLayer { scaleX = scale; scaleY = scale }
-            .clipToBounds()
-            .clickable {
-                if (!hasChildren) {
-                    if (!task.isDone) soundPlayer.play()
-                    onToggle()
-                }
-            },
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = if (task.isDone) 0.5f else 0.3f),
-        ),
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            if (hasChildren) {
-                Spacer(Modifier.width(30.dp))
-            } else {
-                SparkleCheck(isDone = task.isDone, onToggle = {
-                    if (!task.isDone) soundPlayer.play()
-                    onToggle()
-                })
-            }
-            if (hasChildren) {
-                TextButton(onClick = onToggleExpand, modifier = Modifier.padding(0.dp)) {
-                    Text(if (isExpanded) "\u25BE" else "\u25B8")
-                }
-            }
-            Text(
-                text = task.title,
-                modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
-                style = MaterialTheme.typography.bodyLarge.copy(
-                    textDecoration = if (task.isDone) TextDecoration.LineThrough else null,
-                ),
-            )
-            if (progress != null && progress.second > 0) {
-                Box(modifier = Modifier.size(28.dp), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(
-                        progress = { progress.first.toFloat() / progress.second },
-                        modifier = Modifier.fillMaxSize(),
-                        strokeWidth = 3.dp,
-                        trackColor = MaterialTheme.colorScheme.surfaceVariant,
-                    )
-                    Text(
-                        "${progress.first}",
-                        style = MaterialTheme.typography.labelSmall,
-                    )
-                }
-            }
-            tags.forEach { tag ->
-                tag.color?.let {
-                    Spacer(Modifier.width(2.dp))
-                    Box(Modifier.size(8.dp).clip(CircleShape).background(tagColorForValue(it)))
-                }
-            }
-            Box {
-                var expanded by remember { mutableStateOf(false) }
-                IconButton(onClick = { expanded = true }, modifier = Modifier.semantics { contentDescription = "More options" }) {
-                    Text("⋮", fontWeight = FontWeight.Bold)
-                }
-                DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                    onTogglePin?.let {
-                        DropdownMenuItem(
-                            text = { Text(if (task.isPinned) "Unpin" else "Pin") },
-                            onClick = { expanded = false; it() },
-                        )
-                    }
-                    DropdownMenuItem(
-                        text = { Text("Add sub-task") },
-                        onClick = { expanded = false; onAddSub() },
-                    )
-                    DropdownMenuItem(
-                        text = { Text("Edit") },
-                        onClick = { expanded = false; onEdit() },
-                    )
-                    DropdownMenuItem(
-                        text = { Text("Delete") },
-                        onClick = { expanded = false; onDelete() },
-                    )
-                }
-            }
-        }
-    }
-}
 
 private fun buildFlatList(
     tasks: List<Task>,
@@ -553,17 +449,4 @@ private fun buildFlatList(
     return recurse(tasks.filter { it.parentId == null }, 0)
 }
 
-private fun countProgress(
-    taskId: Long,
-    subTaskMap: Map<Long, List<Task>>,
-): Pair<Int, Int> {
-    val subs = subTaskMap[taskId] ?: return 0 to 0
-    var done = subs.count { it.isDone }
-    var total = subs.size
-    for (sub in subs) {
-        val (d, t) = countProgress(sub.id, subTaskMap)
-        done += d
-        total += t
-    }
-    return done to total
-}
+

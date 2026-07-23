@@ -61,6 +61,7 @@ import com.asr.ui.app.EmptyState
 import com.asr.ui.app.FilterBottomSheet
 import com.asr.ui.app.PinnedItemDivider
 import com.asr.ui.app.SparkleCheck
+import com.asr.ui.app.TaskItemCard
 import com.asr.ui.app.UndoDeleteSnackbarEffect
 import com.asr.ui.habit.HabitItem
 import com.asr.ui.tagColorForValue
@@ -130,72 +131,21 @@ fun TodayPage(viewModel: TodayViewModel) {
                 val lastTaskPinIdx = state.tasks.indexOfLast { it.isPinned }
                 val hasTaskUnpinnedAfter = lastTaskPinIdx >= 0 && lastTaskPinIdx < state.tasks.size - 1
                 items(state.tasks, key = { "task_${it.id}" }) { task ->
+                    val depth = state.taskDepths[task.id] ?: 0
                     val isParent = task.id in state.parentTaskIds
-                    val scale by animateFloatAsState(
-                        targetValue = if (task.isDone) 1.08f else 1f,
-                        animationSpec = spring(dampingRatio = 0.5f, stiffness = 150f),
+                    TaskItemCard(
+                        task = task,
+                        depth = depth,
+                        isParent = isParent,
+                        showChevron = isParent,
+                        isExpanded = task.id in state.expandedTaskIds,
+                        progress = state.taskProgress[task.id],
+                        tags = state.tags.filter { state.taskTagMappings[task.id]?.contains(it.id) == true },
+                        soundPlayer = soundPlayer,
+                        onToggle = { viewModel.onAction(TodayViewModel.Action.ToggleTask(task.id)) },
+                        onToggleExpand = { viewModel.onAction(TodayViewModel.Action.ToggleExpandTask(task.id)) },
+                        onTogglePin = { viewModel.onAction(TodayViewModel.Action.TogglePinTask(task.id)) },
                     )
-                    Card(
-                        modifier = Modifier.fillMaxWidth()
-                            .padding(vertical = 4.dp)
-                            .graphicsLayer { scaleX = scale; scaleY = scale }
-                            .clipToBounds()
-                            .clickable {
-                                if (!isParent) {
-                                    if (!task.isDone) soundPlayer.play()
-                                    viewModel.onAction(TodayViewModel.Action.ToggleTask(task.id))
-                                }
-                            },
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(
-                                alpha = if (task.isDone) 0.5f else 0.3f
-                            ),
-                        ),
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            if (isParent) {
-                                Spacer(Modifier.width(30.dp))
-                            } else {
-                                SparkleCheck(
-                                    isDone = task.isDone,
-                                    onToggle = {
-                                        if (!task.isDone) soundPlayer.play()
-                                        viewModel.onAction(TodayViewModel.Action.ToggleTask(task.id))
-                                    },
-                                )
-                            }
-                            Text(
-                                text = task.title,
-                                modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
-                                style = MaterialTheme.typography.bodyLarge.copy(
-                                    textDecoration = if (task.isDone) TextDecoration.LineThrough else null,
-                                ),
-                            )
-                            state.taskTagMappings[task.id]?.forEach { tagId ->
-                                state.tags.find { it.id == tagId }?.color?.let {
-                                    Spacer(Modifier.width(2.dp))
-                                    Box(
-                                        Modifier.size(8.dp).clip(CircleShape).background(tagColorForValue(it))
-                                    )
-                                }
-                            }
-                            Box {
-                                var expanded by remember { mutableStateOf(false) }
-                                IconButton(onClick = { expanded = true }, modifier = Modifier.semantics { contentDescription = "More options" }) {
-                                    Text("\u22EE", fontWeight = FontWeight.Bold)
-                                }
-                                DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                                    DropdownMenuItem(
-                                        text = { Text(if (task.isPinned) "Unpin" else "Pin") },
-                                        onClick = { expanded = false; viewModel.onAction(TodayViewModel.Action.TogglePinTask(task.id)) },
-                                    )
-                                }
-                            }
-                        }
-                    }
                     PinnedItemDivider(state.tasks, task, lastTaskPinIdx, hasTaskUnpinnedAfter, showThinDividers = false)
                 }
             }
