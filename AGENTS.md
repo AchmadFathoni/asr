@@ -144,6 +144,9 @@ A dialog on Today triggers when **more than half of yesterday's scheduled items*
 - **Persistence:** `PrefsSettingsStorage` (Android) and `JsonSettingsStorage` (desktop)
 - No settings toggle, no sound, no animation
 
+#### 9. No-op stubs in shared/ui must not carry `@Single`
+No-op implementations in `shared:ui` (like `DefaultSoundPlayer`, `DefaultWidgetUpdater`) must NOT be annotated with `@Single(binds = [...])` — `UIModules` component-scans `com.asr.ui` and auto-registers them, creating duplicate bindings that override the real platform implementations in `:androidApp` / `:desktopApp`. Instead, they're plain classes instantiated explicitly by platform `@Single` functions (e.g., `DesktopAppModule.provideSoundPlayer()`). Platform-specific implementations sit in their respective modules with `@Single(binds = [...])`.
+
 ### Code Style
 - UDF: sealed actions → ViewModel state
 - Immutable state data classes, exposed via `StateFlow`
