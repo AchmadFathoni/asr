@@ -16,6 +16,7 @@ import com.asr.core.currentDateFlow
 import com.asr.core.now
 import com.asr.core.settings.SettingsRepo
 import com.asr.core.sortedByPinAndDate
+import com.asr.core.TodayItems
 import com.asr.core.sortedByPinAndTime
 import com.asr.core.tag.Tag
 import com.asr.core.tag.TagRepo
@@ -104,18 +105,9 @@ class TodayViewModel(
         combine(filterAndMappings, _completingTaskIds, _completingHabitIds) { m, t, h -> m.copy(completingTaskIds = t, completingHabitIds = h) },
     ) { tasks, habits, (today, records, yRecs, allRecs), tags, (filter, ttm, htm, pendingDeleted, punishmentDismissed, completingTaskIds, completingHabitIds) ->
         val parentTaskIds = tasks.mapNotNull { it.parentId }.toSet()
-        val baseTasks = tasks.filter { val due = it.dueDate; (due == null || due <= today) && !it.isDone && it.id !in completingTaskIds }
+        val baseTasks = TodayItems.tasks(tasks, today, completingTaskIds)
         val todayHabits = habits.filter { it.shouldShowToday(today) }
-        val baseHabits = todayHabits.filter { h ->
-            val todayRec = records.firstOrNull { it.habitId == h.id }
-            val hidden = when {
-                h.frequencyType == HabitFrequency.DAILY || h.frequencyCount == 1 ->
-                    todayRec != null && todayRec.state != HabitState.NOT_DONE
-                else ->
-                    todayRec != null || h.isCompleteForPeriod(today, allRecs)
-            }
-            !hidden || h.id in completingHabitIds
-        }
+        val baseHabits = TodayItems.habits(habits, today, allRecs, records, completingHabitIds)
 
         val todayTasks = tasks.filter { val due = it.dueDate; due == null || due <= today }
         val hasItems = todayTasks.isNotEmpty() || todayHabits.isNotEmpty()

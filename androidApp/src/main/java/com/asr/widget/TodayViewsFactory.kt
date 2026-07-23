@@ -13,8 +13,8 @@ import com.asr.core.habit.Habit
 import com.asr.core.habit.HabitFrequency
 import com.asr.core.habit.HabitRecord
 import com.asr.core.habit.HabitState
-import com.asr.core.habit.shouldShowToday
 import com.asr.core.now
+import com.asr.core.TodayItems
 import com.asr.core.sortedByPinAndDate
 import com.asr.core.sortedByPinAndTime
 import com.asr.core.task.Task
@@ -158,20 +158,18 @@ class TodayViewsFactory(
             val todayEpoch = today.toEpochDays()
             val parentIds = allTaskEntities.mapNotNull { it.parentId }.toSet()
 
-            val tasks = allTaskEntities
-                .filter { !it.isDone && (it.dueDate == null || it.dueDate <= todayEpoch) }
-                .map { it.toTask() }
-                .sortedByPinAndDate()
-
             val allHabits = allHabitEntities.map { it.toHabit() }
-            val todayRecords = allRecordEntities
-                .filter { it.date == todayEpoch }
-                .map { it.toHabitRecord() }
-                .associateBy { it.habitId }
+            val allRecords = allRecordEntities.map { it.toHabitRecord() }
+            val todayRecordList = allRecords.filter { it.date == today }
+            val todayRecords = todayRecordList.associateBy { it.habitId }
 
-            val habits = allHabits
-                .filter { it.shouldShowToday(today) && (todayRecords[it.id]?.state != HabitState.DONE) }
-                .sortedByPinAndTime()
+            val tasks = TodayItems.tasks(
+                allTaskEntities.map { it.toTask() }, today
+            ).sortedByPinAndDate()
+
+            val habits = TodayItems.habits(
+                allHabits, today, allRecords, todayRecordList
+            ).sortedByPinAndTime()
 
             val allDone = tasks.isEmpty() && habits.isEmpty() &&
                 (allTaskEntities.any { it.isDone } || allHabitEntities.isNotEmpty())
