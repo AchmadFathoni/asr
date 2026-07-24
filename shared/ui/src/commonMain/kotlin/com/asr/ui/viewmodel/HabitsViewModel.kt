@@ -38,7 +38,6 @@ import org.koin.core.annotation.KoinViewModel
 import org.koin.core.annotation.Provided
 
 
-
 @OptIn(ExperimentalCoroutinesApi::class)
 @KoinViewModel
 class HabitsViewModel(

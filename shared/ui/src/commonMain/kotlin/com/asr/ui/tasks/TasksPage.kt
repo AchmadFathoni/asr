@@ -157,10 +157,15 @@ fun TasksPage(viewModel: TasksViewModel) {
                 onToggleFilter = { viewModel.onAction(TasksViewModel.Action.ToggleFilterSheet) },
                 filterActive = state.filterState.searchQuery.isNotBlank() || state.filterState.selectedTagIds.isNotEmpty() || state.filterState.filterDate != null,
                 onAdd = {
-                    newTaskTitle = ""; newTaskDescription = ""; newTaskReminder = ""
-                    newDueDate = null; newTaskParentId = null
-                    selectedTagIds = emptySet(); newTagName = ""
-                    editingTask = null; showAddDialog = true
+                    newTaskTitle = ""
+                    newTaskDescription = ""
+                    newTaskReminder = ""
+                    newDueDate = null
+                    newTaskParentId = null
+                    selectedTagIds = emptySet()
+                    newTagName = ""
+                    editingTask = null
+                    showAddDialog = true
                 },
                 addContentDescription = "Add task",
                 isEmpty = isEmpty,
@@ -423,26 +428,4 @@ fun TasksPage(viewModel: TasksViewModel) {
         onDismiss = { viewModel.onAction(TasksViewModel.Action.ToggleFilterSheet) },
     )
 }
-
-
-
-private fun buildFlatList(
-    tasks: List<Task>,
-    expandedIds: Set<Long>,
-): List<Pair<Task, Int>> {
-    val subTaskMap = tasks.mapNotNull { t -> t.parentId?.let { pid -> pid to t } }
-        .groupBy({ it.first }, { it.second })
-    fun recurse(items: List<Task>, depth: Int): List<Pair<Task, Int>> {
-        val result = mutableListOf<Pair<Task, Int>>()
-        for (task in items) {
-            result.add(task to depth)
-            if (task.id in expandedIds) {
-                result.addAll(recurse(subTaskMap[task.id].orEmpty(), depth + 1))
-            }
-        }
-        return result
-    }
-    return recurse(tasks.filter { it.parentId == null }, 0)
-}
-
 

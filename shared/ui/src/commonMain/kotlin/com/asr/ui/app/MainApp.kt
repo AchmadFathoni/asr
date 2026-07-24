@@ -76,8 +76,8 @@ fun MainApp() {
                     label = { Text("Tasks", maxLines = 1) },
                 )
                 NavigationBarItem(
-                    selected = selectedTab == AppRoute.Habit,
-                    onClick = { selectedTab = AppRoute.Habit },
+                    selected = selectedTab == AppRoute.Habits,
+                    onClick = { selectedTab = AppRoute.Habits },
                     alwaysShowLabel = true,
                     icon = {
                         Icon(
@@ -107,7 +107,7 @@ fun MainApp() {
                 when (tab) {
                     AppRoute.Today -> TodayPage(todayVM)
                     AppRoute.Tasks -> TasksPage(tasksVM)
-                    AppRoute.Habit -> HabitsPage(habitsVM)
+                    AppRoute.Habits -> HabitsPage(habitsVM)
                     AppRoute.Settings -> SettingsPage(settingsVM)
                 }
             }

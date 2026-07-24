@@ -115,8 +115,6 @@ dependencies {
     implementation(libs.koin.annotations)
     implementation(libs.koin.android)
 
-    implementation(libs.glance.appwidget)
-    implementation(libs.glance.material3)
     implementation(libs.work.runtime.ktx)
 }
 

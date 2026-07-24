@@ -9,7 +9,7 @@ data class Habit(
     val title: String,
     val description: String = "",
     val frequencyType: HabitFrequency = HabitFrequency.DAILY,
-    val frequencyCount: Int = 1, // ponytail: per-period total, not split across daysOfWeek
+    val frequencyCount: Int = 1,
     val daysOfWeek: Set<Int> = emptySet(),
     val daysOfMonth: Set<Int> = emptySet(),
     val yearlyDates: Set<Int> = emptySet(),
