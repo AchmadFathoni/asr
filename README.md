@@ -1,5 +1,9 @@
 # ASR — Todo & Habit App
 
+<p align="center">
+  <img src="logo.png" alt="ASR Logo" width="200"/>
+</p>
+
 > وَالْعَصْرِ ﴿١﴾ إِنَّ الْإِنسَانَ لَفِي خُسْرٍ ﴿٢﴾ إِلَّا الَّذِينَ آمَنُوا وَعَمِلُوا الصَّالِحَاتِ وَتَوَاصَوْا بِالْحَقِّ وَتَوَاصَوْا بِالصَّبْرِ ﴿٣﴾
 >
 > *"By the time, indeed mankind is in loss, except for those who believe and do righteous deeds and advise each other to truth and advise each other to patience."*
