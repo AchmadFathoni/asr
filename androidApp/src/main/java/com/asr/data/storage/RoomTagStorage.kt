@@ -50,6 +50,6 @@ class RoomTagStorage(private val tagDao: TagDao) : TagStorage {
     override suspend fun replaceAll(tags: List<Tag>) =
         tagDao.insertAllTags(tags.map { it.toEntity() })
 
-    private fun TagEntity.toDomain() = Tag(id = id, name = name, color = color)
-    private fun Tag.toEntity() = TagEntity(id = id, name = name, color = color)
+    private fun TagEntity.toDomain() = Tag(id = id, name = name)
+    private fun Tag.toEntity() = TagEntity(id = id, name = name)
 }

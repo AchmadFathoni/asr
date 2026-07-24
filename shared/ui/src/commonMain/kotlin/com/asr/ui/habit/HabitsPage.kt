@@ -88,7 +88,7 @@ import com.asr.ui.app.PinnedItemDivider
 import com.asr.ui.app.StatusFilterChips
 import com.asr.ui.app.TagFilterRow
 import com.asr.ui.app.TopActionRow
-import com.asr.ui.tagColorForValue
+
 import com.asr.core.StatusFilter
 import com.asr.ui.viewmodel.HabitsViewModel
 import org.jetbrains.compose.resources.vectorResource
@@ -112,7 +112,6 @@ fun HabitsPage(viewModel: HabitsViewModel) {
     var habitToDelete by remember { mutableStateOf<Habit?>(null) }
     var selectedTagIds by remember { mutableStateOf(setOf<Long>()) }
     var newTagName by remember { mutableStateOf("") }
-    var newTagColor by remember { mutableStateOf<Long?>(null) }
 
     val createdTagId by viewModel.createdTagId.collectAsState()
     LaunchedEffect(createdTagId) {
@@ -150,7 +149,7 @@ fun HabitsPage(viewModel: HabitsViewModel) {
                     newHabitTitle = ""; newHabitDescription = ""; newHabitReminder = ""
                     newFreq = HabitFrequency.DAILY
                     newDaysOfWeek.clear(); newDaysOfMonth.clear(); selectedYearlyDates.clear(); activeYearlyMonth = 1
-                    selectedTagIds = emptySet(); newTagName = ""; newTagColor = null
+                    selectedTagIds = emptySet(); newTagName = ""
                     editingHabit = null
                     showAddDialog = true
                 },
@@ -200,14 +199,13 @@ fun HabitsPage(viewModel: HabitsViewModel) {
                                 newDaysOfWeek.clear(); newDaysOfWeek.addAll(habit.daysOfWeek)
                                 newDaysOfMonth.clear(); newDaysOfMonth.addAll(habit.daysOfMonth)
                                 selectedYearlyDates.clear(); selectedYearlyDates.addAll(habit.yearlyDates); activeYearlyMonth = 1
-                                selectedTagIds = (state.habitTagMappings[habit.id]?.toSet() ?: emptySet()).intersect(state.tags.map { it.id }.toSet()); newTagName = ""; newTagColor = null
+                                selectedTagIds = (state.habitTagMappings[habit.id]?.toSet() ?: emptySet()).intersect(state.tags.map { it.id }.toSet()); newTagName = ""
                                 showAddDialog = true
                             },
                             streak = state.streaks[habit.id] ?: 0,
                             periodCount = state.periodCounts[habit.id] ?: 0,
                             onDelete = { habitToDelete = habit },
                             onDuplicate = { viewModel.onAction(HabitsViewModel.Action.DuplicateHabit(habit.id)) },
-                            tags = state.tags.filter { state.habitTagMappings[habit.id]?.contains(it.id) == true },
                             onTogglePin = { viewModel.onAction(HabitsViewModel.Action.TogglePinHabit(habit.id)) },
                         )
                         PinnedItemDivider(filteredHabits, habit, lastPinnedIdx, hasUnpinnedAfter)
@@ -339,12 +337,10 @@ fun HabitsPage(viewModel: HabitsViewModel) {
                     CreateTagRow(
                         tagName = newTagName,
                         onTagNameChange = { newTagName = it },
-                        tagColor = newTagColor,
-                        onTagColorChange = { newTagColor = it },
                         onCreate = {
                             if (newTagName.isNotBlank()) {
-                                viewModel.onAction(HabitsViewModel.Action.CreateTag(newTagName.trim(), newTagColor))
-                                newTagName = ""; newTagColor = null
+                                viewModel.onAction(HabitsViewModel.Action.CreateTag(newTagName.trim()))
+                                newTagName = ""
                             }
                         },
                     )
@@ -548,7 +544,6 @@ fun HabitItem(
     onDelete: (() -> Unit)? = null,
     onDuplicate: (() -> Unit)? = null,
     streak: Int = 0,
-    tags: List<Tag> = emptyList(),
     onTogglePin: (() -> Unit)? = null,
     periodCount: Int = 0,
 ) {
@@ -581,17 +576,6 @@ fun HabitItem(
                     maxLines = 2, overflow = TextOverflow.Ellipsis,
                     style = MaterialTheme.typography.bodyLarge.copy(
                         textDecoration = if (isDone) TextDecoration.LineThrough else null))
-                if (tags.isNotEmpty()) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        tags.forEach { tag ->
-                            tag.color?.let {
-                                Spacer(Modifier.width(3.dp))
-                                Box(Modifier.size(8.dp).clip(CircleShape).background(tagColorForValue(it)))
-                            }
-                        }
-                    }
-                    Spacer(Modifier.height(2.dp))
-                }
                 if (habit.frequencyCount > 1) {
                     LinearProgressIndicator(
                         progress = { currentCount.toFloat() / habit.frequencyCount.coerceAtLeast(1) },

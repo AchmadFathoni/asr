@@ -1,6 +1,5 @@
 package com.asr.ui.setting
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -9,13 +8,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
@@ -36,15 +32,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.asr.core.backup.ExportState
 import com.asr.core.backup.RestoreState
 import com.asr.core.tag.Tag
-import com.asr.ui.TagColorPicker
-import com.asr.ui.tagColorForValue
 import com.asr.core.AppVersion
 import com.asr.core.settings.ThemeOption
 import com.asr.ui.viewmodel.SettingsViewModel
@@ -54,7 +48,6 @@ fun SettingsPage(viewModel: SettingsViewModel) {
     val state by viewModel.state.collectAsState()
 
     val tagToDelete = remember { mutableStateOf<Tag?>(null) }
-    val editingColorTagId = remember { mutableStateOf<Long?>(null) }
 
     Column(
         modifier = Modifier.fillMaxSize().padding(16.dp).verticalScroll(rememberScrollState()),
@@ -140,52 +133,26 @@ fun SettingsPage(viewModel: SettingsViewModel) {
                         singleLine = true,
                         modifier = Modifier.weight(1f),
                     )
-                Spacer(Modifier.width(8.dp))
                     TextButton(
                         onClick = { viewModel.onAction(SettingsViewModel.Action.CreateTag) },
                         enabled = state.newTagName.isNotBlank(),
                     ) { Text("Create") }
                 }
-                Spacer(Modifier.height(8.dp))
-                TagColorPicker(
-                    selectedColor = state.newTagColor,
-                    onColorSelected = { viewModel.onAction(SettingsViewModel.Action.SetNewTagColor(it)) },
-                )
                 if (state.tags.isNotEmpty()) {
                     Spacer(Modifier.height(8.dp))
                     state.tags.forEach { tag ->
-                        Column(modifier = Modifier.fillMaxWidth()) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .padding(end = 8.dp)
-                                        .size(12.dp)
-                                        .clip(CircleShape)
-                                        .background(tagColorForValue(tag.color))
-                                        .clickable { editingColorTagId.value = if (editingColorTagId.value == tag.id) null else tag.id },
-                                )
-                                Text(
-                                    text = tag.name,
-                                    modifier = Modifier.weight(1f),
-                                    style = MaterialTheme.typography.bodyLarge,
-                                )
-                                TextButton(
-                                    onClick = { tagToDelete.value = tag },
-                                ) { Text("Delete", color = MaterialTheme.colorScheme.error) }
-                            }
-                            if (editingColorTagId.value == tag.id) {
-                                Spacer(Modifier.height(8.dp))
-                                TagColorPicker(
-                                    selectedColor = tag.color,
-                                    onColorSelected = {
-                                        viewModel.onAction(SettingsViewModel.Action.SetTagColor(tag.id, it))
-                                        editingColorTagId.value = null
-                                    },
-                                )
-                            }
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                text = tag.name,
+                                modifier = Modifier.weight(1f),
+                                style = MaterialTheme.typography.bodyLarge,
+                            )
+                            TextButton(
+                                onClick = { tagToDelete.value = tag },
+                            ) { Text("Delete", color = MaterialTheme.colorScheme.error) }
                         }
                     }
                 }

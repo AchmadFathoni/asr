@@ -94,5 +94,5 @@ private fun com.asr.data.database.HabitRecordEntity.toSchema() = HabitRecordSche
 )
 
 private fun com.asr.data.database.TagEntity.toSchema() = TagSchema(
-    id = id, name = name, color = color,
+    id = id, name = name,
 )

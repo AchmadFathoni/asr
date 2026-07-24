@@ -106,7 +106,7 @@ class HabitsViewModel(
         data class SetRecordState(val habitId: Long, val state: HabitState) : Action
         data class ViewHabitHistory(val habitId: Long) : Action
         data class ToggleLogDate(val habitId: Long, val date: LocalDate) : Action
-        data class CreateTag(val name: String, val color: Long? = null) : Action
+        data class CreateTag(val name: String) : Action
         data class TogglePinHabit(val habitId: Long) : Action
         data class SetSearchQuery(val query: String) : Action
         data class ToggleTag(val tagId: Long) : Action
@@ -157,7 +157,7 @@ class HabitsViewModel(
             }
             is Action.CreateTag -> viewModelScope.launch {
                 if (action.name.isNotBlank()) {
-                    val id = tagRepo.upsertTag(Tag(name = action.name, color = action.color))
+                    val id = tagRepo.upsertTag(Tag(name = action.name))
                     _createdTagId.value = id
                 }
             }

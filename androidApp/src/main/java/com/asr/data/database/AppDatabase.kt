@@ -26,7 +26,7 @@ abstract class AppDatabase : RoomDatabase() {
 
     companion object {
         const val DB_NAME = "asr_database"
-        const val SCHEMA_VERSION = 5
+        const val SCHEMA_VERSION = 6
 
         val MIGRATION_4_5 = object : Migration(4, 5) {
             override suspend fun migrate(connection: SQLiteConnection) {
@@ -34,6 +34,12 @@ abstract class AppDatabase : RoomDatabase() {
                 connection.prepare("ALTER TABLE tasks ADD COLUMN isPinned INTEGER NOT NULL DEFAULT 0").step()
                 connection.prepare("ALTER TABLE habits DROP COLUMN order_index").step()
                 connection.prepare("ALTER TABLE habits ADD COLUMN isPinned INTEGER NOT NULL DEFAULT 0").step()
+            }
+        }
+
+        val MIGRATION_5_6 = object : Migration(5, 6) {
+            override suspend fun migrate(connection: SQLiteConnection) {
+                connection.prepare("ALTER TABLE tags DROP COLUMN color").step()
             }
         }
     }

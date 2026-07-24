@@ -12,5 +12,5 @@ fun getDatabase(context: Context): AppDatabase {
         context.applicationContext,
         AppDatabase::class.java,
         AppDatabase.DB_NAME,
-    ).addMigrations(AppDatabase.MIGRATION_4_5).build().also { dbInstance = it }
+    ).addMigrations(AppDatabase.MIGRATION_4_5, AppDatabase.MIGRATION_5_6).build().also { dbInstance = it }
 }

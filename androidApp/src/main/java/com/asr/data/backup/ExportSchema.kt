@@ -56,5 +56,4 @@ data class HabitRecordSchema(
 data class TagSchema(
     val id: Long = 0,
     val name: String,
-    val color: Long? = null,
 )

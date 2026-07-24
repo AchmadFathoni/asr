@@ -34,8 +34,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import com.asr.core.tag.Tag
-import com.asr.ui.TagColorPicker
-import com.asr.ui.tagColorForValue
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.vectorResource
 import asr.shared.ui.generated.resources.Res
@@ -162,31 +160,20 @@ fun UndoDeleteSnackbarEffect(
 fun CreateTagRow(
     tagName: String,
     onTagNameChange: (String) -> Unit,
-    tagColor: Long?,
-    onTagColorChange: (Long?) -> Unit,
     onCreate: () -> Unit,
 ) {
-    Column {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            OutlinedTextField(
-                value = tagName,
-                onValueChange = onTagNameChange,
-                label = { Text("New tag name") },
-                singleLine = true,
-                modifier = Modifier.weight(1f),
-            )
-            TextButton(
-                onClick = onCreate,
-                enabled = tagName.isNotBlank(),
-            ) { Text("Add") }
-        }
-        if (tagName.isNotBlank()) {
-            Spacer(Modifier.height(8.dp))
-            TagColorPicker(
-                selectedColor = tagColor,
-                onColorSelected = onTagColorChange,
-            )
-        }
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        OutlinedTextField(
+            value = tagName,
+            onValueChange = onTagNameChange,
+            label = { Text("New tag name") },
+            singleLine = true,
+            modifier = Modifier.weight(1f),
+        )
+        TextButton(
+            onClick = onCreate,
+            enabled = tagName.isNotBlank(),
+        ) { Text("Add") }
     }
 }
 
@@ -216,14 +203,6 @@ private fun TagChip(tag: Tag, selected: Boolean, onToggle: (Long) -> Unit) {
     FilterChip(
         selected = selected,
         onClick = { onToggle(tag.id) },
-        label = {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                tag.color?.let {
-                    Box(Modifier.size(8.dp).clip(CircleShape).background(tagColorForValue(it)))
-                    Spacer(Modifier.width(4.dp))
-                }
-                Text(tag.name)
-            }
-        },
+        label = { Text(tag.name) },
     )
 }

@@ -64,7 +64,6 @@ import com.asr.ui.app.SparkleCheck
 import com.asr.ui.app.TaskItemCard
 import com.asr.ui.app.UndoDeleteSnackbarEffect
 import com.asr.ui.habit.HabitItem
-import com.asr.ui.tagColorForValue
 import com.asr.ui.viewmodel.TodayViewModel
 import asr.shared.ui.generated.resources.*
 import org.jetbrains.compose.resources.vectorResource
@@ -140,7 +139,6 @@ fun TodayPage(viewModel: TodayViewModel) {
                         showChevron = isParent,
                         isExpanded = task.id in state.expandedTaskIds,
                         progress = state.taskProgress[task.id],
-                        tags = state.tags.filter { state.taskTagMappings[task.id]?.contains(it.id) == true },
                         soundPlayer = soundPlayer,
                         onToggle = { viewModel.onAction(TodayViewModel.Action.ToggleTask(task.id)) },
                         onToggleExpand = { viewModel.onAction(TodayViewModel.Action.ToggleExpandTask(task.id)) },
@@ -165,7 +163,6 @@ fun TodayPage(viewModel: TodayViewModel) {
                         onSetState = { viewModel.onAction(TodayViewModel.Action.ToggleHabit(habit.id, it)) },
                         periodCount = state.periodCounts[habit.id] ?: 0,
                         onTogglePin = { viewModel.onAction(TodayViewModel.Action.TogglePinHabit(habit.id)) },
-                        tags = state.tags.filter { state.habitTagMappings[habit.id]?.contains(it.id) == true },
                     )
                     PinnedItemDivider(state.habits, habit, lastHabitPinIdx, hasHabitUnpinnedAfter)
                 }

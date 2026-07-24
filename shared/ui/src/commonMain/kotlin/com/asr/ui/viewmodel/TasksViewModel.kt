@@ -86,7 +86,7 @@ class TasksViewModel(
         data class ToggleTask(val taskId: Long) : Action
         data class ToggleExpand(val taskId: Long) : Action
         data class SetFilter(val filter: StatusFilter) : Action
-        data class CreateTag(val name: String, val color: Long? = null) : Action
+        data class CreateTag(val name: String) : Action
         data class TogglePinTask(val taskId: Long) : Action
         data object DeleteDoneTasks : Action
         data object UndoDeleteDoneTasks : Action
@@ -135,7 +135,7 @@ class TasksViewModel(
             }
             is Action.CreateTag -> viewModelScope.launch {
                 if (action.name.isNotBlank()) {
-                    val id = tagRepo.upsertTag(Tag(name = action.name, color = action.color))
+                    val id = tagRepo.upsertTag(Tag(name = action.name))
                     _createdTagId.value = id
                 }
             }

@@ -81,7 +81,7 @@ import com.asr.ui.app.TaskItemCard
 import com.asr.ui.app.TopActionRow
 import com.asr.ui.app.countProgress
 import com.asr.ui.app.UndoDeleteSnackbarEffect
-import com.asr.ui.tagColorForValue
+
 import com.asr.core.StatusFilter
 import com.asr.ui.viewmodel.TasksViewModel
 import kotlinx.datetime.LocalDate
@@ -102,7 +102,6 @@ fun TasksPage(viewModel: TasksViewModel) {
     var newTaskParentId by remember { mutableStateOf<Long?>(null) }
     var selectedTagIds by remember { mutableStateOf(setOf<Long>()) }
     var newTagName by remember { mutableStateOf("") }
-    var newTagColor by remember { mutableStateOf<Long?>(null) }
     var editingTask by remember { mutableStateOf<Task?>(null) }
     var taskToDelete by remember { mutableStateOf<Task?>(null) }
 
@@ -160,7 +159,7 @@ fun TasksPage(viewModel: TasksViewModel) {
                 onAdd = {
                     newTaskTitle = ""; newTaskDescription = ""; newTaskReminder = ""
                     newDueDate = null; newTaskParentId = null
-                    selectedTagIds = emptySet(); newTagName = ""; newTagColor = null
+                    selectedTagIds = emptySet(); newTagName = ""
                     editingTask = null; showAddDialog = true
                 },
                 addContentDescription = "Add task",
@@ -197,7 +196,6 @@ fun TasksPage(viewModel: TasksViewModel) {
                         showChevron = hasChildren,
                         isExpanded = task.id in state.expandedTaskIds,
                         progress = progress,
-                        tags = state.tags.filter { state.taskTagMappings[task.id]?.contains(it.id) == true },
                         soundPlayer = soundPlayer,
                         onToggle = { viewModel.onAction(TasksViewModel.Action.ToggleTask(task.id)) },
                         onToggleExpand = { viewModel.onAction(TasksViewModel.Action.ToggleExpand(task.id)) },
@@ -208,7 +206,7 @@ fun TasksPage(viewModel: TasksViewModel) {
                             newTaskDescription = ""
                             newTaskReminder = ""
                             newDueDate = null
-                            newTagName = ""; newTagColor = null
+                            newTagName = ""
                             editingTask = null
                             newTaskParentId = task.id
                             showAddDialog = true
@@ -220,7 +218,7 @@ fun TasksPage(viewModel: TasksViewModel) {
                             newTaskReminder = task.reminderTime ?: ""
                             newDueDate = task.dueDate
                             selectedTagIds = emptySet()
-                            newTagName = ""; newTagColor = null
+                            newTagName = ""
                             newTaskParentId = null
                             showAddDialog = true
                         },
@@ -294,12 +292,10 @@ fun TasksPage(viewModel: TasksViewModel) {
                         CreateTagRow(
                             tagName = newTagName,
                             onTagNameChange = { newTagName = it },
-                            tagColor = newTagColor,
-                            onTagColorChange = { newTagColor = it },
                             onCreate = {
                                 if (newTagName.isNotBlank()) {
-                                    viewModel.onAction(TasksViewModel.Action.CreateTag(newTagName.trim(), newTagColor))
-                                    newTagName = ""; newTagColor = null
+                                    viewModel.onAction(TasksViewModel.Action.CreateTag(newTagName.trim()))
+                                    newTagName = ""
                                 }
                             },
                         )

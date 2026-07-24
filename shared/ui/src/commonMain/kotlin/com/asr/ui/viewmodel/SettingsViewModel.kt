@@ -30,22 +30,20 @@ class SettingsViewModel(
     private val _exportState = MutableStateFlow(ExportState.IDLE)
     private val _restoreState = MutableStateFlow(RestoreState.IDLE)
     private val _newTagName = MutableStateFlow("")
-    private val _newTagColor = MutableStateFlow<Long?>(null)
     private val _theme = MutableStateFlow(settingsRepo.getTheme())
 
     val state: StateFlow<SettingsState> = combine(
         _exportState,
         _restoreState,
         tagRepo.getTagsFlow(),
-        combine(_newTagName, _newTagColor) { n, c -> n to c },
+        _newTagName,
         _theme,
-    ) { exportState, restoreState, tags, (newName, newColor), theme ->
+    ) { exportState, restoreState, tags, newName, theme ->
         SettingsState(
             exportState = exportState,
             restoreState = restoreState,
             tags = tags,
             newTagName = newName,
-            newTagColor = newColor,
             theme = theme,
         )
     }.stateIn(
@@ -58,10 +56,8 @@ class SettingsViewModel(
         data object Export : Action
         data object Restore : Action
         data class SetNewTagName(val name: String) : Action
-        data class SetNewTagColor(val color: Long?) : Action
         data object CreateTag : Action
         data class DeleteTag(val id: Long) : Action
-        data class SetTagColor(val tagId: Long, val color: Long?) : Action
         data class SetTheme(val theme: ThemeOption) : Action
     }
 
@@ -82,21 +78,15 @@ class SettingsViewModel(
                 }
             }
             is Action.SetNewTagName -> _newTagName.value = action.name
-            is Action.SetNewTagColor -> _newTagColor.value = action.color
             Action.CreateTag -> viewModelScope.launch {
                 val name = _newTagName.value.trim()
                 if (name.isNotBlank()) {
-                    tagRepo.upsertTag(Tag(name = name, color = _newTagColor.value))
+                    tagRepo.upsertTag(Tag(name = name))
                     _newTagName.value = ""
-                    _newTagColor.value = null
                 }
             }
             is Action.DeleteTag -> viewModelScope.launch {
                 tagRepo.deleteTag(action.id)
-            }
-            is Action.SetTagColor -> viewModelScope.launch {
-                val existing = tagRepo.getTagById(action.tagId) ?: return@launch
-                tagRepo.upsertTag(existing.copy(color = action.color))
             }
             is Action.SetTheme -> {
                 _theme.value = action.theme
@@ -111,6 +101,5 @@ data class SettingsState(
     val restoreState: RestoreState = RestoreState.IDLE,
     val tags: List<Tag> = emptyList(),
     val newTagName: String = "",
-    val newTagColor: Long? = null,
     val theme: ThemeOption = ThemeOption.SYSTEM,
 )
