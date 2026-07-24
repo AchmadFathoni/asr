@@ -85,7 +85,6 @@ class TodayViewsFactory(
             LabelStyle.HEADER -> 24f
             LabelStyle.SECTION_TASKS, LabelStyle.SECTION_HABITS -> 18f
             LabelStyle.MESSAGE -> 14f
-            else -> 12f
         })
         if (item.style == LabelStyle.HEADER || item.style == LabelStyle.SECTION_TASKS || item.style == LabelStyle.SECTION_HABITS) {
             views.setInt(R.id.label_text, "setGravity", Gravity.CENTER)
