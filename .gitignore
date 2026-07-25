@@ -27,6 +27,7 @@ captures/
 .kotlin/
 
 # Misc
+kls_database.db
 *.log
 *.hprof
 *.keystore
