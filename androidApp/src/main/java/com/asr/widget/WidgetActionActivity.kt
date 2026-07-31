@@ -5,7 +5,10 @@ import android.media.MediaPlayer
 import android.os.Bundle
 import android.util.Log
 import com.asr.R
+import com.asr.core.interfaces.WidgetUpdater
 import com.asr.core.now
+import com.asr.core.task.SharedTaskRepo
+import com.asr.data.storage.RoomTaskStorage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -48,7 +51,8 @@ class WidgetActionActivity : Activity() {
                 val db = getDatabase(applicationContext)
                 val task = db.taskDao().getTaskById(taskId) ?: return@launch
                 val nowDone = !task.isDone
-                db.taskDao().upsertTask(task.copy(isDone = nowDone))
+                SharedTaskRepo(RoomTaskStorage(db.taskDao()), object : WidgetUpdater { override fun notifyDataChanged() {} })
+                    .toggleTask(taskId)
                 Log.d("Widget", "ToggleTask id=$taskId done=$nowDone")
                 if (nowDone) playDone()
                 if (widgetId > 0) TodayWidgetProvider.refreshWidget(applicationContext, widgetId)

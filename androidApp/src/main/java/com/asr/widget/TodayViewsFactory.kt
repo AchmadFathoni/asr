@@ -13,6 +13,8 @@ import com.asr.core.habit.Habit
 import com.asr.core.habit.HabitFrequency
 import com.asr.core.habit.HabitRecord
 import com.asr.core.habit.HabitState
+import com.asr.core.habit.periodTarget
+import com.asr.core.habit.shouldShowToday
 import com.asr.core.now
 import com.asr.core.TodayItems
 import com.asr.core.sortedByPinAndDate
@@ -113,7 +115,7 @@ class TodayViewsFactory(
         views.setTextColor(R.id.habit_title, textPrimary())
         views.setTextViewText(
             R.id.habit_count,
-            "${item.periodCount} / ${item.habit.frequencyCount}"
+            "${item.periodCount} / ${item.periodTarget.coerceAtLeast(1)}"
         )
         views.setTextColor(R.id.habit_count, textDim())
         views.setOnClickFillInIntent(R.id.habit_row, habitFillInIntent(item.habit.id, appWidgetId))
@@ -130,7 +132,7 @@ class TodayViewsFactory(
     sealed class ListItem {
         data class Label(val text: String, val style: LabelStyle) : ListItem()
         data class TaskItem(val task: Task, val isParent: Boolean, val indentDp: Int = 0) : ListItem()
-        data class HabitItem(val habit: Habit, val record: HabitRecord?, val periodCount: Int = 0) : ListItem()
+        data class HabitItem(val habit: Habit, val record: HabitRecord?, val periodCount: Int = 0, val periodTarget: Int = 0) : ListItem()
     }
 
     enum class LabelStyle { HEADER, SECTION_TASKS, SECTION_HABITS, MESSAGE }
@@ -177,8 +179,10 @@ class TodayViewsFactory(
                 allHabits, today, allRecords, todayRecordList
             ).sortedByPinAndTime()
 
+            val dueTasks = allTaskEntities.map { it.toTask() }.filter { val d = it.dueDate; d == null || d <= today }
+            val scheduledHabits = allHabits.filter { it.shouldShowToday(today) }
             val allDone = tasks.isEmpty() && habits.isEmpty() &&
-                (allTaskEntities.any { it.isDone } || allHabitEntities.isNotEmpty())
+                (dueTasks.isNotEmpty() || scheduledHabits.isNotEmpty())
 
             val result = mutableListOf<ListItem>()
             result.add(ListItem.Label("Today To-do List", LabelStyle.HEADER))
@@ -216,9 +220,9 @@ class TodayViewsFactory(
                     }
                     val pStartEpoch = pStart.toEpochDays()
                     val periodCount = allRecordEntities
-                        .filter { it.habitId == habit.id && it.date >= pStartEpoch && it.date <= todayEpoch }
+                        .filter { it.habitId == habit.id && it.date >= pStartEpoch && it.date <= todayEpoch && habit.shouldShowToday(Converters.dateFromTimestamp(it.date)) }
                         .sumOf { it.count }
-                    result.add(ListItem.HabitItem(habit, todayRecords[habit.id], periodCount))
+                    result.add(ListItem.HabitItem(habit, todayRecords[habit.id], periodCount, habit.periodTarget(today)))
                 }
             }
 

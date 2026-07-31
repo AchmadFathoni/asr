@@ -7,6 +7,7 @@ import com.asr.core.habit.HabitState
 import com.asr.core.habit.computeStreak
 import com.asr.core.habit.habitRecordWithNewState
 import com.asr.core.habit.isCompleteForPeriod
+import com.asr.core.habit.periodTarget
 import com.asr.core.habit.shouldShowToday
 import com.asr.core.tag.Tag
 import com.asr.core.task.Task
@@ -379,6 +380,52 @@ class BusinessLogicTest {
         assertTrue(h.shouldShowToday( LocalDate(2026, 7, 1)))
         assertTrue(h.shouldShowToday( LocalDate(2026, 7, 15)))
         assertFalse(h.shouldShowToday( LocalDate(2026, 7, 7)))
+    }
+
+    @Test fun monthlyPeriodTargetCollapsesClampedDays() {
+        val h = Habit(title = "M", frequencyType = HabitFrequency.MONTHLY, frequencyCount = 2, daysOfMonth = setOf(30, 31))
+        assertEquals(1, h.periodTarget(LocalDate(2025, 2, 28)))  // non-leap Feb: 30,31 -> 28
+        assertEquals(1, h.periodTarget(LocalDate(2024, 2, 29)))  // leap Feb: 30,31 -> 29
+        assertEquals(1, h.periodTarget(LocalDate(2026, 4, 30)))  // April: 31 -> 30
+        assertEquals(2, h.periodTarget(LocalDate(2026, 3, 30)))  // 31-day month: 30 + 31
+    }
+
+    @Test fun monthlyPeriodTargetCollapsesAllDaysInFeb() {
+        val h = Habit(title = "M", frequencyType = HabitFrequency.MONTHLY, frequencyCount = 3, daysOfMonth = setOf(29, 30, 31))
+        assertEquals(1, h.periodTarget(LocalDate(2025, 2, 28)))
+        assertEquals(1, h.periodTarget(LocalDate(2024, 2, 29)))
+    }
+
+    @Test fun monthlyPeriodTargetRespectsUnclampedDays() {
+        val h = Habit(title = "M", frequencyType = HabitFrequency.MONTHLY, frequencyCount = 3, daysOfMonth = setOf(28, 30, 31))
+        assertEquals(3, h.periodTarget(LocalDate(2026, 3, 28)))
+        assertEquals(2, h.periodTarget(LocalDate(2026, 4, 28)))
+    }
+
+    @Test fun monthlyCompleteInFebruaryWithCollapsedTarget() {
+        val h = Habit(title = "M", frequencyType = HabitFrequency.MONTHLY, frequencyCount = 2, daysOfMonth = setOf(30, 31))
+        val feb28 = LocalDate(2025, 2, 28)
+        val records = listOf(HabitRecord(habitId = 0, date = feb28, state = HabitState.DONE, count = 1))
+        assertTrue(h.isCompleteForPeriod(feb28, records))
+    }
+
+    @Test fun monthlyIncompleteUntilAllCollapsedDaysDone() {
+        val h = Habit(title = "M", frequencyType = HabitFrequency.MONTHLY, frequencyCount = 2, daysOfMonth = setOf(30, 31))
+        val mar30 = LocalDate(2026, 3, 30)
+        val records = listOf(HabitRecord(habitId = 0, date = mar30, state = HabitState.DONE, count = 1))
+        assertFalse(h.isCompleteForPeriod(mar30, records))
+    }
+
+    @Test fun monthlyStreakSurvivesFebruaryCollapse() {
+        val h = Habit(title = "M", frequencyType = HabitFrequency.MONTHLY, frequencyCount = 2, daysOfMonth = setOf(30, 31))
+        val records = listOf(
+            HabitRecord(habitId = 0, date = LocalDate(2026, 3, 31), state = HabitState.DONE, count = 1),
+            HabitRecord(habitId = 0, date = LocalDate(2026, 3, 30), state = HabitState.DONE, count = 1),
+            HabitRecord(habitId = 0, date = LocalDate(2026, 2, 28), state = HabitState.DONE, count = 1),
+            HabitRecord(habitId = 0, date = LocalDate(2026, 1, 31), state = HabitState.DONE, count = 1),
+            HabitRecord(habitId = 0, date = LocalDate(2026, 1, 30), state = HabitState.DONE, count = 1),
+        )
+        assertEquals(3, h.computeStreak(records, LocalDate(2026, 3, 31)))
     }
 
     @Test fun yearlyShowsOnCorrectMonthAndDay() {

@@ -10,6 +10,7 @@ import com.asr.core.habit.HabitState
 import com.asr.core.habit.habitRecordWithNewState
 import com.asr.core.habit.isCompleteForPeriod
 import com.asr.core.habit.periodStart
+import com.asr.core.habit.periodTarget
 import com.asr.core.habit.shouldShowToday
 import com.asr.core.interfaces.AlarmScheduler
 import com.asr.core.currentDateFlow
@@ -114,7 +115,9 @@ class TodayViewModel(
         val subTaskMap = filteredTasks.mapNotNull { t -> t.parentId?.let { pid -> pid to t } }
             .groupBy({ it.first }, { it.second })
         val parentTaskIds = subTaskMap.keys
-        val taskProgress = parentTaskIds.associateWith { countProgress(it, subTaskMap) }
+        val allSubTaskMap = tasks.mapNotNull { t -> t.parentId?.let { pid -> pid to t } }
+            .groupBy({ it.first }, { it.second })
+        val taskProgress = allSubTaskMap.keys.associateWith { countProgress(it, allSubTaskMap) }
 
         val flatTasks = mutableListOf<Pair<Task, Int>>()
         fun recurse(items: List<Task>, depth: Int) {
@@ -147,6 +150,7 @@ class TodayViewModel(
         val periodCounts = todayHabits.associate { h ->
             h.id to allRecs.filter { it.habitId == h.id && it.date >= h.periodStart(today) && it.date <= today && h.shouldShowToday(it.date) }.sumOf { it.count }
         }
+        val periodTargets = todayHabits.associate { it.id to it.periodTarget(today) }
 
         val yesterdayDate = LocalDate.fromEpochDays(today.toEpochDays() - 1)
         val yesterdayTasks = tasks.filter { it.dueDate == yesterdayDate }
@@ -171,6 +175,7 @@ class TodayViewModel(
             tags = tags,
             habitRecords = records.associateBy { it.habitId },
             periodCounts = periodCounts,
+            periodTargets = periodTargets,
             filter = filter,
             pendingDeletedTasks = pendingDeleted,
             taskTagMappings = ttm,
@@ -293,6 +298,7 @@ data class TodayState(
     val tags: List<Tag> = emptyList(),
     val habitRecords: Map<Long, HabitRecord> = emptyMap(),
     val periodCounts: Map<Long, Int> = emptyMap(),
+    val periodTargets: Map<Long, Int> = emptyMap(),
     val filter: FilterState = FilterState(),
     val pendingDeletedTasks: List<Task>? = null,
     val taskTagMappings: Map<Long, List<Long>> = emptyMap(),

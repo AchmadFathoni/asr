@@ -319,6 +319,16 @@ class TodayViewModelTest {
         assertTrue(s.tasks.none { it.id == 1L })
     }
 
+    @Test fun `parent progress counts done children not just visible ones`() = runBlocking {
+        tasks.value = listOf(
+            Task(id = 1, title = "Parent", isDone = false),
+            Task(id = 2, title = "Child done", isDone = true, parentId = 1),
+            Task(id = 3, title = "Child undone", isDone = false, parentId = 1),
+        )
+        val s = waitForState()
+        assertEquals(1 to 2, s.taskProgress[1])
+    }
+
     // ── periodCounts ──────────────────────────────────────────────
 
     @Test fun `periodCounts sums across period not just today`() = runBlocking {

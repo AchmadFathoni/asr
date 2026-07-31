@@ -11,6 +11,7 @@ import com.asr.core.habit.computeStreak
 import com.asr.core.habit.habitRecordWithNewState
 import com.asr.core.habit.isCompleteForPeriod
 import com.asr.core.habit.periodStart
+import com.asr.core.habit.periodTarget
 import com.asr.core.habit.shouldShowToday
 import com.asr.core.interfaces.AlarmScheduler
 import com.asr.core.currentDateFlow
@@ -76,11 +77,13 @@ class HabitsViewModel(
         val periodCounts = habits.associate { h ->
             h.id to allRecords.filter { it.habitId == h.id && it.date >= h.periodStart(today) && it.date <= today && h.shouldShowToday(it.date) }.sumOf { it.count }
         }
+        val periodTargets = habits.associate { it.id to it.periodTarget(today) }
         HabitsState(
             habits = Filters.habits(base.sortedByPinAndTime(), tagMappings, filter.searchQuery, filter.selectedTagIds, filter.filterDate),
             allRecords = allRecords,
             todayRecords = records.associateBy { it.habitId },
             periodCounts = periodCounts,
+            periodTargets = periodTargets,
             streaks = habits.associate { it.id to it.computeStreak(allRecords, today, requireToday = false) },
             habitFilter = habitFilter,
             tags = tags,
@@ -216,6 +219,7 @@ data class HabitsState(
     val allRecords: List<HabitRecord> = emptyList(),
     val todayRecords: Map<Long, HabitRecord> = emptyMap(),
     val periodCounts: Map<Long, Int> = emptyMap(),
+    val periodTargets: Map<Long, Int> = emptyMap(),
     val streaks: Map<Long, Int> = emptyMap(),
     val tags: List<Tag> = emptyList(),
     val filter: FilterState = FilterState(),

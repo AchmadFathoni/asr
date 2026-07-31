@@ -150,6 +150,14 @@ No-op implementations in `shared:ui` (like `DefaultSoundPlayer`, `DefaultWidgetU
 #### 10. Habits are done once per day (no tap-counting)
 A habit is either DONE or NOT_DONE for a given day. `HabitRecord.count` is always 0 (NOT_DONE/SKIPPED) or 1 (DONE). Period progress is the number of DONE days in the period, not the sum of intra-day taps. `habitRecordWithNewState` in `shared/core` uses a pure toggle: DONE ↔ NOT_DONE, no increment logic. Widget `ACTION_INCREMENT_HABIT` is a misnomer — it toggles the day state. The DAO's `upsertRecordForDate` uses `@Transaction` + DELETE-then-INSERT for atomicity (see `Daos.kt`) to prevent duplicate records.
 
+#### 11. Monthly habits: clamp short months + dynamic period target
+A monthly habit's selected days are *clamped* to the month's length — day 31 fires on the last day of short months (Feb 28 / leap Feb 29 / Apr 30). This is deliberate ("last day of month" semantics, e.g. payday); tests in `BusinessLogicTest.kt` assert it. Consequences:
+
+- **`periodTarget(today)` is the completion goal, not the stored `frequencyCount`.** For MONTHLY habits with non-empty `daysOfMonth`, it's the count of *distinct clamped days* in the current month: {30,31} → target 1 in Feb (both collapse to the 28th/29th), 2 in 31-day months. Without this, a multi-day selection containing days > 28 was impossible to complete in February (silently: never hidden from Today, streak broken, punishment counted it undone).
+- `isCompleteForPeriod`, `computeStreak`, and all progress displays (`HabitItemCard`, widget `N / M` label) use `periodTarget` as the denominator; ViewModels expose `periodTargets` alongside `periodCounts`.
+- Yearly habits are NOT clamped — `{month*100+day}` matches exactly, so a Feb-29 birthday habit simply skips non-leap years. Monthly clamps, yearly skips: intentional asymmetry.
+- `frequencyCount` remains the stored/config value (used for the `frequencyCount == 1` short-circuit and as fallback) — do not change what's persisted.
+
 ### Code Style
 - UDF: sealed actions → ViewModel state
 - Immutable state data classes, exposed via `StateFlow`

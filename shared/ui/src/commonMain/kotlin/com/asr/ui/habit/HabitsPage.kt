@@ -203,6 +203,7 @@ fun HabitsPage(viewModel: HabitsViewModel) {
                             },
                             streak = state.streaks[habit.id] ?: 0,
                             periodCount = state.periodCounts[habit.id] ?: 0,
+                            periodTarget = state.periodTargets[habit.id] ?: 0,
                             onDelete = { habitToDelete = habit },
                             onDuplicate = { viewModel.onAction(HabitsViewModel.Action.DuplicateHabit(habit.id)) },
                             onTogglePin = { viewModel.onAction(HabitsViewModel.Action.TogglePinHabit(habit.id)) },

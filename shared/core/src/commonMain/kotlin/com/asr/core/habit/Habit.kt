@@ -46,6 +46,15 @@ fun Habit.periodStart(today: LocalDate): LocalDate = when (frequencyType) {
     HabitFrequency.YEARLY -> LocalDate(today.year, 1, 1)
 }
 
+fun Habit.periodTarget(today: LocalDate): Int = when (frequencyType) {
+    HabitFrequency.DAILY -> 1
+    HabitFrequency.WEEKLY -> frequencyCount
+    HabitFrequency.MONTHLY ->
+        if (daysOfMonth.isEmpty()) frequencyCount
+        else daysOfMonth.map { kotlin.math.min(it, daysInMonth(today.year, today.month.ordinal + 1)) }.distinct().size
+    HabitFrequency.YEARLY -> frequencyCount
+}
+
 fun Habit.nextOccurrenceFrom(today: LocalDate): LocalDate {
     var d = today
     while (true) {
@@ -68,7 +77,7 @@ fun Habit.computeStreak(records: List<HabitRecord>, today: LocalDate, requireTod
         myRecords.filter { it.state == HabitState.DONE }.map { periodKey(it.date) }.toSet()
     } else {
         myRecords.groupBy { periodKey(it.date) }
-            .filter { (_, recs) -> recs.sumOf { it.count } >= frequencyCount }
+            .filter { (_, recs) -> recs.sumOf { it.count } >= periodTarget(recs.first().date) }
             .keys
     }
 
@@ -93,7 +102,7 @@ fun Habit.isCompleteForPeriod(today: LocalDate, allRecords: List<HabitRecord>): 
     val pStart = periodStart(today)
     val myRecords = allRecords.filter { it.habitId == id && it.date >= pStart && it.date <= today && shouldShowToday(it.date) }
     if (myRecords.any { it.state == HabitState.SKIPPED }) return true
-    return myRecords.sumOf { it.count } >= frequencyCount
+    return myRecords.sumOf { it.count } >= periodTarget(today)
 }
 
 fun daysInMonth(year: Int, month: Int): Int = when (month) {

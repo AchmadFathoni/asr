@@ -56,10 +56,12 @@ fun HabitItem(
     streak: Int = 0,
     onTogglePin: (() -> Unit)? = null,
     periodCount: Int = 0,
+    periodTarget: Int = 0,
 ) {
     val soundPlayer = koinInject<SoundPlayer>()
     val currentState = record?.state ?: HabitState.NOT_DONE
     val currentCount = periodCount
+    val target = if (periodTarget > 0) periodTarget else habit.frequencyCount
     val isDone = currentState == HabitState.DONE
     val isSkipped = currentState == HabitState.SKIPPED
 
@@ -88,11 +90,11 @@ fun HabitItem(
                         textDecoration = if (isDone) TextDecoration.LineThrough else null))
                 if (habit.frequencyCount > 1) {
                     LinearProgressIndicator(
-                        progress = { currentCount.toFloat() / habit.frequencyCount.coerceAtLeast(1) },
+                        progress = { currentCount.toFloat() / target.coerceAtLeast(1) },
                         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                         trackColor = MaterialTheme.colorScheme.surfaceVariant,
                     )
-                    Text("$currentCount / ${habit.frequencyCount} ${habit.frequencyType.name.lowercase().replaceFirstChar { it.uppercase() }}",
+                    Text("$currentCount / $target ${habit.frequencyType.name.lowercase().replaceFirstChar { it.uppercase() }}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }

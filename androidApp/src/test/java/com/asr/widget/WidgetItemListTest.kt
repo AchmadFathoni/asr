@@ -42,6 +42,35 @@ class WidgetItemListTest {
     }
 
     @Test
+    fun `unscheduled habit shows nothing message not all done`() {
+        val otherDow = ((today.dayOfWeek.ordinal + 1) % 7) + 1
+        val habits = listOf(HabitEntity(id = 1, title = "Off day", frequencyType = "WEEKLY", daysOfWeek = otherDow.toString()))
+        val items = TodayViewsFactory.buildItemList(emptyList(), habits, emptyList(), today)
+        assertTrue(items.any { it is TodayViewsFactory.ListItem.Label && it.text.contains("Nothing for today") })
+        assertTrue(items.none { it is TodayViewsFactory.ListItem.Label && it.text == "All done for today!" })
+    }
+
+    @Test
+    fun `period count excludes off-schedule records`() {
+        val today = LocalDate(2026, 7, 13) // Monday
+        val tuesday = LocalDate(2026, 7, 14).toEpochDays()
+        val habits = listOf(HabitEntity(id = 1, title = "Mon habit", frequencyType = "WEEKLY", frequencyCount = 1, daysOfWeek = "1"))
+        val records = listOf(HabitRecordEntity(habitId = 1, date = tuesday.toLong(), state = "DONE"))
+        val items = TodayViewsFactory.buildItemList(emptyList(), habits, records, today)
+        val habitItem = items.filterIsInstance<TodayViewsFactory.ListItem.HabitItem>().first()
+        assertEquals(0, habitItem.periodCount)
+    }
+
+    @Test
+    fun `period target collapses clamped days in february`() {
+        val today = LocalDate(2025, 2, 28) // non-leap February
+        val habits = listOf(HabitEntity(id = 1, title = "Payday", frequencyType = "MONTHLY", frequencyCount = 2, daysOfMonth = "30,31"))
+        val items = TodayViewsFactory.buildItemList(emptyList(), habits, emptyList(), today)
+        val habitItem = items.filterIsInstance<TodayViewsFactory.ListItem.HabitItem>().first()
+        assertEquals(1, habitItem.periodTarget)
+    }
+
+    @Test
     fun `daily habit without today record appears`() {
         val habits = listOf(HabitEntity(id = 1, title = "Exercise", frequencyType = "DAILY"))
         val items = TodayViewsFactory.buildItemList(emptyList(), habits, emptyList(), today)

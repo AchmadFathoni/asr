@@ -161,6 +161,7 @@ fun TodayPage(viewModel: TodayViewModel) {
                         record = state.habitRecords[habit.id],
                         onSetState = { viewModel.onAction(TodayViewModel.Action.ToggleHabit(habit.id, it)) },
                         periodCount = state.periodCounts[habit.id] ?: 0,
+                        periodTarget = state.periodTargets[habit.id] ?: 0,
                         onTogglePin = { viewModel.onAction(TodayViewModel.Action.TogglePinHabit(habit.id)) },
                     )
                     PinnedItemDivider(state.habits, habit, lastHabitPinIdx, hasHabitUnpinnedAfter)
