@@ -107,4 +107,37 @@ class WidgetItemListTest {
         val items = TodayViewsFactory.buildItemList(tasks, emptyList(), emptyList(), today)
         assertTrue(items.none { it is TodayViewsFactory.ListItem.TaskItem })
     }
+
+    @Test
+    fun `streak counts consecutive done days`() {
+        val today = LocalDate(2026, 7, 14)
+        val habits = listOf(HabitEntity(id = 1, title = "Exercise", frequencyType = "DAILY"))
+        val records = listOf(
+            HabitRecordEntity(habitId = 1, date = LocalDate(2026, 7, 12).toEpochDays(), state = "DONE"),
+            HabitRecordEntity(habitId = 1, date = LocalDate(2026, 7, 13).toEpochDays(), state = "DONE"),
+        )
+        val items = TodayViewsFactory.buildItemList(emptyList(), habits, records, today)
+        val habitItem = items.filterIsInstance<TodayViewsFactory.ListItem.HabitItem>().first()
+        assertEquals(2, habitItem.streak)
+    }
+
+    @Test
+    fun `streak counts from yesterday when today pending`() {
+        val today = LocalDate(2026, 7, 13)
+        val habits = listOf(HabitEntity(id = 1, title = "Exercise", frequencyType = "DAILY"))
+        val records = listOf(
+            HabitRecordEntity(habitId = 1, date = LocalDate(2026, 7, 12).toEpochDays(), state = "DONE"),
+        )
+        val items = TodayViewsFactory.buildItemList(emptyList(), habits, records, today)
+        val habitItem = items.filterIsInstance<TodayViewsFactory.ListItem.HabitItem>().first()
+        assertEquals(1, habitItem.streak)
+    }
+
+    @Test
+    fun `streak is zero when no records`() {
+        val habits = listOf(HabitEntity(id = 1, title = "Exercise", frequencyType = "DAILY"))
+        val items = TodayViewsFactory.buildItemList(emptyList(), habits, emptyList(), today)
+        val habitItem = items.filterIsInstance<TodayViewsFactory.ListItem.HabitItem>().first()
+        assertEquals(0, habitItem.streak)
+    }
 }

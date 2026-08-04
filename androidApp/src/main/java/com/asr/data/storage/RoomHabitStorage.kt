@@ -1,14 +1,9 @@
 package com.asr.data.storage
 
 import com.asr.core.habit.Habit
-import com.asr.core.habit.HabitFrequency
 import com.asr.core.habit.HabitRecord
-import com.asr.core.habit.HabitState
 import com.asr.core.habit.HabitStorage
-import com.asr.data.database.Converters
 import com.asr.data.database.HabitDao
-import com.asr.data.database.HabitEntity
-import com.asr.data.database.HabitRecordEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.LocalDate
@@ -59,47 +54,4 @@ class RoomHabitStorage(private val habitDao: HabitDao) : HabitStorage {
         habitDao.insertAllHabits(habits.map { it.toEntity() })
         habitDao.insertAllRecords(records.map { it.toEntity() })
     }
-
-    private fun HabitEntity.toDomain() = Habit(
-        id = id,
-        title = title,
-        description = description,
-        frequencyType = HabitFrequency.valueOf(frequencyType),
-        frequencyCount = frequencyCount,
-        daysOfWeek = if (daysOfWeek.isNotBlank()) daysOfWeek.split(",").mapNotNull { it.toIntOrNull() }.toSet() else emptySet(),
-        daysOfMonth = if (daysOfMonth.isNotBlank()) daysOfMonth.split(",").mapNotNull { it.toIntOrNull() }.toSet() else emptySet(),
-        yearlyDates = if (yearlyDates.isNotBlank()) yearlyDates.split(",").mapNotNull { it.toIntOrNull() }.toSet() else emptySet(),
-        isPinned = isPinned,
-        reminderTime = reminderTime,
-    )
-
-    private fun Habit.toEntity() = HabitEntity(
-        id = id,
-        title = title,
-        description = description,
-        frequencyType = frequencyType.name,
-        frequencyCount = frequencyCount,
-        dayOfWeek = daysOfWeek.firstOrNull(),
-        daysOfWeek = daysOfWeek.joinToString(","),
-        daysOfMonth = daysOfMonth.joinToString(","),
-        yearlyDates = yearlyDates.joinToString(","),
-        isPinned = isPinned,
-        reminderTime = reminderTime,
-    )
-
-    private fun HabitRecordEntity.toDomain() = HabitRecord(
-        id = id,
-        habitId = habitId,
-        date = Converters.dateFromTimestamp(date),
-        state = HabitState.valueOf(state),
-        count = count,
-    )
-
-    private fun HabitRecord.toEntity() = HabitRecordEntity(
-        id = id,
-        habitId = habitId,
-        date = Converters.dateToTimestamp(date),
-        state = state.name,
-        count = count,
-    )
 }

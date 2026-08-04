@@ -2,9 +2,7 @@ package com.asr.data.storage
 
 import com.asr.core.task.Task
 import com.asr.core.task.TaskStorage
-import com.asr.data.database.Converters
 import com.asr.data.database.TaskDao
-import com.asr.data.database.TaskEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -29,26 +27,4 @@ class RoomTaskStorage(private val taskDao: TaskDao) : TaskStorage {
 
     override suspend fun replaceAll(tasks: List<Task>) =
         taskDao.insertAll(tasks.map { it.toEntity() })
-
-    private fun TaskEntity.toDomain() = Task(
-        id = id,
-        title = title,
-        description = description,
-        isDone = isDone,
-        dueDate = dueDate?.let { Converters.dateFromTimestamp(it) },
-        parentId = parentId,
-        isPinned = isPinned,
-        reminderTime = reminderTime,
-    )
-
-    private fun Task.toEntity() = TaskEntity(
-        id = id,
-        title = title,
-        description = description,
-        isDone = isDone,
-        dueDate = dueDate?.let { Converters.dateToTimestamp(it) },
-        parentId = parentId,
-        isPinned = isPinned,
-        reminderTime = reminderTime,
-    )
 }

@@ -24,4 +24,28 @@
         android:layout_height="wrap_content"
         android:textSize="12sp" />
 
+    <LinearLayout
+        android:id="@+id/habit_streak_row"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:visibility="gone">
+
+        <ImageView
+            android:id="@+id/habit_streak_icon"
+            android:layout_width="14dp"
+            android:layout_height="14dp"
+            android:src="@drawable/widget_fire"
+            android:contentDescription="@null" />
+
+        <TextView
+            android:id="@+id/habit_streak"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="4dp"
+            android:textSize="12sp" />
+
+    </LinearLayout>
+
 </LinearLayout>

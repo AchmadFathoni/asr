@@ -5,14 +5,15 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Color as GColor
 import android.view.Gravity
+import android.view.View
 import android.util.Log
 import android.widget.RemoteViews
 import android.widget.RemoteViewsService
 import com.asr.R
 import com.asr.core.habit.Habit
-import com.asr.core.habit.HabitFrequency
 import com.asr.core.habit.HabitRecord
-import com.asr.core.habit.HabitState
+import com.asr.core.habit.computeStreak
+import com.asr.core.habit.periodStart
 import com.asr.core.habit.periodTarget
 import com.asr.core.habit.shouldShowToday
 import com.asr.core.now
@@ -23,6 +24,7 @@ import com.asr.core.task.Task
 import com.asr.data.database.Converters
 import com.asr.data.database.HabitEntity
 import com.asr.data.database.TaskEntity
+import com.asr.data.storage.toDomain
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.LocalDate
 
@@ -118,6 +120,13 @@ class TodayViewsFactory(
             "${item.periodCount} / ${item.periodTarget.coerceAtLeast(1)}"
         )
         views.setTextColor(R.id.habit_count, textDim())
+        if (item.streak > 0) {
+            views.setViewVisibility(R.id.habit_streak_row, View.VISIBLE)
+            views.setTextViewText(R.id.habit_streak, item.streak.toString())
+            views.setTextColor(R.id.habit_streak, 0xFF1E88E5.toInt())
+        } else {
+            views.setViewVisibility(R.id.habit_streak_row, View.GONE)
+        }
         views.setOnClickFillInIntent(R.id.habit_row, habitFillInIntent(item.habit.id, appWidgetId))
         return views
     }
@@ -132,7 +141,7 @@ class TodayViewsFactory(
     sealed class ListItem {
         data class Label(val text: String, val style: LabelStyle) : ListItem()
         data class TaskItem(val task: Task, val isParent: Boolean, val indentDp: Int = 0) : ListItem()
-        data class HabitItem(val habit: Habit, val record: HabitRecord?, val periodCount: Int = 0, val periodTarget: Int = 0) : ListItem()
+        data class HabitItem(val habit: Habit, val record: HabitRecord?, val periodCount: Int = 0, val periodTarget: Int = 0, val streak: Int = 0) : ListItem()
     }
 
     enum class LabelStyle { HEADER, SECTION_TASKS, SECTION_HABITS, MESSAGE }
@@ -166,20 +175,20 @@ class TodayViewsFactory(
             val todayEpoch = today.toEpochDays()
             val parentIds = allTaskEntities.mapNotNull { it.parentId }.toSet()
 
-            val allHabits = allHabitEntities.map { it.toHabit() }
-            val allRecords = allRecordEntities.map { it.toHabitRecord() }
+            val allHabits = allHabitEntities.map { it.toDomain() }
+            val allRecords = allRecordEntities.map { it.toDomain() }
             val todayRecordList = allRecords.filter { it.date == today }
             val todayRecords = todayRecordList.associateBy { it.habitId }
 
             val tasks = TodayItems.tasks(
-                allTaskEntities.map { it.toTask() }, today
+                allTaskEntities.map { it.toDomain() }, today
             ).sortedByPinAndDate()
 
             val habits = TodayItems.habits(
                 allHabits, today, allRecords, todayRecordList
             ).sortedByPinAndTime()
 
-            val dueTasks = allTaskEntities.map { it.toTask() }.filter { val d = it.dueDate; d == null || d <= today }
+            val dueTasks = allTaskEntities.map { it.toDomain() }.filter { val d = it.dueDate; d == null || d <= today }
             val scheduledHabits = allHabits.filter { it.shouldShowToday(today) }
             val allDone = tasks.isEmpty() && habits.isEmpty() &&
                 (dueTasks.isNotEmpty() || scheduledHabits.isNotEmpty())
@@ -212,17 +221,13 @@ class TodayViewsFactory(
             if (habits.isNotEmpty()) {
                 result.add(ListItem.Label("Habits", LabelStyle.SECTION_HABITS))
                 habits.forEach { habit ->
-                    val pStart = when (habit.frequencyType) {
-                        HabitFrequency.WEEKLY -> LocalDate.fromEpochDays(todayEpoch - today.dayOfWeek.ordinal)
-                        HabitFrequency.MONTHLY -> LocalDate(today.year, today.month, 1)
-                        HabitFrequency.YEARLY -> LocalDate(today.year, 1, 1)
-                        else -> today
-                    }
+                    val pStart = habit.periodStart(today)
                     val pStartEpoch = pStart.toEpochDays()
                     val periodCount = allRecordEntities
                         .filter { it.habitId == habit.id && it.date >= pStartEpoch && it.date <= todayEpoch && habit.shouldShowToday(Converters.dateFromTimestamp(it.date)) }
                         .sumOf { it.count }
-                    result.add(ListItem.HabitItem(habit, todayRecords[habit.id], periodCount, habit.periodTarget(today)))
+                    val streak = habit.computeStreak(allRecords, today, requireToday = false)
+                    result.add(ListItem.HabitItem(habit, todayRecords[habit.id], periodCount, habit.periodTarget(today), streak))
                 }
             }
 
@@ -242,38 +247,3 @@ fun habitFillInIntent(habitId: Long, appWidgetId: Int) = Intent().apply {
     putExtra("habit_id", habitId)
     putExtra("appWidgetId", appWidgetId)
 }
-
-private fun TaskEntity.toTask() = Task(
-    id = id,
-    title = title,
-    description = description,
-    isDone = isDone,
-    dueDate = dueDate?.let { Converters.dateFromTimestamp(it) },
-    parentId = parentId,
-    isPinned = isPinned,
-    reminderTime = reminderTime,
-)
-
-private fun HabitEntity.toHabit() = Habit(
-    id = id,
-    title = title,
-    description = description,
-    frequencyType = HabitFrequency.valueOf(frequencyType),
-    frequencyCount = frequencyCount,
-    daysOfWeek = if (daysOfWeek.isNotBlank()) daysOfWeek.split(",").mapNotNull { it.toIntOrNull() }.toSet()
-    else emptySet(),
-    daysOfMonth = if (daysOfMonth.isNotBlank()) daysOfMonth.split(",").mapNotNull { it.toIntOrNull() }.toSet()
-    else emptySet(),
-    yearlyDates = if (yearlyDates.isNotBlank()) yearlyDates.split(",").mapNotNull { it.toIntOrNull() }.toSet()
-    else emptySet(),
-    isPinned = isPinned,
-    reminderTime = reminderTime,
-)
-
-private fun com.asr.data.database.HabitRecordEntity.toHabitRecord() = HabitRecord(
-    id = id,
-    habitId = habitId,
-    date = Converters.dateFromTimestamp(date),
-    state = HabitState.valueOf(state),
-    count = count,
-)
