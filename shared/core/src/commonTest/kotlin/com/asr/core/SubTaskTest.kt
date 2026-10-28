@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class SubTaskTest {
@@ -90,12 +91,25 @@ class SubTaskTest {
     }
 
     @Test
-    fun upsertUnderDoneParentForcesChildDone() = runBlocking {
+    fun addingChildToDoneParentReopensParentAndKeepsChildUndone() = runBlocking {
         val repo = repoWith(Task(id = 1, title = "P", isDone = true))
         val childId = repo.upsertTask(Task(title = "C", parentId = 1))
         val child = repo.getTaskById(childId)
         assertTrue(child != null)
-        assertTrue(child.isDone)
+        assertFalse(child.isDone)
+        assertFalse(repo.getTaskById(1)!!.isDone)
+    }
+
+    @Test
+    fun addingChildToDoneParentReopensDoneAncestors() = runBlocking {
+        val repo = repoWith(
+            Task(id = 1, title = "GP", isDone = true),
+            Task(id = 2, title = "P", parentId = 1, isDone = true),
+        )
+        val childId = repo.upsertTask(Task(title = "C", parentId = 2))
+        assertFalse(repo.getTaskById(childId)!!.isDone)
+        assertFalse(repo.getTaskById(2)!!.isDone)
+        assertFalse(repo.getTaskById(1)!!.isDone)
     }
 
     // ── buildFlatList (UI-level, kept as-is) ──

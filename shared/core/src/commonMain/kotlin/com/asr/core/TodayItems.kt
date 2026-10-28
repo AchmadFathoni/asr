@@ -30,17 +30,17 @@ object TodayItems {
         }
     }
 
-    private fun isCompleteForToday(
+    fun isCompleteForToday(
         habit: Habit,
         today: LocalDate,
         allRecords: List<HabitRecord>,
         todayRecMap: Map<Long, HabitRecord>,
     ): Boolean {
         val rec = todayRecMap[habit.id]
-        return when {
-            habit.frequencyType == HabitFrequency.DAILY || habit.frequencyCount == 1 ->
-                rec != null && rec.state != HabitState.NOT_DONE
-            else -> rec != null || habit.isCompleteForPeriod(today, allRecords)
+        val loggedToday = rec != null && rec.state != HabitState.NOT_DONE
+        if (habit.frequencyType == HabitFrequency.DAILY || habit.frequencyCount == 1) {
+            return loggedToday
         }
+        return loggedToday || habit.isCompleteForPeriod(today, allRecords)
     }
 }

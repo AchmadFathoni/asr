@@ -22,11 +22,10 @@ class SharedTaskRepo(
     override suspend fun getSubTasks(parentId: Long): List<Task> = storage.getByParent(parentId)
 
     override suspend fun upsertTask(task: Task): Long {
-        val updated = if (task.parentId != null) {
-            val parent = storage.getById(task.parentId)
-            if (parent?.isDone == true) task.copy(isDone = true) else task
-        } else task
-        return storage.upsert(updated).also { widgetUpdater.notifyDataChanged() }
+        val id = storage.upsert(task)
+        task.parentId?.let { parentId -> uncompleteAncestors(parentId) }
+        widgetUpdater.notifyDataChanged()
+        return id
     }
 
     override suspend fun toggleTask(id: Long) {
@@ -44,13 +43,7 @@ class SharedTaskRepo(
             }
         } else {
             uncompleteDescendants(id)
-            current.parentId?.let { parentId ->
-                val parent = storage.getById(parentId) ?: return@let
-                val siblings = storage.getByParent(parentId)
-                if (parent.isDone && siblings.none { it.isDone }) {
-                    storage.upsert(parent.copy(isDone = false))
-                }
-            }
+            uncompleteAncestors(current.parentId)
         }
         widgetUpdater.notifyDataChanged()
     }
@@ -66,6 +59,18 @@ class SharedTaskRepo(
         storage.getByParent(parentId).filter { it.isDone }.forEach { sub ->
             storage.upsert(sub.copy(isDone = false))
             uncompleteDescendants(sub.id)
+        }
+    }
+
+    private suspend fun uncompleteAncestors(startParentId: Long?) {
+        var current = startParentId
+        while (current != null) {
+            val node = storage.getById(current) ?: break
+            if (storage.getByParent(current).all { it.isDone }) break
+            if (node.isDone) {
+                storage.upsert(node.copy(isDone = false))
+            }
+            current = node.parentId
         }
     }
 

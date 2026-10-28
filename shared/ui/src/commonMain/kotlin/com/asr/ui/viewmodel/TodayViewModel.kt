@@ -3,12 +3,10 @@ package com.asr.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.asr.core.habit.Habit
-import com.asr.core.habit.HabitFrequency
 import com.asr.core.habit.HabitRecord
 import com.asr.core.habit.HabitRepo
 import com.asr.core.habit.HabitState
 import com.asr.core.habit.habitRecordWithNewState
-import com.asr.core.habit.isCompleteForPeriod
 import com.asr.core.habit.periodStart
 import com.asr.core.habit.periodTarget
 import com.asr.core.habit.shouldShowToday
@@ -135,17 +133,10 @@ class TodayViewModel(
         val todayTasks = tasks.filter { val due = it.dueDate; due == null || due <= today }
         val hasItems = todayTasks.isNotEmpty() || todayHabits.isNotEmpty()
         val noFilter = filter.searchQuery.isBlank() && filter.selectedTagIds.isEmpty()
+        val todayRecMap = records.associateBy { it.habitId }
         val allDone = noFilter && hasItems &&
             todayTasks.all { it.isDone } &&
-            todayHabits.all { h ->
-                val todayRec = records.firstOrNull { it.habitId == h.id }
-                when {
-                    h.frequencyType == HabitFrequency.DAILY || h.frequencyCount == 1 ->
-                        todayRec != null && todayRec.state != HabitState.NOT_DONE
-                    else ->
-                    todayRec != null || h.isCompleteForPeriod(today, allRecs)
-                }
-            }
+            todayHabits.all { h -> TodayItems.isCompleteForToday(h, today, allRecs, todayRecMap) }
 
         val periodCounts = todayHabits.associate { h ->
             h.id to allRecs.filter { it.habitId == h.id && it.date >= h.periodStart(today) && it.date <= today && h.shouldShowToday(it.date) }.sumOf { it.count }
@@ -173,7 +164,7 @@ class TodayViewModel(
             tasks = visibleTasks,
             habits = Filters.habits(baseHabits.sortedByPinAndTime(), htm, filter.searchQuery, filter.selectedTagIds, null),
             tags = tags,
-            habitRecords = records.associateBy { it.habitId },
+            habitRecords = todayRecMap,
             periodCounts = periodCounts,
             periodTargets = periodTargets,
             filter = filter,

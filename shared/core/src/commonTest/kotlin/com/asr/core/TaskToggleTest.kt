@@ -60,6 +60,36 @@ class TaskToggleTest {
     }
 
     @Test
+    fun `uncompleting one of several subtasks reopens parent when sibling stays done`() = runTest {
+        val init = listOf(
+            Task(id = 1, title = "Parent", isDone = true),
+            Task(id = 2, title = "Child A", parentId = 1, isDone = true),
+            Task(id = 3, title = "Child B", parentId = 1, isDone = true),
+        )
+        insertAll(init)
+
+        toggleTask(3)
+        assertFalse(getTaskById(3)!!.isDone)
+        assertFalse(getTaskById(1)!!.isDone)
+        assertTrue(getTaskById(2)!!.isDone)
+    }
+
+    @Test
+    fun `uncompleting deep leaf reopens all done ancestors`() = runTest {
+        val init = listOf(
+            Task(id = 1, title = "L1", isDone = true),
+            Task(id = 2, title = "L2", parentId = 1, isDone = true),
+            Task(id = 3, title = "L3", parentId = 2, isDone = true),
+        )
+        insertAll(init)
+
+        toggleTask(3)
+        assertFalse(getTaskById(3)!!.isDone)
+        assertFalse(getTaskById(2)!!.isDone)
+        assertFalse(getTaskById(1)!!.isDone)
+    }
+
+    @Test
     fun `toggling parent done marks all descendants done recursively`() = runTest {
         val init = listOf(
             Task(id = 1, title = "Parent"),

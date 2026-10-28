@@ -254,7 +254,21 @@ class TodayViewModelTest {
 
     @Test fun `weekly target3 tapped once today hides for the day`() = runBlocking {
         habits.value = listOf(Habit(id = 1, title = "H", frequencyType = HabitFrequency.WEEKLY, frequencyCount = 3))
-        records.value = listOf(HabitRecord(habitId = 1, date = today, state = HabitState.NOT_DONE, count = 1))
+        records.value = listOf(HabitRecord(habitId = 1, date = today, state = HabitState.DONE, count = 1))
+        val s = waitForState()
+        assertTrue(s.habits.none { it.id == 1L })
+    }
+
+    @Test fun `weekly target3 done then undone today returns to Today`() = runBlocking {
+        habits.value = listOf(Habit(id = 1, title = "H", frequencyType = HabitFrequency.WEEKLY, frequencyCount = 3))
+        records.value = listOf(HabitRecord(habitId = 1, date = today, state = HabitState.NOT_DONE, count = 0))
+        val s = waitForState()
+        assertContains(s.habits.map { it.id }, 1L)
+    }
+
+    @Test fun `weekly target3 skipped today hides`() = runBlocking {
+        habits.value = listOf(Habit(id = 1, title = "H", frequencyType = HabitFrequency.WEEKLY, frequencyCount = 3))
+        records.value = listOf(HabitRecord(habitId = 1, date = today, state = HabitState.SKIPPED))
         val s = waitForState()
         assertTrue(s.habits.none { it.id == 1L })
     }
@@ -374,5 +388,12 @@ class TodayViewModelTest {
         records.value = listOf(HabitRecord(habitId = 1, date = weekStart, state = HabitState.DONE, count = 3))
         val s = waitForState()
         assertTrue(s.allDone)
+    }
+
+    @Test fun `allDone false for weekly target3 undone today`() = runBlocking {
+        habits.value = listOf(Habit(id = 1, title = "H", frequencyType = HabitFrequency.WEEKLY, frequencyCount = 3))
+        records.value = listOf(HabitRecord(habitId = 1, date = today, state = HabitState.NOT_DONE, count = 0))
+        val s = waitForState()
+        assertFalse(s.allDone)
     }
 }
