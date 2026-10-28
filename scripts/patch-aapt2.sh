@@ -13,7 +13,10 @@ if [ -z "$INTERP" ]; then
   INTERP="${NIX_LD:-"$(patchelf --print-interpreter "$(which bash)")"}"
 fi
 
-find "$PWD/.gradle-home/caches" "$PWD/.android-sdk/build-tools" \
+GRADLE_USER_HOME="${GRADLE_USER_HOME:-$PWD/../.gradle-home}"
+ANDROID_HOME="${ANDROID_HOME:-$PWD/../.android-sdk}"
+
+find "$GRADLE_USER_HOME/caches" "$ANDROID_HOME/build-tools" \
   -name aapt2 -type f -print0 2>/dev/null \
   | while IFS= read -r -d '' bin; do
       current="$(patchelf --print-interpreter "$bin" 2>/dev/null || true)"

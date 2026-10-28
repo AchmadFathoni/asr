@@ -10,7 +10,7 @@ cd "$(dirname "$0")/.."
 # ----------------------------------------------------------------------
 if grep -q NixOS /etc/os-release 2>/dev/null; then
   if [ -z "${JAVA_HOME:-}" ] || [ -z "${NIX_LD:-}" ]; then
-    CACHE="$PWD/.gradle-home/.nix-env-cache"
+    CACHE="$PWD/../.gradle-home/.nix-env-cache"
     if [ -f "$CACHE" ]; then
       eval "$(cat "$CACHE")"
     fi
@@ -22,6 +22,7 @@ if grep -q NixOS /etc/os-release 2>/dev/null; then
       NCURSES=$(nix eval nixpkgs#ncurses.outPath 2>/dev/null | tr -d '"')
       GCC_LIB=$(nix eval nixpkgs#gcc.cc.lib.outPath 2>/dev/null | tr -d '"')
       if [ -n "$JAVA_HOME" ] && [ -n "$GLIBC" ]; then
+        mkdir -p "$(dirname "$CACHE")"
         cat > "$CACHE" <<CACHEEOF
 JAVA_HOME=$JAVA_HOME
 NIX_LD=$GLIBC/lib/ld-linux-x86-64.so.2
@@ -35,16 +36,19 @@ CACHEEOF
   export JAVA_HOME="${JAVA_HOME:-}"
   export NIX_LD="${NIX_LD:-}"
   export NIX_LD_LIBRARY_PATH="${NIX_LD_LIBRARY_PATH:-}"
-  export ANDROID_HOME="${ANDROID_HOME:-$PWD/.android-sdk}"
-  export GRADLE_USER_HOME="${GRADLE_USER_HOME:-$PWD/.gradle-home}"
+  export ANDROID_HOME="${ANDROID_HOME:-$PWD/../.android-sdk}"
+  export GRADLE_USER_HOME="${GRADLE_USER_HOME:-$PWD/../.gradle-home}"
 
   mkdir -p "$ANDROID_HOME/licenses"
   [ -f "$ANDROID_HOME/licenses/android-sdk-license" ] || \
     echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" > "$ANDROID_HOME/licenses/android-sdk-license"
 fi
 
+export ANDROID_HOME="${ANDROID_HOME:-$PWD/../.android-sdk}"
+export GRADLE_USER_HOME="${GRADLE_USER_HOME:-$PWD/../.gradle-home}"
+
 # ── AAPT2 override ───────────────────────────────────────────────────
-AAPT2_PATH=$(find "$PWD/.android-sdk/build-tools" -name aapt2 -type f 2>/dev/null | head -1)
+AAPT2_PATH=$(find "$ANDROID_HOME/build-tools" -name aapt2 -type f 2>/dev/null | head -1)
 if [ -n "$AAPT2_PATH" ]; then
   set -- -Pandroid.aapt2FromMavenOverride="$AAPT2_PATH" "$@"
 fi

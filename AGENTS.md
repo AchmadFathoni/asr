@@ -76,8 +76,10 @@ Caveat: `AlarmSchedulerImpl.kt` in `:androidApp` uses `java.time.LocalTime` for 
 #### 3. NixOS compatibility
 `scripts/gradlew` is self-contained on NixOS — it auto-detects the OS, resolves
 `JAVA_HOME`, `NIX_LD`, `NIX_LD_LIBRARY_PATH` via `nix eval`, and sets
-`ANDROID_HOME` / `GRADLE_USER_HOME` to project-local dirs automatically.
-Results are cached in `.gradle-home/.nix-env-cache` for sub-second subsequent runs.
+`ANDROID_HOME` / `GRADLE_USER_HOME` to the shared parent dirs automatically.
+The SDK and Gradle cache live at `../.android-sdk` and `../.gradle-home`,
+shared with `../counter`. Results are cached in
+`../.gradle-home/.nix-env-cache` for sub-second subsequent runs.
 
 AAPT2 handling:
 - **AAPT2 override:** `-Pandroid.aapt2FromMavenOverride=$AAPT2_PATH` (project property, not `-D` — AGP silently ignores `-D`). Redirects AGP to the SDK's pre-patched `aapt2`, skipping Maven's binary entirely.
@@ -85,15 +87,13 @@ AAPT2 handling:
 
 **Important for opencode agents:** Do NOT use `nix develop --command` or `nix develop --print-env` — these produce no output in opencode's terminal. Instead, set env vars directly or just run `./scripts/gradlew` (it handles everything). The correct pattern is:
 ```bash
-GRADLE_USER_HOME="$PWD/.gradle-home" ANDROID_HOME="$PWD/.android-sdk" \
+GRADLE_USER_HOME="$PWD/../.gradle-home" ANDROID_HOME="$PWD/../.android-sdk" \
 JAVA_HOME=/nix/store/.../openjdk NIX_LD=... NIX_LD_LIBRARY_PATH=... \
 ./scripts/gradlew installDebug
 ```
 Or simply `./scripts/gradlew installDebug` (auto-bootstraps).
 
-If the transform cache gets corrupted, delete only `.gradle-home/caches/*/transforms/` then rebuild. Don't nuke the whole cache.
-
-If the transform cache gets corrupted, delete only `.gradle-home/caches/*/transforms/` then rebuild. Don't nuke the whole cache.
+If the transform cache gets corrupted, delete only `../.gradle-home/caches/*/transforms/` then rebuild. Don't nuke the whole cache.
 
 #### 4. Custom XML vector drawables via Compose Resources
 Drawables in `shared/ui/src/commonMain/composeResources/drawable/`, loaded with `vectorResource(Res.drawable.*)`. Generated resource package: `asr.shared.ui.generated.resources`. Sidesteps `material-icons-core` version gap.

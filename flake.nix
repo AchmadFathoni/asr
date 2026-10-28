@@ -35,10 +35,10 @@
           JAVA_HOME = "${pkgs.jdk21}";
 
           shellHook = ''
-            export GRADLE_USER_HOME="$PWD/.gradle-home"
+            export GRADLE_USER_HOME="$PWD/../.gradle-home"
 
             if [ -z "$ANDROID_HOME" ]; then
-              export ANDROID_HOME="$PWD/.android-sdk"
+              export ANDROID_HOME="$PWD/../.android-sdk"
             fi
 
             mkdir -p "$ANDROID_HOME/licenses"
