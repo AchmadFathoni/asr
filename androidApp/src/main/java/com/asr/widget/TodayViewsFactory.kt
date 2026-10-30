@@ -90,9 +90,12 @@ class TodayViewsFactory(
             LabelStyle.SECTION_TASKS, LabelStyle.SECTION_HABITS -> 18f
             LabelStyle.MESSAGE -> 14f
         })
-        if (item.style == LabelStyle.HEADER || item.style == LabelStyle.SECTION_TASKS || item.style == LabelStyle.SECTION_HABITS) {
-            views.setInt(R.id.label_text, "setGravity", Gravity.CENTER)
-        }
+        // Always set gravity: a recycled label row keeps the previous row's alignment.
+        views.setInt(
+            R.id.label_text,
+            "setGravity",
+            if (item.style == LabelStyle.MESSAGE) Gravity.START else Gravity.CENTER,
+        )
         return views
     }
 
@@ -100,13 +103,12 @@ class TodayViewsFactory(
         val views = RemoteViews(context.packageName, R.layout.widget_task_row)
         views.setTextViewText(R.id.task_title, item.task.title)
         views.setTextColor(R.id.task_title, if (item.isParent) textDim() else textPrimary())
-        if (item.indentDp > 0) {
-            val density = context.resources.displayMetrics.density
-            val startPx = ((12 + item.indentDp) * density).toInt()
-            val verticalPx = (6 * density).toInt()
-            val endPx = (12 * density).toInt()
-            views.setViewPadding(R.id.task_row, startPx, verticalPx, endPx, verticalPx)
-        }
+        // Always set padding: recycled rows keep the previous row's indent otherwise.
+        val density = context.resources.displayMetrics.density
+        val startPx = ((12 + item.indentDp) * density).toInt()
+        val verticalPx = (6 * density).toInt()
+        val endPx = (12 * density).toInt()
+        views.setViewPadding(R.id.task_row, startPx, verticalPx, endPx, verticalPx)
         views.setOnClickFillInIntent(R.id.task_row, taskFillInIntent(item.task.id, appWidgetId))
         return views
     }
