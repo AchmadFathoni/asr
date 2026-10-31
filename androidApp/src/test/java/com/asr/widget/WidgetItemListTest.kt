@@ -109,6 +109,32 @@ class WidgetItemListTest {
     }
 
     @Test
+    fun `subtasks follow their parent and parent shows done count`() {
+        val tasks = listOf(
+            TaskEntity(id = 1, title = "Parent"),
+            TaskEntity(id = 2, title = "Child done", parentId = 1, isDone = true),
+            TaskEntity(id = 3, title = "Child undone", parentId = 1),
+        )
+        val items = TodayViewsFactory.buildItemList(tasks, emptyList(), emptyList(), today)
+        val taskItems = items.filterIsInstance<TodayViewsFactory.ListItem.TaskItem>()
+        assertEquals(listOf("Parent", "Child undone"), taskItems.map { it.task.title })
+        assertEquals(1 to 2, taskItems.first().progress)
+        assertEquals(24, taskItems[1].indentDp)
+    }
+
+    @Test
+    fun `subtask stays under its parent even when its due date sorts it later`() {
+        val tasks = listOf(
+            TaskEntity(id = 1, title = "Parent"),
+            TaskEntity(id = 2, title = "Child", parentId = 1, dueDate = todayEpoch.toLong()),
+            TaskEntity(id = 3, title = "Other"),
+        )
+        val items = TodayViewsFactory.buildItemList(tasks, emptyList(), emptyList(), today)
+        val titles = items.filterIsInstance<TodayViewsFactory.ListItem.TaskItem>().map { it.task.title }
+        assertEquals(listOf("Parent", "Child", "Other"), titles)
+    }
+
+    @Test
     fun `streak counts consecutive done days`() {
         val today = LocalDate(2026, 7, 14)
         val habits = listOf(HabitEntity(id = 1, title = "Exercise", frequencyType = "DAILY"))

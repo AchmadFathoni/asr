@@ -25,6 +25,7 @@ import com.asr.data.database.Converters
 import com.asr.data.database.HabitEntity
 import com.asr.data.database.TaskEntity
 import com.asr.data.storage.toDomain
+import com.asr.ui.app.countProgress
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.LocalDate
 
@@ -103,6 +104,15 @@ class TodayViewsFactory(
         val views = RemoteViews(context.packageName, R.layout.widget_task_row)
         views.setTextViewText(R.id.task_title, item.task.title)
         views.setTextColor(R.id.task_title, if (item.isParent) textDim() else textPrimary())
+        // Always set visibility: recycled rows keep the previous row's count otherwise.
+        val (done, total) = item.progress ?: (0 to 0)
+        if (total > 0) {
+            views.setViewVisibility(R.id.task_progress, View.VISIBLE)
+            views.setTextViewText(R.id.task_progress, "$done / $total")
+            views.setTextColor(R.id.task_progress, textDim())
+        } else {
+            views.setViewVisibility(R.id.task_progress, View.GONE)
+        }
         // Always set padding: recycled rows keep the previous row's indent otherwise.
         val density = context.resources.displayMetrics.density
         val startPx = ((12 + item.indentDp) * density).toInt()
@@ -142,7 +152,12 @@ class TodayViewsFactory(
 
     sealed class ListItem {
         data class Label(val text: String, val style: LabelStyle) : ListItem()
-        data class TaskItem(val task: Task, val isParent: Boolean, val indentDp: Int = 0) : ListItem()
+        data class TaskItem(
+            val task: Task,
+            val isParent: Boolean,
+            val indentDp: Int = 0,
+            val progress: Pair<Int, Int>? = null,
+        ) : ListItem()
         data class HabitItem(val habit: Habit, val record: HabitRecord?, val periodCount: Int = 0, val periodTarget: Int = 0, val streak: Int = 0) : ListItem()
     }
 
@@ -175,22 +190,23 @@ class TodayViewsFactory(
             today: LocalDate,
         ): List<ListItem> {
             val todayEpoch = today.toEpochDays()
-            val parentIds = allTaskEntities.mapNotNull { it.parentId }.toSet()
+
+            val allTasks = allTaskEntities.map { it.toDomain() }
+            val subTaskMap = allTasks.mapNotNull { t -> t.parentId?.let { pid -> pid to t } }
+                .groupBy({ it.first }, { it.second })
 
             val allHabits = allHabitEntities.map { it.toDomain() }
             val allRecords = allRecordEntities.map { it.toDomain() }
             val todayRecordList = allRecords.filter { it.date == today }
             val todayRecords = todayRecordList.associateBy { it.habitId }
 
-            val tasks = TodayItems.tasks(
-                allTaskEntities.map { it.toDomain() }, today
-            ).sortedByPinAndDate()
+            val tasks = TodayItems.tasks(allTasks, today).sortedByPinAndDate()
 
             val habits = TodayItems.habits(
                 allHabits, today, allRecords, todayRecordList
             ).sortedByPinAndTime()
 
-            val dueTasks = allTaskEntities.map { it.toDomain() }.filter { val d = it.dueDate; d == null || d <= today }
+            val dueTasks = allTasks.filter { val d = it.dueDate; d == null || d <= today }
             val scheduledHabits = allHabits.filter { it.shouldShowToday(today) }
             val allDone = tasks.isEmpty() && habits.isEmpty() &&
                 (dueTasks.isNotEmpty() || scheduledHabits.isNotEmpty())
@@ -215,8 +231,16 @@ class TodayViewsFactory(
 
             if (tasks.isNotEmpty()) {
                 result.add(ListItem.Label("Tasks", LabelStyle.SECTION_TASKS))
-                tasks.forEach { task ->
-                    result.add(ListItem.TaskItem(task, task.id in parentIds, if (task.parentId != null) 24 else 0))
+                val ordered = withSubtasks(tasks)
+                ordered.forEach { (task, depth) ->
+                    result.add(
+                        ListItem.TaskItem(
+                            task = task,
+                            isParent = task.id in subTaskMap,
+                            indentDp = depth * 24,
+                            progress = countProgress(task.id, subTaskMap).takeIf { it.second > 0 },
+                        )
+                    )
                 }
             }
 
@@ -236,6 +260,23 @@ class TodayViewsFactory(
             return result
         }
     }
+}
+
+/** Same order as the Today tab: each task immediately followed by its undone subtasks. */
+private fun withSubtasks(tasks: List<Task>): List<Pair<Task, Int>> {
+    val children = tasks.filter { it.parentId != null }.groupBy { it.parentId }
+    val result = mutableListOf<Pair<Task, Int>>()
+    fun recurse(items: List<Task>, depth: Int) {
+        for (task in items) {
+            result.add(task to depth)
+            recurse(children[task.id].orEmpty(), depth + 1)
+        }
+    }
+    recurse(tasks.filter { it.parentId == null }, 0)
+    // Orphan subtasks (parent done or hidden) would be dropped by the recursion.
+    val shown = result.mapTo(HashSet()) { it.first.id }
+    tasks.filter { it.id !in shown }.forEach { result.add(it to 0) }
+    return result
 }
 
 fun taskFillInIntent(taskId: Long, appWidgetId: Int) = Intent().apply {
