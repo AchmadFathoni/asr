@@ -13,6 +13,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.asr.core.habit.Habit
@@ -64,13 +65,15 @@ fun YesterdaySheet(
             if (tasks.isNotEmpty()) {
                 Text("Tasks", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
                 tasks.forEach { task ->
-                    TaskItemCard(
-                        task = task,
-                        depth = 0,
-                        isParent = false,
-                        soundPlayer = soundPlayer,
-                        onToggle = { onToggleTask(task.id) },
-                    )
+                    key(task.id) {
+                        TaskItemCard(
+                            task = task,
+                            depth = 0,
+                            isParent = false,
+                            soundPlayer = soundPlayer,
+                            onToggle = { onToggleTask(task.id) },
+                        )
+                    }
                 }
             }
 
@@ -78,13 +81,15 @@ fun YesterdaySheet(
                 Spacer(Modifier.height(16.dp))
                 Text("Habits", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
                 habits.forEach { habit ->
-                    HabitItem(
-                        habit = habit,
-                        record = records[habit.id],
-                        onSetState = { onSetHabitState(habit.id, it) },
-                        periodCount = periodCounts[habit.id] ?: 0,
-                        periodTarget = periodTargets[habit.id] ?: 0,
-                    )
+                    key(habit.id) {
+                        HabitItem(
+                            habit = habit,
+                            record = records[habit.id],
+                            onSetState = { onSetHabitState(habit.id, it) },
+                            periodCount = periodCounts[habit.id] ?: 0,
+                            periodTarget = periodTargets[habit.id] ?: 0,
+                        )
+                    }
                 }
             }
 
