@@ -4,9 +4,9 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -72,6 +72,7 @@ fun TodayPage(viewModel: TodayViewModel) {
     val state by viewModel.state.collectAsState()
     val soundPlayer = koinInject<SoundPlayer>()
     val snackbarHostState = remember { SnackbarHostState() }
+    var showYesterday by remember { mutableStateOf(false) }
 
     UndoDeleteSnackbarEffect(
         pendingDeletedTasks = state.pendingDeletedTasks,
@@ -100,7 +101,14 @@ fun TodayPage(viewModel: TodayViewModel) {
         }
     } else {
     Column(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp)) {
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            if (state.yesterdayTasks.isNotEmpty() || state.yesterdayHabits.isNotEmpty()) {
+                TextButton(
+                    onClick = { showYesterday = true },
+                    contentPadding = PaddingValues(0.dp),
+                ) { Text("Yesterday ›") }
+            }
+            Spacer(Modifier.weight(1f))
             val filterActive = state.filter.searchQuery.isNotBlank() || state.filter.selectedTagIds.isNotEmpty()
             Box {
                 IconButton(onClick = { viewModel.onAction(TodayViewModel.Action.ToggleFilterSheet) }) {
@@ -196,6 +204,18 @@ fun TodayPage(viewModel: TodayViewModel) {
             viewModel.onAction(TodayViewModel.Action.ClearTagFilter)
         },
         onDismiss = { viewModel.onAction(TodayViewModel.Action.ToggleFilterSheet) },
+    )
+
+    YesterdaySheet(
+        show = showYesterday,
+        tasks = state.yesterdayTasks,
+        habits = state.yesterdayHabits,
+        records = state.yesterdayRecords,
+        periodCounts = state.yesterdayPeriodCounts,
+        periodTargets = state.yesterdayPeriodTargets,
+        onToggleTask = { viewModel.onAction(TodayViewModel.Action.ToggleYesterdayTask(it)) },
+        onSetHabitState = { id, newState -> viewModel.onAction(TodayViewModel.Action.ToggleYesterdayHabit(id, newState)) },
+        onDismiss = { showYesterday = false },
     )
 
     if (state.showPunishmentDialog) {

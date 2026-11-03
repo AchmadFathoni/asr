@@ -396,4 +396,39 @@ class TodayViewModelTest {
         val s = waitForState()
         assertFalse(s.allDone)
     }
+
+    // ── Yesterday review ──────────────────────────────────────────
+
+    @Test fun `yesterday list has tasks due yesterday and habits scheduled`() = runBlocking {
+        val yesterday = LocalDate.fromEpochDays(today.toEpochDays() - 1)
+        tasks.value = listOf(
+            Task(id = 1, title = "Yesterday", dueDate = yesterday),
+            Task(id = 2, title = "Today", dueDate = today),
+        )
+        habits.value = listOf(Habit(id = 3, title = "H", frequencyType = HabitFrequency.DAILY, frequencyCount = 1))
+        val s = waitForState()
+        assertEquals(listOf(1L), s.yesterdayTasks.map { it.id })
+        assertContains(s.yesterdayHabits.map { it.id }, 3L)
+    }
+
+    @Test fun `yesterday list only offers habits not done`() = runBlocking {
+        val yesterday = LocalDate.fromEpochDays(today.toEpochDays() - 1)
+        habits.value = listOf(
+            Habit(id = 1, title = "Done", frequencyType = HabitFrequency.DAILY, frequencyCount = 1),
+            Habit(id = 2, title = "Undone", frequencyType = HabitFrequency.DAILY, frequencyCount = 1),
+        )
+        records.value = listOf(HabitRecord(habitId = 1, date = yesterday, state = HabitState.DONE, count = 1))
+        val s = waitForState()
+        assertEquals(listOf(2L), s.yesterdayHabits.map { it.id })
+    }
+
+    @Test fun `retro habit toggle writes record to yesterday not today`() = runBlocking {
+        val yesterday = LocalDate.fromEpochDays(today.toEpochDays() - 1)
+        habits.value = listOf(Habit(id = 1, title = "H", frequencyType = HabitFrequency.DAILY, frequencyCount = 1))
+        waitForState()
+        viewModel.onAction(TodayViewModel.Action.ToggleYesterdayHabit(1L, HabitState.DONE))
+        viewModel.state.first { it.yesterdayRecords[1L]?.state == HabitState.DONE }
+        assertTrue(records.value.any { it.habitId == 1L && it.date == yesterday })
+        assertTrue(records.value.none { it.date == today })
+    }
 }

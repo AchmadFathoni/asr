@@ -153,6 +153,13 @@ class TodayViewModel(
                 val rec = yRecs.firstOrNull { it.habitId == h.id }
                 rec == null || rec.state != HabitState.DONE
             }
+        val yesterdayPeriodCounts = yesterdayHabits.associate { h ->
+            h.id to allRecs.filter { it.habitId == h.id && it.date >= h.periodStart(yesterdayDate) && it.date <= yesterdayDate && h.shouldShowToday(it.date) }.sumOf { it.count }
+        }
+        val yesterdayPeriodTargets = yesterdayHabits.associate { it.id to it.periodTarget(yesterdayDate) }
+        // the review sheet only offers habits still open for that day
+        val undoneYesterdayHabits = yesterdayHabits.filter { h -> yRecs.firstOrNull { it.habitId == h.id }?.state != HabitState.DONE }
+
         val acknowledgedDate = settingsRepo.getPunishmentAcknowledgedDate()
         val alreadyAcknowledged = acknowledgedDate == yesterdayDate.toString()
         val showPunishment = totalYesterday > 0 &&
@@ -176,6 +183,11 @@ class TodayViewModel(
             taskProgress = taskProgress,
             expandedTaskIds = expandedTaskIds,
             allDone = allDone,
+            yesterdayTasks = yesterdayTasks.sortedByPinAndDate(),
+            yesterdayHabits = undoneYesterdayHabits.sortedByPinAndTime(),
+            yesterdayRecords = yRecs.associateBy { it.habitId },
+            yesterdayPeriodCounts = yesterdayPeriodCounts,
+            yesterdayPeriodTargets = yesterdayPeriodTargets,
             showPunishmentDialog = showPunishment,
             isLoading = false,
         )
@@ -211,6 +223,8 @@ class TodayViewModel(
         data class ToggleTag(val tagId: Long) : Action
         data object ClearTagFilter : Action
         data object ToggleFilterSheet : Action
+        data class ToggleYesterdayTask(val taskId: Long) : Action
+        data class ToggleYesterdayHabit(val habitId: Long, val newState: HabitState) : Action
         data class DismissPunishmentDialog(val acknowledged: Boolean) : Action
     }
 
@@ -272,6 +286,16 @@ class TodayViewModel(
             }
             is Action.ClearTagFilter -> _filter.value = _filter.value.copy(selectedTagIds = emptySet())
             is Action.ToggleFilterSheet -> _filter.value = _filter.value.copy(showFilterSheet = !_filter.value.showFilterSheet)
+            is Action.ToggleYesterdayTask -> viewModelScope.launch {
+                taskRepo.toggleTask(action.taskId)
+            }
+            is Action.ToggleYesterdayHabit -> viewModelScope.launch {
+                val yesterday = LocalDate.fromEpochDays(currentToday.toEpochDays() - 1)
+                val existing = habitRepo.getRecordForDate(action.habitId, yesterday)
+                val habit = habitRepo.getHabitById(action.habitId) ?: return@launch
+                // no alarm rescheduling: a retro edit must not touch today's reminder
+                habitRepo.upsertRecord(habitRecordWithNewState(existing, habit, yesterday, action.newState))
+            }
             is Action.DismissPunishmentDialog -> {
                 _punishmentDismissed.value = true
                 if (action.acknowledged) {
@@ -299,6 +323,11 @@ data class TodayState(
     val taskProgress: Map<Long, Pair<Int, Int>> = emptyMap(),
     val expandedTaskIds: Set<Long> = emptySet(),
     val allDone: Boolean = false,
+    val yesterdayTasks: List<Task> = emptyList(),
+    val yesterdayHabits: List<Habit> = emptyList(),
+    val yesterdayRecords: Map<Long, HabitRecord> = emptyMap(),
+    val yesterdayPeriodCounts: Map<Long, Int> = emptyMap(),
+    val yesterdayPeriodTargets: Map<Long, Int> = emptyMap(),
     val showPunishmentDialog: Boolean = false,
     val isLoading: Boolean = true,
 )
