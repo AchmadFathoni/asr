@@ -84,10 +84,20 @@ fun HabitItem(
         Row(modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
             verticalAlignment = Alignment.CenterVertically) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(habit.title,
-                    maxLines = 2, overflow = TextOverflow.Ellipsis,
-                    style = MaterialTheme.typography.bodyLarge.copy(
-                        textDecoration = if (isDone) TextDecoration.LineThrough else null))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (habit.isPinned) {
+                        Icon(
+                            imageVector = vectorResource(Res.drawable.pin),
+                            contentDescription = "Pinned",
+                            modifier = Modifier.size(14.dp).padding(end = 4.dp),
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                    Text(habit.title,
+                        maxLines = 2, overflow = TextOverflow.Ellipsis,
+                        style = MaterialTheme.typography.bodyLarge.copy(
+                            textDecoration = if (isDone) TextDecoration.LineThrough else null))
+                }
                 if (habit.frequencyCount > 1) {
                     LinearProgressIndicator(
                         progress = { currentCount.toFloat() / target.coerceAtLeast(1) },

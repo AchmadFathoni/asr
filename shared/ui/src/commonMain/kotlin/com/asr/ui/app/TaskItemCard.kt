@@ -17,6 +17,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -36,6 +37,8 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import com.asr.core.interfaces.SoundPlayer
 import com.asr.core.task.Task
+import asr.shared.ui.generated.resources.*
+import org.jetbrains.compose.resources.vectorResource
 
 
 @Composable
@@ -100,9 +103,17 @@ fun TaskItemCard(
                     onToggle()
                 })
             }
+            if (task.isPinned) {
+                Icon(
+                    imageVector = vectorResource(Res.drawable.pin),
+                    contentDescription = "Pinned",
+                    modifier = Modifier.size(14.dp),
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+            }
             Text(
                 text = task.title,
-                modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
+                modifier = Modifier.weight(1f).padding(start = if (task.isPinned) 4.dp else 8.dp, end = 8.dp),
                 style = MaterialTheme.typography.bodyLarge.copy(
                     textDecoration = if (task.isDone) TextDecoration.LineThrough else null,
                 ),
